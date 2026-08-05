@@ -169,32 +169,55 @@
     /* Show the keyboard legend by default; swap to the touch legend on mobile. */
     .controls-help.touch { display: none; }
 
-    /* Touch controls — hidden on larger screens */
-    .touch-controls { display: none; }
+    /* Control-scheme toggle (On-screen / Keyboard) */
+    .ctrl-select {
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+      margin-top: 16px;
+    }
+    .ctrl-select button {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 9px;
+      background: var(--cell);
+      color: #94a3b8;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .ctrl-select button.active { background: var(--accent); color: #fff; }
 
+    /* Touch controls — shown only when the On-screen scheme is active */
+    .touch-controls {
+      display: none;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin: 12px auto 0;
+      max-width: 360px;
+    }
+    .touch-controls button {
+      padding: 16px 0;
+      border: none;
+      border-radius: 10px;
+      background: var(--cell);
+      color: var(--text);
+      font-size: 1.2rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .touch-controls button:active { background: var(--accent); }
+
+    /* The chosen control scheme drives which controls/legend show,
+       independent of screen width (so tablets like iPad work too). */
+    body.mode-touch .touch-controls { display: grid; }
+    body.mode-touch .controls-help.keyboard { display: none; }
+    body.mode-touch .controls-help.touch { display: block; }
+
+    /* Narrow screens: stack the board and score panel regardless of scheme. */
     @media (max-width: 560px) {
       .layout { flex-direction: column-reverse; align-items: center; }
       .sidebar { flex-direction: row; flex-wrap: wrap; justify-content: center; min-width: 0; }
-      .touch-controls {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 8px;
-        margin-top: 16px;
-      }
-      .touch-controls button {
-        padding: 14px 0;
-        border: none;
-        border-radius: 10px;
-        background: var(--cell);
-        color: var(--text);
-        font-size: 1.1rem;
-        font-weight: 700;
-        cursor: pointer;
-      }
-      .touch-controls button:active { background: var(--accent); }
-
-      .controls-help.keyboard { display: none; }
-      .controls-help.touch { display: block; }
     }
   </style>
 </head>
@@ -232,6 +255,11 @@
         </div>
         <button class="action" id="pauseBtn">Pause</button>
       </div>
+    </div>
+
+    <div class="ctrl-select">
+      <button data-ctrl="touch" id="ctrlTouch">📱 On-screen</button>
+      <button data-ctrl="keyboard" id="ctrlKeyboard">⌨ Keyboard</button>
     </div>
 
     <div class="touch-controls">
@@ -579,6 +607,27 @@
       else togglePause();
     });
     pauseBtn.addEventListener('click', togglePause);
+
+    // --- Control scheme: On-screen buttons vs device keyboard ---
+    const ctrlTouchBtn = document.getElementById('ctrlTouch');
+    const ctrlKeyboardBtn = document.getElementById('ctrlKeyboard');
+    const CONTROLS_KEY = 'tetris-control-scheme';
+
+    function setControlScheme(scheme) {
+      document.body.classList.toggle('mode-touch', scheme === 'touch');
+      ctrlTouchBtn.classList.toggle('active', scheme === 'touch');
+      ctrlKeyboardBtn.classList.toggle('active', scheme === 'keyboard');
+      try { localStorage.setItem(CONTROLS_KEY, scheme); } catch (e) { /* ignore */ }
+    }
+
+    ctrlTouchBtn.addEventListener('click', () => setControlScheme('touch'));
+    ctrlKeyboardBtn.addEventListener('click', () => setControlScheme('keyboard'));
+
+    // Default: remembered choice, else auto-detect touch devices (e.g. iPad).
+    let savedScheme = null;
+    try { savedScheme = localStorage.getItem(CONTROLS_KEY); } catch (e) { /* ignore */ }
+    const isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+    setControlScheme(savedScheme || (isTouchDevice ? 'touch' : 'keyboard'));
 
     startGame();
   </script>
