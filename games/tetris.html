@@ -166,6 +166,9 @@
       color: var(--text);
     }
 
+    /* Show the keyboard legend by default; swap to the touch legend on mobile. */
+    .controls-help.touch { display: none; }
+
     /* Touch controls — hidden on larger screens */
     .touch-controls { display: none; }
 
@@ -189,6 +192,9 @@
         cursor: pointer;
       }
       .touch-controls button:active { background: var(--accent); }
+
+      .controls-help.keyboard { display: none; }
+      .controls-help.touch { display: block; }
     }
   </style>
 </head>
@@ -235,12 +241,19 @@
       <button data-action="drop">&#8595;&#8595;</button>
     </div>
 
-    <div class="controls-help">
+    <div class="controls-help keyboard">
       <kbd>&larr;</kbd> <kbd>&rarr;</kbd> move &middot;
       <kbd>&uarr;</kbd> rotate &middot;
       <kbd>&darr;</kbd> soft drop &middot;
       <kbd>Space</kbd> hard drop &middot;
       <kbd>P</kbd> pause
+    </div>
+
+    <div class="controls-help touch">
+      <kbd>&larr;</kbd> <kbd>&rarr;</kbd> move &middot;
+      <kbd>&#8635;</kbd> rotate &middot;
+      <kbd>&#8595;&#8595;</kbd> hard drop &middot;
+      <kbd>Pause</kbd> button above
     </div>
   </main>
 
