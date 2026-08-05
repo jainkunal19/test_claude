@@ -86,6 +86,9 @@
     .mode-btn:hover { color: var(--text); }
     .mode-btn.active { background: var(--accent); color: #fff; }
 
+    .difficulty { margin-top: 0; }
+    .difficulty .mode-btn { font-size: 0.82rem; padding: 8px; }
+
     .status {
       text-align: center;
       font-size: 1.1rem;
@@ -179,6 +182,12 @@
       <button class="mode-btn" id="mode2" data-mode="2">2 Players</button>
     </div>
 
+    <div class="mode-select difficulty" id="difficulty">
+      <button class="mode-btn" data-level="easy">Easy</button>
+      <button class="mode-btn active" data-level="medium">Medium</button>
+      <button class="mode-btn" data-level="hard">Hard</button>
+    </div>
+
     <p class="status" id="status">Your turn</p>
 
     <div class="board" id="board">
@@ -223,6 +232,8 @@
     const labelO = document.getElementById('labelO');
     const mode1Btn = document.getElementById('mode1');
     const mode2Btn = document.getElementById('mode2');
+    const difficultyEl = document.getElementById('difficulty');
+    const levelBtns = Array.from(difficultyEl.querySelectorAll('.mode-btn'));
     const scoreEls = {
       X: document.getElementById('scoreX'),
       O: document.getElementById('scoreO'),
@@ -233,6 +244,7 @@
     let currentPlayer = 'X';
     let gameOver = false;
     let gameMode = 1;         // 1 = vs bot, 2 = two players
+    let botLevel = 'medium';  // easy | medium | hard
     let inputLocked = false;  // blocks clicks while the bot is moving
     const scores = { X: 0, O: 0, draw: 0 };
 
@@ -343,8 +355,29 @@
       return best;
     }
 
-    function bestBotMove() {
+    function emptyIndices() {
+      const r = [];
+      board.forEach((v, i) => { if (!v) r.push(i); });
+      return r;
+    }
+
+    function randomMove() {
+      const avail = emptyIndices();
+      return avail[Math.floor(Math.random() * avail.length)];
+    }
+
+    function optimalMove() {
       return minimax(board.slice(), BOT, 0).index;
+    }
+
+    // Choose the bot's move based on the selected difficulty.
+    // Easy: always random. Medium: mostly optimal, sometimes random
+    // (beatable). Hard: always optimal (unbeatable).
+    function bestBotMove() {
+      if (botLevel === 'easy') return randomMove();
+      if (botLevel === 'hard') return optimalMove();
+      // medium
+      return Math.random() < 0.6 ? optimalMove() : randomMove();
     }
 
     function newRound() {
@@ -372,6 +405,7 @@
       gameMode = mode;
       mode1Btn.classList.toggle('active', mode === 1);
       mode2Btn.classList.toggle('active', mode === 2);
+      difficultyEl.style.display = mode === 1 ? 'flex' : 'none';
       if (mode === 1) {
         labelX.textContent = 'You';
         labelO.textContent = 'Bot';
@@ -382,13 +416,19 @@
       resetScores(); // switching mode starts a fresh game
     }
 
+    function setLevel(level) {
+      botLevel = level;
+      levelBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.level === level));
+    }
+
     cells.forEach(cell => cell.addEventListener('click', handleCellClick));
     document.getElementById('newRound').addEventListener('click', newRound);
     document.getElementById('resetScores').addEventListener('click', resetScores);
     mode1Btn.addEventListener('click', () => setMode(1));
     mode2Btn.addEventListener('click', () => setMode(2));
+    levelBtns.forEach(btn => btn.addEventListener('click', () => setLevel(btn.dataset.level)));
 
-    // Start in 1-player mode by default.
+    // Start in 1-player mode, medium difficulty, by default.
     setMode(1);
   </script>
 </body>
