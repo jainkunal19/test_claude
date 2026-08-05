@@ -63,6 +63,32 @@
       -webkit-text-fill-color: transparent;
     }
 
+    .mode-select {
+      display: flex;
+      gap: 6px;
+      background: var(--cell);
+      border-radius: 12px;
+      padding: 5px;
+      margin: 14px 0 12px;
+    }
+    .mode-btn {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      border-radius: 9px;
+      background: transparent;
+      color: #94a3b8;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+    .mode-btn:hover { color: var(--text); }
+    .mode-btn.active { background: var(--accent); color: #fff; }
+
+    .difficulty { margin-top: 0; }
+    .difficulty .mode-btn { font-size: 0.82rem; padding: 8px; }
+
     .status {
       text-align: center;
       font-size: 1.1rem;
@@ -150,7 +176,19 @@
   <main class="game">
     <a class="back-link" href="../index.html">&larr; Back to Alisha Arcade</a>
     <h1>Tic Tac Toe</h1>
-    <p class="status" id="status">Player X's turn</p>
+
+    <div class="mode-select">
+      <button class="mode-btn active" id="mode1" data-mode="1">1 Player</button>
+      <button class="mode-btn" id="mode2" data-mode="2">2 Players</button>
+    </div>
+
+    <div class="mode-select difficulty" id="difficulty">
+      <button class="mode-btn" data-level="easy">Easy</button>
+      <button class="mode-btn active" data-level="medium">Medium</button>
+      <button class="mode-btn" data-level="hard">Hard</button>
+    </div>
+
+    <p class="status" id="status">Your turn</p>
 
     <div class="board" id="board">
       <button class="cell" data-index="0" aria-label="cell 1"></button>
@@ -165,9 +203,9 @@
     </div>
 
     <div class="scoreboard">
-      <div class="score x"><span class="label">Player X</span><span class="value" id="scoreX">0</span></div>
+      <div class="score x"><span class="label" id="labelX">You</span><span class="value" id="scoreX">0</span></div>
       <div class="score draw"><span class="label">Draws</span><span class="value" id="scoreDraw">0</span></div>
-      <div class="score o"><span class="label">Player O</span><span class="value" id="scoreO">0</span></div>
+      <div class="score o"><span class="label" id="labelO">Bot</span><span class="value" id="scoreO">0</span></div>
     </div>
 
     <div class="controls">
@@ -175,7 +213,7 @@
       <button class="action btn-reset" id="resetScores">Reset Scores</button>
     </div>
 
-    <footer>Get three in a row to win &middot; Two-player mode</footer>
+    <footer>Get three in a row to win</footer>
   </main>
 
   <script>
@@ -185,8 +223,17 @@
       [0, 4, 8], [2, 4, 6]             // diagonals
     ];
 
+    const HUMAN = 'X'; // human always plays X and moves first
+    const BOT = 'O';   // bot plays O in 1-player mode
+
     const statusEl = document.getElementById('status');
     const cells = Array.from(document.querySelectorAll('.cell'));
+    const labelX = document.getElementById('labelX');
+    const labelO = document.getElementById('labelO');
+    const mode1Btn = document.getElementById('mode1');
+    const mode2Btn = document.getElementById('mode2');
+    const difficultyEl = document.getElementById('difficulty');
+    const levelBtns = Array.from(difficultyEl.querySelectorAll('.mode-btn'));
     const scoreEls = {
       X: document.getElementById('scoreX'),
       O: document.getElementById('scoreO'),
@@ -196,24 +243,54 @@
     let board = Array(9).fill('');
     let currentPlayer = 'X';
     let gameOver = false;
+    let gameMode = 1;         // 1 = vs bot, 2 = two players
+    let botLevel = 'medium';  // easy | medium | hard
+    let inputLocked = false;  // blocks clicks while the bot is moving
     const scores = { X: 0, O: 0, draw: 0 };
 
     function handleCellClick(event) {
       const index = Number(event.target.dataset.index);
-      if (gameOver || board[index]) return;
+      if (gameOver || inputLocked || board[index]) return;
+      // In 1-player mode the human may only place their own mark.
+      if (gameMode === 1 && currentPlayer !== HUMAN) return;
+      makeMove(index, currentPlayer);
+    }
 
-      board[index] = currentPlayer;
-      event.target.textContent = currentPlayer;
-      event.target.classList.add(currentPlayer.toLowerCase());
-      event.target.disabled = true;
+    function makeMove(index, player) {
+      board[index] = player;
+      const cell = cells[index];
+      cell.textContent = player;
+      cell.classList.add(player.toLowerCase());
+      cell.disabled = true;
 
       const winningLine = getWinningLine();
       if (winningLine) {
-        endGame(currentPlayer, winningLine);
+        endGame(player, winningLine);
       } else if (board.every(Boolean)) {
         endGame(null);
       } else {
-        currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+        currentPlayer = player === 'X' ? 'O' : 'X';
+        updateStatus();
+        if (gameMode === 1 && currentPlayer === BOT) {
+          triggerBotMove();
+        }
+      }
+    }
+
+    function triggerBotMove() {
+      inputLocked = true;
+      setTimeout(() => {
+        inputLocked = false;
+        if (gameOver) return;
+        const index = bestBotMove();
+        makeMove(index, BOT);
+      }, 400); // small delay so the bot feels natural
+    }
+
+    function updateStatus() {
+      if (gameMode === 1) {
+        statusEl.textContent = currentPlayer === HUMAN ? 'Your turn' : 'Bot is thinking…';
+      } else {
         statusEl.textContent = `Player ${currentPlayer}'s turn`;
       }
     }
@@ -233,7 +310,11 @@
       if (winner) {
         scores[winner]++;
         scoreEls[winner].textContent = scores[winner];
-        statusEl.textContent = `Player ${winner} wins! 🎉`;
+        if (gameMode === 1) {
+          statusEl.textContent = winner === HUMAN ? 'You win! 🎉' : 'Bot wins!';
+        } else {
+          statusEl.textContent = `Player ${winner} wins! 🎉`;
+        }
         winningLine.forEach(i => cells[i].classList.add('win'));
       } else {
         scores.draw++;
@@ -242,16 +323,74 @@
       }
     }
 
+    // --- Bot: unbeatable minimax play ---
+    function winnerOf(bd) {
+      for (const [a, b, c] of WINNING_LINES) {
+        if (bd[a] && bd[a] === bd[b] && bd[b] === bd[c]) return bd[a];
+      }
+      return null;
+    }
+
+    function minimax(bd, player, depth) {
+      const w = winnerOf(bd);
+      if (w === BOT) return { score: 10 - depth };
+      if (w === HUMAN) return { score: depth - 10 };
+      const avail = [];
+      bd.forEach((v, i) => { if (!v) avail.push(i); });
+      if (avail.length === 0) return { score: 0 };
+
+      let best = null;
+      for (const idx of avail) {
+        bd[idx] = player;
+        const score = minimax(bd, player === BOT ? HUMAN : BOT, depth + 1).score;
+        bd[idx] = '';
+        if (
+          best === null ||
+          (player === BOT && score > best.score) ||
+          (player === HUMAN && score < best.score)
+        ) {
+          best = { index: idx, score };
+        }
+      }
+      return best;
+    }
+
+    function emptyIndices() {
+      const r = [];
+      board.forEach((v, i) => { if (!v) r.push(i); });
+      return r;
+    }
+
+    function randomMove() {
+      const avail = emptyIndices();
+      return avail[Math.floor(Math.random() * avail.length)];
+    }
+
+    function optimalMove() {
+      return minimax(board.slice(), BOT, 0).index;
+    }
+
+    // Choose the bot's move based on the selected difficulty.
+    // Easy: always random. Medium: mostly optimal, sometimes random
+    // (beatable). Hard: always optimal (unbeatable).
+    function bestBotMove() {
+      if (botLevel === 'easy') return randomMove();
+      if (botLevel === 'hard') return optimalMove();
+      // medium
+      return Math.random() < 0.6 ? optimalMove() : randomMove();
+    }
+
     function newRound() {
       board = Array(9).fill('');
       currentPlayer = 'X';
       gameOver = false;
+      inputLocked = false;
       cells.forEach(cell => {
         cell.textContent = '';
         cell.disabled = false;
         cell.classList.remove('x', 'o', 'win');
       });
-      statusEl.textContent = "Player X's turn";
+      updateStatus();
     }
 
     function resetScores() {
@@ -262,9 +401,35 @@
       newRound();
     }
 
+    function setMode(mode) {
+      gameMode = mode;
+      mode1Btn.classList.toggle('active', mode === 1);
+      mode2Btn.classList.toggle('active', mode === 2);
+      difficultyEl.style.display = mode === 1 ? 'flex' : 'none';
+      if (mode === 1) {
+        labelX.textContent = 'You';
+        labelO.textContent = 'Bot';
+      } else {
+        labelX.textContent = 'Player X';
+        labelO.textContent = 'Player O';
+      }
+      resetScores(); // switching mode starts a fresh game
+    }
+
+    function setLevel(level) {
+      botLevel = level;
+      levelBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.level === level));
+    }
+
     cells.forEach(cell => cell.addEventListener('click', handleCellClick));
     document.getElementById('newRound').addEventListener('click', newRound);
     document.getElementById('resetScores').addEventListener('click', resetScores);
+    mode1Btn.addEventListener('click', () => setMode(1));
+    mode2Btn.addEventListener('click', () => setMode(2));
+    levelBtns.forEach(btn => btn.addEventListener('click', () => setLevel(btn.dataset.level)));
+
+    // Start in 1-player mode, medium difficulty, by default.
+    setMode(1);
   </script>
 </body>
 </html>
