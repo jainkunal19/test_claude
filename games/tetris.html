@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Tetris &middot; Alisha Arcade</title>
   <style>
     :root {
@@ -17,6 +17,14 @@
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
+    /* Prevent double-tap-to-zoom and text selection on interactive elements */
+    button, .touch-controls, .back-link {
+      touch-action: manipulation;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+    }
+
     body {
       min-height: 100vh;
       display: flex;
@@ -25,13 +33,13 @@
       background: radial-gradient(circle at top, #1e293b, var(--bg));
       color: var(--text);
       font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-      padding: 20px;
+      padding: 12px;
     }
 
     .game {
       background: var(--panel);
       border-radius: 20px;
-      padding: 28px;
+      padding: 20px 24px;
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
       width: 100%;
       max-width: 560px;
@@ -53,8 +61,8 @@
 
     h1 {
       text-align: center;
-      font-size: 2rem;
-      margin-bottom: 18px;
+      font-size: 1.75rem;
+      margin-bottom: 14px;
       background: linear-gradient(90deg, #38bdf8, var(--accent), #fb7185);
       -webkit-background-clip: text;
       background-clip: text;
@@ -74,8 +82,9 @@
       background: #0b1120;
       border-radius: 10px;
       display: block;
-      width: 300px;
-      height: 600px;
+      height: min(600px, 62vh);
+      width: auto;
+      aspect-ratio: 1 / 2;
       touch-action: none;
     }
 
@@ -142,10 +151,10 @@
     button.action:active { transform: translateY(0); }
 
     .controls-help {
-      margin-top: 16px;
+      margin-top: 12px;
       color: var(--muted);
       font-size: 0.78rem;
-      line-height: 1.7;
+      line-height: 1.6;
       text-align: center;
     }
     .controls-help kbd {
