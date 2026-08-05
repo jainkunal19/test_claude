@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Tetris &middot; Alisha Arcade</title>
   <style>
     :root {
@@ -17,6 +17,14 @@
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
+    /* Prevent double-tap-to-zoom and text selection on interactive elements */
+    button, .touch-controls, .back-link {
+      touch-action: manipulation;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+    }
+
     body {
       min-height: 100vh;
       display: flex;
@@ -25,13 +33,13 @@
       background: radial-gradient(circle at top, #1e293b, var(--bg));
       color: var(--text);
       font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-      padding: 20px;
+      padding: 12px;
     }
 
     .game {
       background: var(--panel);
       border-radius: 20px;
-      padding: 28px;
+      padding: 20px 24px;
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
       width: 100%;
       max-width: 560px;
@@ -53,8 +61,8 @@
 
     h1 {
       text-align: center;
-      font-size: 2rem;
-      margin-bottom: 18px;
+      font-size: 1.75rem;
+      margin-bottom: 14px;
       background: linear-gradient(90deg, #38bdf8, var(--accent), #fb7185);
       -webkit-background-clip: text;
       background-clip: text;
@@ -74,8 +82,9 @@
       background: #0b1120;
       border-radius: 10px;
       display: block;
-      width: 300px;
-      height: 600px;
+      height: min(640px, 72vh);
+      width: auto;
+      aspect-ratio: 1 / 2;
       touch-action: none;
     }
 
@@ -99,39 +108,39 @@
     .sidebar {
       display: flex;
       flex-direction: column;
-      gap: 16px;
-      min-width: 150px;
+      gap: 10px;
+      min-width: 118px;
     }
 
     .panel-box {
       background: var(--cell);
-      border-radius: 12px;
-      padding: 12px 14px;
+      border-radius: 10px;
+      padding: 7px 11px;
     }
     .panel-box .label {
-      font-size: 0.72rem;
+      font-size: 0.62rem;
       text-transform: uppercase;
       letter-spacing: 1px;
       color: var(--muted);
-      margin-bottom: 4px;
+      margin-bottom: 2px;
     }
-    .panel-box .value { font-size: 1.4rem; font-weight: 700; }
+    .panel-box .value { font-size: 1.1rem; font-weight: 700; }
 
     canvas#next {
       display: block;
-      width: 120px;
-      height: 120px;
+      width: 84px;
+      height: 84px;
       background: #0b1120;
       border-radius: 8px;
-      margin-top: 4px;
+      margin-top: 2px;
     }
 
     button.action {
       width: 100%;
-      padding: 12px;
+      padding: 9px;
       border: none;
-      border-radius: 12px;
-      font-size: 0.95rem;
+      border-radius: 10px;
+      font-size: 0.88rem;
       font-weight: 600;
       cursor: pointer;
       color: #fff;
@@ -142,10 +151,10 @@
     button.action:active { transform: translateY(0); }
 
     .controls-help {
-      margin-top: 16px;
+      margin-top: 12px;
       color: var(--muted);
       font-size: 0.78rem;
-      line-height: 1.7;
+      line-height: 1.6;
       text-align: center;
     }
     .controls-help kbd {
