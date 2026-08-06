@@ -90,6 +90,7 @@
     .stat .value { font-size: 1.15rem; font-weight: 700; }
 
     .board-wrap { position: relative; }
+    .board-wrap, .overlay { touch-action: manipulation; }
 
     canvas#board {
       background: linear-gradient(#0e1a33, var(--sky));
@@ -465,6 +466,17 @@
       const p = pointerToCanvas(e);
       shootAt(p.x, p.y);
     });
+
+    // Block double-tap / double-click zoom on the play area. iOS Safari
+    // ignores user-scalable=no, so guard a quick second tap explicitly.
+    const boardWrap = document.querySelector('.board-wrap');
+    let lastTapEnd = 0;
+    boardWrap.addEventListener('touchend', (e) => {
+      const now = Date.now();
+      if (now - lastTapEnd <= 350) e.preventDefault();
+      lastTapEnd = now;
+    }, { passive: false });
+    boardWrap.addEventListener('dblclick', (e) => e.preventDefault());
 
     overlayBtn.addEventListener('click', startGame);
 
