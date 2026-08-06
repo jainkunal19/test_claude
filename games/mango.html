@@ -96,8 +96,9 @@
       border-radius: 12px;
       display: block;
       width: 100%;
-      height: min(520px, 62vh);
+      height: min(540px, 64vh);
       touch-action: none;
+      cursor: crosshair;
     }
 
     .overlay {
@@ -115,7 +116,7 @@
     }
     .overlay.show { display: flex; }
     .overlay h2 { font-size: 1.5rem; }
-    .overlay p { color: var(--muted); font-size: 0.95rem; line-height: 1.5; }
+    .overlay p { color: var(--muted); font-size: 0.92rem; line-height: 1.55; }
 
     button.action {
       padding: 12px 24px;
@@ -131,98 +132,46 @@
     button.action:hover { opacity: 0.9; transform: translateY(-1px); }
     button.action:active { transform: translateY(0); }
 
-    .touch-controls {
-      display: none;
-      gap: 12px;
-      margin-top: 14px;
-    }
-    .touch-controls button {
-      flex: 1;
-      padding: 18px 0;
-      border: none;
-      border-radius: 12px;
-      background: var(--cell);
-      color: var(--text);
-      font-size: 1.4rem;
-      font-weight: 700;
-      cursor: pointer;
-    }
-    .touch-controls button:active { background: var(--accent); color: #1a1206; }
-    body.mode-touch .touch-controls { display: flex; }
-
-    .ctrl-select {
-      display: flex;
-      gap: 6px;
-      justify-content: center;
-      margin-top: 14px;
-    }
-    .ctrl-select button {
-      padding: 8px 16px;
-      border: none;
-      border-radius: 9px;
-      background: var(--cell);
-      color: var(--muted);
-      font-size: 0.85rem;
-      font-weight: 600;
-      cursor: pointer;
-    }
-    .ctrl-select button.active { background: var(--accent); color: #1a1206; }
-
-    .controls-help {
+    .legend {
       margin-top: 12px;
       color: var(--muted);
       font-size: 0.78rem;
-      line-height: 1.6;
+      line-height: 1.7;
       text-align: center;
     }
-    .controls-help kbd {
-      background: var(--cell);
-      border-radius: 5px;
-      padding: 1px 7px;
-      font-family: inherit;
-      font-size: 0.72rem;
-      color: var(--text);
-    }
-    .controls-help.touch { display: none; }
-    body.mode-touch .controls-help.keyboard { display: none; }
-    body.mode-touch .controls-help.touch { display: block; }
+    .legend b { color: var(--text); }
   </style>
 </head>
 <body>
   <main class="game">
     <a class="back-link" href="../index.html">&larr; Back to Alisha Arcade</a>
-    <h1>Mango 🥭</h1>
+    <h1>Mango 🍍</h1>
 
     <div class="hud">
       <div class="stat"><div class="label">Score</div><div class="value" id="score">0</div></div>
-      <div class="stat"><div class="label">Lives</div><div class="value" id="lives">❤️❤️❤️</div></div>
+      <div class="stat"><div class="label">Hearts</div><div class="value" id="hearts">❤️ 10</div></div>
       <div class="stat"><div class="label">Level</div><div class="value" id="level">1</div></div>
     </div>
 
     <div class="board-wrap">
-      <canvas id="board" width="360" height="520"></canvas>
+      <canvas id="board" width="360" height="540"></canvas>
       <div class="overlay show" id="overlay">
-        <h2 id="overlayTitle">Catch the Mangoes! 🥭</h2>
-        <p id="overlayText">Move the basket to catch falling mangoes.<br>Miss three and it's game over.</p>
+        <h2 id="overlayTitle">Blast the Pineapples! 🍍</h2>
+        <p id="overlayText">
+          Tap or click falling pineapples to shoot them.<br>
+          Miss one and you lose half a heart.<br>
+          <b>🍍 Regular</b> = 100 &middot; <b style="color:#fbbf24">✦ Golden</b> = 1000 &middot;
+          <b style="color:#4ade80">＋ Surgeon</b> heals a heart.
+        </p>
         <button class="action" id="overlayBtn">Start</button>
       </div>
     </div>
 
-    <div class="touch-controls">
-      <button data-dir="-1" aria-label="move left">&larr;</button>
-      <button data-dir="1" aria-label="move right">&rarr;</button>
-    </div>
-
-    <div class="ctrl-select">
-      <button data-ctrl="touch" id="ctrlTouch">📱 On-screen</button>
-      <button data-ctrl="keyboard" id="ctrlKeyboard">⌨ Keyboard</button>
-    </div>
-
-    <div class="controls-help keyboard">
-      <kbd>&larr;</kbd> <kbd>&rarr;</kbd> move &middot; or drag on the board
-    </div>
-    <div class="controls-help touch">
-      <kbd>&larr;</kbd> <kbd>&rarr;</kbd> buttons &middot; or drag on the board
+    <div class="legend">
+      <b>🍍 Regular</b> 100 &middot;
+      <b style="color:#fbbf24">✦ Golden</b> 1000 &middot;
+      <b style="color:#4ade80">＋ Surgeon</b> +1 heart &middot;
+      miss = &minus;&frac12; heart
     </div>
   </main>
 
@@ -233,133 +182,242 @@
     const H = canvas.height;
 
     const scoreEl = document.getElementById('score');
-    const livesEl = document.getElementById('lives');
+    const heartsEl = document.getElementById('hearts');
     const levelEl = document.getElementById('level');
     const overlay = document.getElementById('overlay');
     const overlayTitle = document.getElementById('overlayTitle');
     const overlayText = document.getElementById('overlayText');
     const overlayBtn = document.getElementById('overlayBtn');
 
-    const BASKET_W = 74;
-    const BASKET_H = 46;
-    const BASKET_Y = H - BASKET_H - 6; // top of the basket rim
+    const MAX_HEARTS = 10;
+    const GUN_X = W / 2;
+    const GUN_Y = H; // turret base sits at the bottom-center
 
-    let basketX, mangoes, score, lives, level;
-    let leftHeld, rightHeld, targetX;
-    let running, gameOver;
+    // Pineapple types and their spawn weights.
+    const TYPES = {
+      regular: { weight: 78, points: 100, halo: null, badge: null, speed: 1 },
+      golden:  { weight: 12, points: 1000, halo: '#fbbf24', badge: '✦', speed: 1.35 },
+      surgeon: { weight: 10, points: 0, heal: 1, halo: '#4ade80', badge: '＋', speed: 1 }
+    };
+    const WEIGHT_TOTAL = Object.values(TYPES).reduce((s, t) => s + t.weight, 0);
+
+    let pineapples, lasers, particles;
+    let score, hearts, level, spawnedCount;
+    let aimAngle, running, gameOver;
     let rafId, lastTime, spawnTimer, spawnInterval;
 
     function reset() {
-      basketX = W / 2;
-      targetX = null;
-      mangoes = [];
+      pineapples = [];
+      lasers = [];
+      particles = [];
       score = 0;
-      lives = 3;
+      hearts = MAX_HEARTS;
       level = 1;
-      leftHeld = rightHeld = false;
-      spawnInterval = 1100;
+      spawnedCount = 0;
+      aimAngle = -Math.PI / 2; // pointing straight up
+      spawnInterval = 1200;
       spawnTimer = 0;
       updateHud();
     }
 
     function updateHud() {
       scoreEl.textContent = score;
-      livesEl.textContent = lives > 0 ? '❤️'.repeat(lives) : '—';
+      const h = Number.isInteger(hearts) ? hearts : hearts.toFixed(1);
+      heartsEl.textContent = '❤️ ' + h;
       levelEl.textContent = level;
     }
 
-    function spawnMango() {
-      const size = 30 + Math.random() * 8;
-      mangoes.push({
+    function pickType() {
+      let r = Math.random() * WEIGHT_TOTAL;
+      for (const [name, t] of Object.entries(TYPES)) {
+        if ((r -= t.weight) < 0) return name;
+      }
+      return 'regular';
+    }
+
+    function spawnPineapple() {
+      const type = pickType();
+      const cfg = TYPES[type];
+      const size = 34;
+      spawnedCount++;
+      level = 1 + Math.floor(spawnedCount / 12);
+      spawnInterval = Math.max(520, 1200 - (level - 1) * 100);
+      pineapples.push({
         x: size + Math.random() * (W - size * 2),
         y: -size,
         size,
-        vy: 90 + (level - 1) * 26 + Math.random() * 30,
-        spin: (Math.random() - 0.5) * 3
+        type,
+        vy: (70 + (level - 1) * 20 + Math.random() * 25) * cfg.speed,
+        rot: (Math.random() - 0.5) * 0.5,
+        spin: (Math.random() - 0.5) * 1.5
       });
     }
 
-    function update(dt) {
-      // Move basket
-      const speed = 380; // px/s for key/button hold
-      if (leftHeld) basketX -= speed * dt;
-      if (rightHeld) basketX += speed * dt;
-      if (targetX !== null) basketX += (targetX - basketX) * Math.min(1, dt * 16);
-      basketX = Math.max(BASKET_W / 2, Math.min(W - BASKET_W / 2, basketX));
+    function burst(x, y, color) {
+      for (let i = 0; i < 12; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const sp = 60 + Math.random() * 160;
+        particles.push({
+          x, y,
+          vx: Math.cos(a) * sp,
+          vy: Math.sin(a) * sp,
+          life: 0.5 + Math.random() * 0.3,
+          color
+        });
+      }
+    }
 
-      // Spawn
-      spawnTimer += dt * 1000;
-      if (spawnTimer >= spawnInterval) {
-        spawnTimer = 0;
-        spawnMango();
+    function shootAt(px, py) {
+      if (!running) return;
+      aimAngle = Math.atan2(py - GUN_Y, px - GUN_X);
+      // Find the front-most pineapple under the point.
+      let hitIndex = -1;
+      for (let i = pineapples.length - 1; i >= 0; i--) {
+        const m = pineapples[i];
+        if (Math.hypot(m.x - px, m.y - py) <= m.size * 0.62) { hitIndex = i; break; }
       }
 
-      // Move mangoes, handle catch / miss
-      for (let i = mangoes.length - 1; i >= 0; i--) {
-        const m = mangoes[i];
+      if (hitIndex >= 0) {
+        const m = pineapples[hitIndex];
+        const cfg = TYPES[m.type];
+        lasers.push({ tx: m.x, ty: m.y, life: 0.12 });
+        if (m.type === 'surgeon') {
+          hearts = Math.min(MAX_HEARTS, hearts + cfg.heal);
+          burst(m.x, m.y, '#4ade80');
+        } else {
+          score += cfg.points;
+          burst(m.x, m.y, m.type === 'golden' ? '#fbbf24' : '#fde047');
+        }
+        pineapples.splice(hitIndex, 1);
+        updateHud();
+      } else {
+        // Missed shot — just a laser flash to the tapped point.
+        lasers.push({ tx: px, ty: py, life: 0.1 });
+      }
+    }
+
+    function loseHeart() {
+      hearts -= 0.5;
+      updateHud();
+      if (hearts <= 0) { hearts = 0; endGame(); }
+    }
+
+    function update(dt) {
+      spawnTimer += dt * 1000;
+      if (spawnTimer >= spawnInterval) { spawnTimer = 0; spawnPineapple(); }
+
+      for (let i = pineapples.length - 1; i >= 0; i--) {
+        const m = pineapples[i];
         m.y += m.vy * dt;
-        const caught = m.y + m.size * 0.4 >= BASKET_Y &&
-                       m.y - m.size * 0.4 <= BASKET_Y + BASKET_H &&
-                       m.x >= basketX - BASKET_W / 2 &&
-                       m.x <= basketX + BASKET_W / 2;
-        if (caught) {
-          mangoes.splice(i, 1);
-          score++;
-          const newLevel = Math.floor(score / 10) + 1;
-          if (newLevel !== level) {
-            level = newLevel;
-            spawnInterval = Math.max(430, 1100 - (level - 1) * 120);
-          }
-          updateHud();
-        } else if (m.y - m.size > H) {
-          mangoes.splice(i, 1);
-          lives--;
-          updateHud();
-          if (lives <= 0) { endGame(); return; }
+        m.rot += m.spin * dt;
+        if (m.y - m.size > H) {
+          pineapples.splice(i, 1);
+          loseHeart();
+          if (!running) return;
         }
       }
+
+      for (let i = lasers.length - 1; i >= 0; i--) {
+        lasers[i].life -= dt;
+        if (lasers[i].life <= 0) lasers.splice(i, 1);
+      }
+
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.vy += 300 * dt;
+        p.life -= dt;
+        if (p.life <= 0) particles.splice(i, 1);
+      }
+    }
+
+    function drawPineapple(m) {
+      const cfg = TYPES[m.type];
+      ctx.save();
+      ctx.translate(m.x, m.y);
+      if (cfg.halo) {
+        ctx.shadowColor = cfg.halo;
+        ctx.shadowBlur = 18;
+        ctx.beginPath();
+        ctx.arc(0, 0, m.size * 0.6, 0, Math.PI * 2);
+        ctx.fillStyle = cfg.halo + '55';
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
+      ctx.rotate(m.rot);
+      ctx.font = m.size + 'px serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('🍍', 0, 0);
+      ctx.restore();
+
+      if (cfg.badge) {
+        ctx.save();
+        ctx.font = 'bold 18px system-ui, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = cfg.halo;
+        ctx.fillText(cfg.badge, m.x + m.size * 0.42, m.y - m.size * 0.42);
+        ctx.restore();
+      }
+    }
+
+    function drawGun() {
+      const len = 34;
+      const tipX = GUN_X + Math.cos(aimAngle) * len;
+      const tipY = GUN_Y + Math.sin(aimAngle) * len;
+      // barrel
+      ctx.strokeStyle = '#e2e8f0';
+      ctx.lineWidth = 9;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(GUN_X, GUN_Y);
+      ctx.lineTo(tipX, tipY);
+      ctx.stroke();
+      // base
+      ctx.fillStyle = '#f59e0b';
+      ctx.beginPath();
+      ctx.arc(GUN_X, GUN_Y, 22, Math.PI, 0);
+      ctx.fill();
+      ctx.strokeStyle = '#b45309';
+      ctx.lineWidth = 3;
+      ctx.stroke();
     }
 
     function draw() {
       ctx.clearRect(0, 0, W, H);
+      pineapples.forEach(drawPineapple);
 
-      // Mangoes (emoji)
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      for (const m of mangoes) {
+      // laser beams
+      for (const l of lasers) {
+        const tipX = GUN_X + Math.cos(aimAngle) * 34;
+        const tipY = GUN_Y + Math.sin(aimAngle) * 34;
         ctx.save();
-        ctx.translate(m.x, m.y);
-        ctx.font = `${m.size}px serif`;
-        ctx.fillText('🥭', 0, 0);
+        ctx.globalAlpha = Math.max(0, l.life / 0.12);
+        ctx.strokeStyle = '#f87171';
+        ctx.shadowColor = '#ef4444';
+        ctx.shadowBlur = 12;
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(tipX, tipY);
+        ctx.lineTo(l.tx, l.ty);
+        ctx.stroke();
         ctx.restore();
       }
 
-      // Basket
-      const bx = basketX;
-      const by = BASKET_Y;
-      ctx.fillStyle = '#a16207';
-      ctx.strokeStyle = '#7c4a06';
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.moveTo(bx - BASKET_W / 2, by);
-      ctx.lineTo(bx + BASKET_W / 2, by);
-      ctx.lineTo(bx + BASKET_W / 2 - 8, by + BASKET_H);
-      ctx.lineTo(bx - BASKET_W / 2 + 8, by + BASKET_H);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-      // rim
-      ctx.fillStyle = '#ca8a04';
-      ctx.fillRect(bx - BASKET_W / 2 - 2, by - 6, BASKET_W + 4, 8);
-      // weave lines
-      ctx.strokeStyle = 'rgba(0,0,0,0.25)';
-      ctx.lineWidth = 2;
-      for (let k = 1; k < 4; k++) {
+      // particles
+      for (const p of particles) {
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, p.life);
+        ctx.fillStyle = p.color;
         ctx.beginPath();
-        ctx.moveTo(bx - BASKET_W / 2 + 4, by + (BASKET_H * k) / 4);
-        ctx.lineTo(bx + BASKET_W / 2 - 4, by + (BASKET_H * k) / 4);
-        ctx.stroke();
+        ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
       }
+
+      drawGun();
     }
 
     function loop(time) {
@@ -368,7 +426,7 @@
       const dt = Math.min(0.05, (time - lastTime) / 1000);
       lastTime = time;
       update(dt);
-      if (!running) return; // endGame may have stopped us
+      if (!running) return; // endGame may have stopped the loop
       draw();
       rafId = requestAnimationFrame(loop);
     }
@@ -389,70 +447,28 @@
       cancelAnimationFrame(rafId);
       draw();
       overlayTitle.textContent = 'Game Over';
-      overlayText.innerHTML = `You caught <strong>${score}</strong> mango${score === 1 ? '' : 's'}!`;
+      overlayText.innerHTML = `Final score: <strong>${score}</strong>`;
       overlayBtn.textContent = 'Play Again';
       overlay.classList.add('show');
     }
 
-    // --- Input ---
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'ArrowLeft') { leftHeld = true; targetX = null; e.preventDefault(); }
-      else if (e.key === 'ArrowRight') { rightHeld = true; targetX = null; e.preventDefault(); }
-    });
-    document.addEventListener('keyup', (e) => {
-      if (e.key === 'ArrowLeft') leftHeld = false;
-      else if (e.key === 'ArrowRight') rightHeld = false;
-    });
-
-    // Drag / pointer on the board (mouse + touch)
-    function pointerToCanvasX(clientX) {
+    function pointerToCanvas(e) {
       const rect = canvas.getBoundingClientRect();
-      return ((clientX - rect.left) / rect.width) * W;
+      return {
+        x: ((e.clientX - rect.left) / rect.width) * W,
+        y: ((e.clientY - rect.top) / rect.height) * H
+      };
     }
-    let dragging = false;
-    canvas.addEventListener('pointerdown', (e) => {
-      dragging = true;
-      targetX = pointerToCanvasX(e.clientX);
-      canvas.setPointerCapture(e.pointerId);
-    });
-    canvas.addEventListener('pointermove', (e) => {
-      if (dragging) targetX = pointerToCanvasX(e.clientX);
-    });
-    canvas.addEventListener('pointerup', () => { dragging = false; });
-    canvas.addEventListener('pointercancel', () => { dragging = false; });
 
-    // On-screen buttons
-    document.querySelectorAll('.touch-controls button').forEach(btn => {
-      const dir = Number(btn.dataset.dir);
-      const press = (e) => { e.preventDefault(); targetX = null; if (dir < 0) leftHeld = true; else rightHeld = true; };
-      const release = () => { if (dir < 0) leftHeld = false; else rightHeld = false; };
-      btn.addEventListener('pointerdown', press);
-      btn.addEventListener('pointerup', release);
-      btn.addEventListener('pointerleave', release);
-      btn.addEventListener('pointercancel', release);
+    canvas.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      const p = pointerToCanvas(e);
+      shootAt(p.x, p.y);
     });
 
     overlayBtn.addEventListener('click', startGame);
 
-    // --- Control scheme: On-screen vs Keyboard ---
-    const ctrlTouchBtn = document.getElementById('ctrlTouch');
-    const ctrlKeyboardBtn = document.getElementById('ctrlKeyboard');
-    const CONTROLS_KEY = 'mango-control-scheme';
-    function setControlScheme(scheme) {
-      document.body.classList.toggle('mode-touch', scheme === 'touch');
-      ctrlTouchBtn.classList.toggle('active', scheme === 'touch');
-      ctrlKeyboardBtn.classList.toggle('active', scheme === 'keyboard');
-      try { localStorage.setItem(CONTROLS_KEY, scheme); } catch (e) { /* ignore */ }
-    }
-    ctrlTouchBtn.addEventListener('click', () => setControlScheme('touch'));
-    ctrlKeyboardBtn.addEventListener('click', () => setControlScheme('keyboard'));
-
-    let savedScheme = null;
-    try { savedScheme = localStorage.getItem(CONTROLS_KEY); } catch (e) { /* ignore */ }
-    const isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
-    setControlScheme(savedScheme || (isTouchDevice ? 'touch' : 'keyboard'));
-
-    // Draw the initial idle frame behind the start overlay.
+    // Draw an idle frame behind the start overlay.
     reset();
     draw();
   </script>
