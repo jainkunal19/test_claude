@@ -15,9 +15,11 @@ index.html               Landing page — grid of game cards (the arcade)
 games/
   tic-tac-toe.html       Tic Tac Toe (1-player vs bot + 2-player)
   tetris.html            Tetris
+  connect-4.html         Connect 4 (1-player vs bot + 2-player)
 images/
   tic-tac-toe.png        Game thumbnails (referenced by index.html)
   tetris.png
+  connect-4.png
   README.md              Notes on thumbnail conventions
 README.md
 ```
@@ -42,6 +44,16 @@ page works standalone on GitHub Pages.
   prevent double-tap zoom. Where a game needs input, offer both keyboard and
   on-screen controls and let the user choose (see Tetris' control toggle,
   which auto-detects touch via `navigator.maxTouchPoints`).
+- **1-player vs bot pattern.** Turn-based games (Tic Tac Toe, Connect 4)
+  share a UI convention: a `.mode-select` toggle (`1 Player` / `2 Players`)
+  and, in 1-player mode, a `.difficulty` toggle (`Easy` / `Medium` / `Hard`).
+  The human moves first; the bot takes the second mark/color. During the
+  bot's turn, set an `inputLocked` flag and show a "Bot is thinking…" status,
+  then move after a short `setTimeout` so it feels natural. Scoreboard labels
+  swap between "You/Bot" (1P) and the two player names (2P). Bots are
+  difficulty-scaled minimax: Easy = random, Medium = mostly optimal with some
+  randomness, Hard = full/deep search (Tic Tac Toe is unbeatable; Connect 4
+  uses depth-limited alpha-beta with a positional heuristic).
 
 ## Adding a new game
 
@@ -62,7 +74,10 @@ page works standalone on GitHub Pages.
    The whole card (thumbnail **and** name) is one link. The `onerror`
    placeholder shows an emoji until a real thumbnail is added.
 3. Drop a square thumbnail at `images/<game>.png` (~400×400) and list it in
-   `images/README.md`.
+   `images/README.md`. Cards reference `.png`; if given another format (e.g.
+   `.webp`), convert it to PNG rather than changing the reference — there's no
+   `convert`/`ffmpeg` here, so use Pillow (`pip install Pillow`, then
+   `Image.open(src).convert('RGBA').save(dst, 'PNG')`).
 
 ## Testing
 
