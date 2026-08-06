@@ -15,9 +15,13 @@ index.html               Landing page — grid of game cards (the arcade)
 games/
   tic-tac-toe.html       Tic Tac Toe (1-player vs bot + 2-player)
   tetris.html            Tetris
+  connect-4.html         Connect 4 (1-player vs bot + 2-player)
+  mango.html             Mango — pineapple laser-shooter (canvas arcade)
 images/
   tic-tac-toe.png        Game thumbnails (referenced by index.html)
   tetris.png
+  connect-4.png
+  mango.png
   README.md              Notes on thumbnail conventions
 README.md
 ```
@@ -42,6 +46,27 @@ page works standalone on GitHub Pages.
   prevent double-tap zoom. Where a game needs input, offer both keyboard and
   on-screen controls and let the user choose (see Tetris' control toggle,
   which auto-detects touch via `navigator.maxTouchPoints`).
+- **1-player vs bot pattern.** Turn-based games (Tic Tac Toe, Connect 4)
+  share a UI convention: a `.mode-select` toggle (`1 Player` / `2 Players`)
+  and, in 1-player mode, a `.difficulty` toggle (`Easy` / `Medium` / `Hard`).
+  The human moves first; the bot takes the second mark/color. During the
+  bot's turn, set an `inputLocked` flag and show a "Bot is thinking…" status,
+  then move after a short `setTimeout` so it feels natural. Scoreboard labels
+  swap between "You/Bot" (1P) and the two player names (2P). Bots are
+  difficulty-scaled minimax: Easy = random, Medium = mostly optimal with some
+  randomness, Hard = full/deep search (Tic Tac Toe is unbeatable; Connect 4
+  uses depth-limited alpha-beta with a positional heuristic).
+- **Canvas action games** (Tetris, Mango) share a loop: a `requestAnimationFrame`
+  update/draw cycle with delta-time (guard the first frame so `lastTime`
+  isn't 0), difficulty that ramps by level, and Start / Game Over overlays
+  layered over the `<canvas>` with a "Play Again" button. Keep the canvas at a
+  fixed internal resolution and scale it with CSS (`height: min(px, vh)`); when
+  mapping pointer input to canvas coords, divide by `getBoundingClientRect()`
+  size. **Mango** is a pineapple laser-shooter: pineapples fall and the player
+  taps/clicks to fire a laser (pointer input works for mouse and touch alike);
+  10 hearts, −½ heart per pineapple that reaches the ground, game over at 0;
+  types are regular (100), golden (1000), and surgeon (heals one heart, capped
+  at 10), chosen by weighted random.
 
 ## Adding a new game
 
@@ -62,7 +87,10 @@ page works standalone on GitHub Pages.
    The whole card (thumbnail **and** name) is one link. The `onerror`
    placeholder shows an emoji until a real thumbnail is added.
 3. Drop a square thumbnail at `images/<game>.png` (~400×400) and list it in
-   `images/README.md`.
+   `images/README.md`. Cards reference `.png`; if given another format (e.g.
+   `.webp`), convert it to PNG rather than changing the reference — there's no
+   `convert`/`ffmpeg` here, so use Pillow (`pip install Pillow`, then
+   `Image.open(src).convert('RGBA').save(dst, 'PNG')`).
 
 ## Testing
 
