@@ -42,7 +42,7 @@
       padding: 20px 22px;
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
       width: 100%;
-      max-width: 420px;
+      max-width: 500px;
     }
 
     .back-link {
@@ -98,7 +98,7 @@
       border-radius: 10px;
       display: block;
       width: 100%;
-      max-width: 342px;
+      max-width: 456px;
       height: auto;
       touch-action: none;
     }
@@ -134,53 +134,10 @@
     button.action:hover { opacity: 0.9; transform: translateY(-1px); }
     button.action:active { transform: translateY(0); }
 
-    /* D-pad — shown only when the On-screen scheme is active */
-    .dpad {
-      display: none;
-      grid-template-columns: repeat(3, 56px);
-      grid-template-rows: repeat(3, 56px);
-      gap: 8px;
-      justify-content: center;
-      margin: 14px auto 0;
-    }
-    body.mode-touch .dpad { display: grid; }
-    .dpad button {
-      border: none;
-      border-radius: 12px;
-      background: var(--cell);
-      color: var(--text);
-      font-size: 1.4rem;
-      font-weight: 700;
-      cursor: pointer;
-    }
-    .dpad button:active { background: var(--accent); color: #1a1206; }
-    .dpad .up { grid-area: 1 / 2; }
-    .dpad .left { grid-area: 2 / 1; }
-    .dpad .right { grid-area: 2 / 3; }
-    .dpad .down { grid-area: 3 / 2; }
-
-    .ctrl-select {
-      display: flex;
-      gap: 6px;
-      justify-content: center;
-      margin-top: 14px;
-    }
-    .ctrl-select button {
-      padding: 8px 16px;
-      border: none;
-      border-radius: 9px;
-      background: var(--cell);
-      color: var(--muted);
-      font-size: 0.85rem;
-      font-weight: 600;
-      cursor: pointer;
-    }
-    .ctrl-select button.active { background: var(--accent); color: #1a1206; }
-
     .controls-help {
-      margin-top: 12px;
+      margin-top: 14px;
       color: var(--muted);
-      font-size: 0.78rem;
+      font-size: 0.8rem;
       line-height: 1.6;
       text-align: center;
     }
@@ -192,9 +149,6 @@
       font-size: 0.72rem;
       color: var(--text);
     }
-    .controls-help.touch { display: none; }
-    body.mode-touch .controls-help.keyboard { display: none; }
-    body.mode-touch .controls-help.touch { display: block; }
   </style>
 </head>
 <body>
@@ -209,7 +163,7 @@
     </div>
 
     <div class="board-wrap">
-      <canvas id="board" width="342" height="378"></canvas>
+      <canvas id="board" width="456" height="504"></canvas>
       <div class="overlay show" id="overlay">
         <h2 id="overlayTitle">Pac-Man</h2>
         <p id="overlayText">
@@ -221,23 +175,9 @@
       </div>
     </div>
 
-    <div class="dpad">
-      <button class="up" data-dir="up" aria-label="up">&uarr;</button>
-      <button class="left" data-dir="left" aria-label="left">&larr;</button>
-      <button class="right" data-dir="right" aria-label="right">&rarr;</button>
-      <button class="down" data-dir="down" aria-label="down">&darr;</button>
-    </div>
-
-    <div class="ctrl-select">
-      <button data-ctrl="touch" id="ctrlTouch">📱 On-screen</button>
-      <button data-ctrl="keyboard" id="ctrlKeyboard">⌨ Keyboard</button>
-    </div>
-
-    <div class="controls-help keyboard">
-      <kbd>&larr;</kbd> <kbd>&uarr;</kbd> <kbd>&darr;</kbd> <kbd>&rarr;</kbd> move &middot; or swipe the board
-    </div>
-    <div class="controls-help touch">
-      D-pad buttons &middot; or swipe the board to move
+    <div class="controls-help">
+      Touch and drag on the board to steer Pac-Man &middot;
+      or use <kbd>&larr;</kbd> <kbd>&uarr;</kbd> <kbd>&darr;</kbd> <kbd>&rarr;</kbd>
     </div>
   </main>
 
@@ -268,7 +208,7 @@
     ];
     const ROWS = MAZE.length;   // 21
     const COLS = MAZE[0].length; // 19
-    const T = 18;               // tile size in px
+    const T = 24;               // tile size in px
 
     const canvas = document.getElementById('board');
     const ctx = canvas.getContext('2d');
@@ -597,21 +537,32 @@
       if (map[e.key]) { e.preventDefault(); setWant(map[e.key]); }
     });
 
-    document.querySelectorAll('.dpad button').forEach(btn => {
-      btn.addEventListener('pointerdown', (e) => { e.preventDefault(); setWant(btn.dataset.dir); });
-    });
-
-    // Swipe on the board
-    let swipeStart = null;
-    canvas.addEventListener('pointerdown', (e) => { swipeStart = { x: e.clientX, y: e.clientY }; });
-    canvas.addEventListener('pointerup', (e) => {
-      if (!swipeStart) return;
-      const dx = e.clientX - swipeStart.x, dy = e.clientY - swipeStart.y;
-      swipeStart = null;
-      if (Math.abs(dx) < 12 && Math.abs(dy) < 12) return;
+    // Touch/drag steering: Pac-Man heads toward wherever your finger is.
+    function pointerToCanvas(e) {
+      const rect = canvas.getBoundingClientRect();
+      return {
+        x: ((e.clientX - rect.left) / rect.width) * canvas.width,
+        y: ((e.clientY - rect.top) / rect.height) * canvas.height
+      };
+    }
+    function steerToward(e) {
+      if (!pac) return;
+      const p = pointerToCanvas(e);
+      const dx = p.x - pac.x, dy = p.y - pac.y;
+      if (Math.hypot(dx, dy) < T * 0.6) return; // finger on Pac — keep current heading
       if (Math.abs(dx) > Math.abs(dy)) setWant(dx > 0 ? 'right' : 'left');
       else setWant(dy > 0 ? 'down' : 'up');
+    }
+    let steering = false;
+    canvas.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      steering = true;
+      if (canvas.setPointerCapture) canvas.setPointerCapture(e.pointerId);
+      steerToward(e);
     });
+    canvas.addEventListener('pointermove', (e) => { if (steering) steerToward(e); });
+    canvas.addEventListener('pointerup', () => { steering = false; });
+    canvas.addEventListener('pointercancel', () => { steering = false; });
 
     // Block double-tap / double-click zoom on the play area.
     const boardWrap = document.querySelector('.board-wrap');
@@ -624,23 +575,6 @@
     boardWrap.addEventListener('dblclick', (e) => e.preventDefault());
 
     overlayBtn.addEventListener('click', startGame);
-
-    // --- Control scheme ---
-    const ctrlTouchBtn = document.getElementById('ctrlTouch');
-    const ctrlKeyboardBtn = document.getElementById('ctrlKeyboard');
-    const CONTROLS_KEY = 'pacman-control-scheme';
-    function setControlScheme(scheme) {
-      document.body.classList.toggle('mode-touch', scheme === 'touch');
-      ctrlTouchBtn.classList.toggle('active', scheme === 'touch');
-      ctrlKeyboardBtn.classList.toggle('active', scheme === 'keyboard');
-      try { localStorage.setItem(CONTROLS_KEY, scheme); } catch (e) { /* ignore */ }
-    }
-    ctrlTouchBtn.addEventListener('click', () => setControlScheme('touch'));
-    ctrlKeyboardBtn.addEventListener('click', () => setControlScheme('keyboard'));
-    let savedScheme = null;
-    try { savedScheme = localStorage.getItem(CONTROLS_KEY); } catch (e) { /* ignore */ }
-    const isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
-    setControlScheme(savedScheme || (isTouchDevice ? 'touch' : 'keyboard'));
 
     // Draw an idle frame behind the start overlay.
     parseMaze();
