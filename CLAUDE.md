@@ -16,10 +16,12 @@ games/
   tic-tac-toe.html       Tic Tac Toe (1-player vs bot + 2-player)
   tetris.html            Tetris
   connect-4.html         Connect 4 (1-player vs bot + 2-player)
+  mango.html             Mango — pineapple laser-shooter (canvas arcade)
 images/
   tic-tac-toe.png        Game thumbnails (referenced by index.html)
   tetris.png
   connect-4.png
+  mango.png
   README.md              Notes on thumbnail conventions
 README.md
 ```
@@ -54,6 +56,17 @@ page works standalone on GitHub Pages.
   difficulty-scaled minimax: Easy = random, Medium = mostly optimal with some
   randomness, Hard = full/deep search (Tic Tac Toe is unbeatable; Connect 4
   uses depth-limited alpha-beta with a positional heuristic).
+- **Canvas action games** (Tetris, Mango) share a loop: a `requestAnimationFrame`
+  update/draw cycle with delta-time (guard the first frame so `lastTime`
+  isn't 0), difficulty that ramps by level, and Start / Game Over overlays
+  layered over the `<canvas>` with a "Play Again" button. Keep the canvas at a
+  fixed internal resolution and scale it with CSS (`height: min(px, vh)`); when
+  mapping pointer input to canvas coords, divide by `getBoundingClientRect()`
+  size. **Mango** is a pineapple laser-shooter: pineapples fall and the player
+  taps/clicks to fire a laser (pointer input works for mouse and touch alike);
+  10 hearts, −½ heart per pineapple that reaches the ground, game over at 0;
+  types are regular (100), golden (1000), and surgeon (heals one heart, capped
+  at 10), chosen by weighted random.
 
 ## Adding a new game
 
