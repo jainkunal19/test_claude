@@ -18,7 +18,7 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     /* Prevent double-tap-to-zoom and text selection on interactive elements */
-    button, .touch-controls, .back-link {
+    button, .back-link, canvas {
       touch-action: manipulation;
       -webkit-user-select: none;
       user-select: none;
@@ -166,54 +166,6 @@
       color: var(--text);
     }
 
-    /* Show the keyboard legend by default; swap to the touch legend on mobile. */
-    .controls-help.touch { display: none; }
-
-    /* Control-scheme toggle (On-screen / Keyboard) */
-    .ctrl-select {
-      display: flex;
-      gap: 6px;
-      justify-content: center;
-      margin-top: 16px;
-    }
-    .ctrl-select button {
-      padding: 8px 16px;
-      border: none;
-      border-radius: 9px;
-      background: var(--cell);
-      color: #94a3b8;
-      font-size: 0.85rem;
-      font-weight: 600;
-      cursor: pointer;
-    }
-    .ctrl-select button.active { background: var(--accent); color: #fff; }
-
-    /* Touch controls — shown only when the On-screen scheme is active */
-    .touch-controls {
-      display: none;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 8px;
-      margin: 12px auto 0;
-      max-width: 360px;
-    }
-    .touch-controls button {
-      padding: 16px 0;
-      border: none;
-      border-radius: 10px;
-      background: var(--cell);
-      color: var(--text);
-      font-size: 1.2rem;
-      font-weight: 700;
-      cursor: pointer;
-    }
-    .touch-controls button:active { background: var(--accent); }
-
-    /* The chosen control scheme drives which controls/legend show,
-       independent of screen width (so tablets like iPad work too). */
-    body.mode-touch .touch-controls { display: grid; }
-    body.mode-touch .controls-help.keyboard { display: none; }
-    body.mode-touch .controls-help.touch { display: block; }
-
     /* Narrow screens: stack the board and score panel regardless of scheme. */
     @media (max-width: 560px) {
       .layout { flex-direction: column-reverse; align-items: center; }
@@ -257,31 +209,11 @@
       </div>
     </div>
 
-    <div class="ctrl-select">
-      <button data-ctrl="touch" id="ctrlTouch">📱 On-screen</button>
-      <button data-ctrl="keyboard" id="ctrlKeyboard">⌨ Keyboard</button>
-    </div>
-
-    <div class="touch-controls">
-      <button data-action="left">&larr;</button>
-      <button data-action="rotate">&#8635;</button>
-      <button data-action="right">&rarr;</button>
-      <button data-action="drop">&#8595;&#8595;</button>
-    </div>
-
-    <div class="controls-help keyboard">
-      <kbd>&larr;</kbd> <kbd>&rarr;</kbd> move &middot;
-      <kbd>&uarr;</kbd> rotate &middot;
-      <kbd>&darr;</kbd> soft drop &middot;
-      <kbd>Space</kbd> hard drop &middot;
-      <kbd>P</kbd> pause
-    </div>
-
-    <div class="controls-help touch">
-      <kbd>&larr;</kbd> <kbd>&rarr;</kbd> move &middot;
-      <kbd>&#8635;</kbd> rotate &middot;
-      <kbd>&#8595;&#8595;</kbd> hard drop &middot;
-      <kbd>Pause</kbd> button above
+    <div class="controls-help">
+      <b>Drag</b> to move &middot; <b>tap</b> to rotate &middot; <b>double-tap</b> to hard drop
+      <br>
+      or <kbd>&larr;</kbd> <kbd>&rarr;</kbd> move &middot; <kbd>&uarr;</kbd> rotate &middot;
+      <kbd>&darr;</kbd> soft drop &middot; <kbd>Space</kbd> hard drop &middot; <kbd>P</kbd> pause
     </div>
   </main>
 
@@ -589,45 +521,72 @@
       if (!paused) draw();
     });
 
-    // Touch controls
-    document.querySelectorAll('.touch-controls button').forEach(btn => {
-      btn.addEventListener('click', () => {
-        if (paused || gameOver) return;
-        const action = btn.dataset.action;
-        if (action === 'left') playerMove(-1);
-        else if (action === 'right') playerMove(1);
-        else if (action === 'rotate') playerRotate();
-        else if (action === 'drop') playerDrop(true);
-        draw();
-      });
-    });
-
     overlayBtn.addEventListener('click', () => {
       if (gameOver) startGame();
       else togglePause();
     });
     pauseBtn.addEventListener('click', togglePause);
 
-    // --- Control scheme: On-screen buttons vs device keyboard ---
-    const ctrlTouchBtn = document.getElementById('ctrlTouch');
-    const ctrlKeyboardBtn = document.getElementById('ctrlKeyboard');
-    const CONTROLS_KEY = 'tetris-control-scheme';
-
-    function setControlScheme(scheme) {
-      document.body.classList.toggle('mode-touch', scheme === 'touch');
-      ctrlTouchBtn.classList.toggle('active', scheme === 'touch');
-      ctrlKeyboardBtn.classList.toggle('active', scheme === 'keyboard');
-      try { localStorage.setItem(CONTROLS_KEY, scheme); } catch (e) { /* ignore */ }
+    // --- Touch gestures on the board ---
+    // Drag left/right to move, drag down to soft drop, tap to rotate,
+    // double-tap to hard drop.
+    function canvasPos(e) {
+      const rect = canvas.getBoundingClientRect();
+      return {
+        x: ((e.clientX - rect.left) / rect.width) * canvas.width,
+        y: ((e.clientY - rect.top) / rect.height) * canvas.height
+      };
     }
 
-    ctrlTouchBtn.addEventListener('click', () => setControlScheme('touch'));
-    ctrlKeyboardBtn.addEventListener('click', () => setControlScheme('keyboard'));
+    let touchActive = false, touchMoved = false;
+    let anchorX = 0, anchorY = 0, touchStartTime = 0, lastTapTime = 0, tapTimer = null;
 
-    // Default: remembered choice, else auto-detect touch devices (e.g. iPad).
-    let savedScheme = null;
-    try { savedScheme = localStorage.getItem(CONTROLS_KEY); } catch (e) { /* ignore */ }
-    const isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
-    setControlScheme(savedScheme || (isTouchDevice ? 'touch' : 'keyboard'));
+    canvas.addEventListener('pointerdown', (e) => {
+      if (gameOver) return;
+      e.preventDefault();
+      if (tapTimer) { clearTimeout(tapTimer); tapTimer = null; }
+      touchActive = true;
+      touchMoved = false;
+      const p = canvasPos(e);
+      anchorX = p.x; anchorY = p.y;
+      touchStartTime = Date.now();
+    });
+
+    canvas.addEventListener('pointermove', (e) => {
+      if (!touchActive || paused || gameOver) return;
+      const p = canvasPos(e);
+      let acted = false;
+      while (p.x - anchorX >= BLOCK) { playerMove(1); anchorX += BLOCK; touchMoved = true; acted = true; }
+      while (anchorX - p.x >= BLOCK) { playerMove(-1); anchorX -= BLOCK; touchMoved = true; acted = true; }
+      while (p.y - anchorY >= BLOCK) { playerDrop(false); anchorY += BLOCK; touchMoved = true; acted = true; }
+      if (p.y < anchorY) anchorY = p.y; // ignore upward drags
+      if (acted) draw();
+    });
+
+    canvas.addEventListener('pointerup', () => {
+      if (!touchActive) return;
+      touchActive = false;
+      if (touchMoved || paused || gameOver) return;
+      if (Date.now() - touchStartTime > 400) return; // long press, not a tap
+      const now = Date.now();
+      if (now - lastTapTime <= 280) {
+        // double tap -> hard drop
+        if (tapTimer) { clearTimeout(tapTimer); tapTimer = null; }
+        lastTapTime = 0;
+        playerDrop(true);
+        draw();
+      } else {
+        // single tap -> rotate (delayed briefly so a double tap can pre-empt it)
+        lastTapTime = now;
+        tapTimer = setTimeout(() => {
+          playerRotate();
+          draw();
+          tapTimer = null; lastTapTime = 0;
+        }, 220);
+      }
+    });
+    canvas.addEventListener('pointercancel', () => { touchActive = false; });
+    canvas.addEventListener('dblclick', (e) => e.preventDefault());
 
     startGame();
   </script>
