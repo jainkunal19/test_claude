@@ -161,7 +161,7 @@
           Tap or click falling pineapples to shoot them.<br>
           Miss one and you lose half a heart.<br>
           <b>🍍 Regular</b> = 100 &middot; <b style="color:#fbbf24">✦ Golden</b> = 1000 &middot;
-          <b style="color:#4ade80">＋ Surgeon</b> heals a heart.
+          <b style="color:#4ade80">🥭 Mango</b> heals a heart.
         </p>
         <button class="action" id="overlayBtn">Start</button>
       </div>
@@ -170,7 +170,7 @@
     <div class="legend">
       <b>🍍 Regular</b> 100 &middot;
       <b style="color:#fbbf24">✦ Golden</b> 1000 &middot;
-      <b style="color:#4ade80">＋ Surgeon</b> +1 heart &middot;
+      <b style="color:#4ade80">🥭 Mango</b> +1 heart &middot;
       miss = &minus;&frac12; heart
     </div>
   </main>
@@ -195,9 +195,9 @@
 
     // Pineapple types and their spawn weights.
     const TYPES = {
-      regular: { weight: 78, points: 100, halo: null, badge: null, speed: 1 },
-      golden:  { weight: 12, points: 1000, halo: '#fbbf24', badge: '✦', speed: 1.35 },
-      surgeon: { weight: 10, points: 0, heal: 1, halo: '#4ade80', badge: '＋', speed: 1 }
+      regular: { weight: 78, points: 100, emoji: '🍍', halo: null, badge: null, speed: 1 },
+      golden:  { weight: 12, points: 1000, emoji: '🍍', halo: '#fbbf24', badge: '✦', speed: 1.35 },
+      mango:   { weight: 10, points: 0, heal: 1, emoji: '🥭', halo: '#4ade80', badge: null, speed: 1 }
     };
     const WEIGHT_TOTAL = Object.values(TYPES).reduce((s, t) => s + t.weight, 0);
 
@@ -281,7 +281,7 @@
         const m = pineapples[hitIndex];
         const cfg = TYPES[m.type];
         lasers.push({ tx: m.x, ty: m.y, life: 0.12 });
-        if (m.type === 'surgeon') {
+        if (cfg.heal) {
           hearts = Math.min(MAX_HEARTS, hearts + cfg.heal);
           burst(m.x, m.y, '#4ade80');
         } else {
@@ -349,7 +349,7 @@
       ctx.font = m.size + 'px serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText('🍍', 0, 0);
+      ctx.fillText(cfg.emoji, 0, 0);
       ctx.restore();
 
       if (cfg.badge) {
