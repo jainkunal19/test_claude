@@ -17,11 +17,13 @@ games/
   tetris.html            Tetris
   connect-4.html         Connect 4 (1-player vs bot + 2-player)
   mango.html             Mango — pineapple laser-shooter (canvas arcade)
+  pac-man.html           Pac-Man (maze, pellets, ghost AI)
 images/
   tic-tac-toe.png        Game thumbnails (referenced by index.html)
   tetris.png
   connect-4.png
   mango.png
+  pac-man.png
   README.md              Notes on thumbnail conventions
 README.md
 ```
@@ -67,6 +69,12 @@ page works standalone on GitHub Pages.
   10 hearts, −½ heart per pineapple that reaches the ground, game over at 0;
   types are regular pineapple (100), golden pineapple (1000), and a mango
   (🥭, heals one heart, capped at 10), chosen by weighted random.
+  **Pac-Man** stores its maze as an array of equal-length strings (`#` wall,
+  `.` dot, `o` power pellet, `P` pac start, `H` ghost home); before changing
+  the maze, re-validate that all rows are the same length and every pellet is
+  reachable from `P` by flood fill. Entities move by tweening between tile
+  centers (turns commit only at a center); ghosts chase by minimizing Manhattan
+  distance to Pac and flee randomly while frightened (after a power pellet).
 
 ## Adding a new game
 

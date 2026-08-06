@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Pac-Man &middot; Alisha Arcade</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #1e293b;
+      --cell: #334155;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --accent: #fde047;
+      --wall: #2563eb;
+      --wall-edge: #1e40af;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    button, .back-link, canvas {
+      touch-action: manipulation;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at top, #1e293b, var(--bg));
+      color: var(--text);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      padding: 14px;
+    }
+
+    .game {
+      background: var(--panel);
+      border-radius: 20px;
+      padding: 20px 22px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+      width: 100%;
+      max-width: 420px;
+    }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 10px;
+      opacity: 0.85;
+      transition: opacity 0.15s ease;
+    }
+    .back-link:hover { opacity: 1; }
+
+    h1 {
+      text-align: center;
+      font-size: 1.9rem;
+      margin-bottom: 12px;
+      background: linear-gradient(90deg, #fde047, #f59e0b, #fde047);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hud {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .stat {
+      flex: 1;
+      background: var(--cell);
+      border-radius: 10px;
+      padding: 7px 10px;
+      text-align: center;
+    }
+    .stat .label {
+      font-size: 0.62rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--muted);
+      margin-bottom: 2px;
+    }
+    .stat .value { font-size: 1.15rem; font-weight: 700; }
+
+    .board-wrap { position: relative; width: fit-content; margin: 0 auto; }
+    .board-wrap, .overlay { touch-action: manipulation; }
+
+    canvas#board {
+      background: #000;
+      border-radius: 10px;
+      display: block;
+      width: 100%;
+      max-width: 342px;
+      height: auto;
+      touch-action: none;
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      background: rgba(0, 0, 0, 0.82);
+      border-radius: 10px;
+      text-align: center;
+      padding: 22px;
+    }
+    .overlay.show { display: flex; }
+    .overlay h2 { font-size: 1.4rem; }
+    .overlay p { color: var(--muted); font-size: 0.9rem; line-height: 1.5; }
+
+    button.action {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      color: #1a1206;
+      background: var(--accent);
+      transition: opacity 0.15s ease, transform 0.1s ease;
+    }
+    button.action:hover { opacity: 0.9; transform: translateY(-1px); }
+    button.action:active { transform: translateY(0); }
+
+    /* D-pad — shown only when the On-screen scheme is active */
+    .dpad {
+      display: none;
+      grid-template-columns: repeat(3, 56px);
+      grid-template-rows: repeat(3, 56px);
+      gap: 8px;
+      justify-content: center;
+      margin: 14px auto 0;
+    }
+    body.mode-touch .dpad { display: grid; }
+    .dpad button {
+      border: none;
+      border-radius: 12px;
+      background: var(--cell);
+      color: var(--text);
+      font-size: 1.4rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .dpad button:active { background: var(--accent); color: #1a1206; }
+    .dpad .up { grid-area: 1 / 2; }
+    .dpad .left { grid-area: 2 / 1; }
+    .dpad .right { grid-area: 2 / 3; }
+    .dpad .down { grid-area: 3 / 2; }
+
+    .ctrl-select {
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+      margin-top: 14px;
+    }
+    .ctrl-select button {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 9px;
+      background: var(--cell);
+      color: var(--muted);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .ctrl-select button.active { background: var(--accent); color: #1a1206; }
+
+    .controls-help {
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 0.78rem;
+      line-height: 1.6;
+      text-align: center;
+    }
+    .controls-help kbd {
+      background: var(--cell);
+      border-radius: 5px;
+      padding: 1px 7px;
+      font-family: inherit;
+      font-size: 0.72rem;
+      color: var(--text);
+    }
+    .controls-help.touch { display: none; }
+    body.mode-touch .controls-help.keyboard { display: none; }
+    body.mode-touch .controls-help.touch { display: block; }
+  </style>
+</head>
+<body>
+  <main class="game">
+    <a class="back-link" href="../index.html">&larr; Back to Alisha Arcade</a>
+    <h1>Pac-Man</h1>
+
+    <div class="hud">
+      <div class="stat"><div class="label">Score</div><div class="value" id="score">0</div></div>
+      <div class="stat"><div class="label">Lives</div><div class="value" id="lives">🟡🟡🟡</div></div>
+      <div class="stat"><div class="label">Level</div><div class="value" id="level">1</div></div>
+    </div>
+
+    <div class="board-wrap">
+      <canvas id="board" width="342" height="378"></canvas>
+      <div class="overlay show" id="overlay">
+        <h2 id="overlayTitle">Pac-Man</h2>
+        <p id="overlayText">
+          Eat all the dots and dodge the ghosts.<br>
+          Grab a <b style="color:#fde047">power pellet</b> to turn the tables
+          and chomp them for bonus points!
+        </p>
+        <button class="action" id="overlayBtn">Start</button>
+      </div>
+    </div>
+
+    <div class="dpad">
+      <button class="up" data-dir="up" aria-label="up">&uarr;</button>
+      <button class="left" data-dir="left" aria-label="left">&larr;</button>
+      <button class="right" data-dir="right" aria-label="right">&rarr;</button>
+      <button class="down" data-dir="down" aria-label="down">&darr;</button>
+    </div>
+
+    <div class="ctrl-select">
+      <button data-ctrl="touch" id="ctrlTouch">📱 On-screen</button>
+      <button data-ctrl="keyboard" id="ctrlKeyboard">⌨ Keyboard</button>
+    </div>
+
+    <div class="controls-help keyboard">
+      <kbd>&larr;</kbd> <kbd>&uarr;</kbd> <kbd>&darr;</kbd> <kbd>&rarr;</kbd> move &middot; or swipe the board
+    </div>
+    <div class="controls-help touch">
+      D-pad buttons &middot; or swipe the board to move
+    </div>
+  </main>
+
+  <script>
+    // Maze: # wall, . dot, o power pellet, P pac start, H ghost home, space empty.
+    const MAZE = [
+      "###################",
+      "#o...............o#",
+      "#.###.#####.###.#.#",
+      "#.................#",
+      "#.###.#.###.#.###.#",
+      "#.....#..#..#.....#",
+      "#####.##.#.##.#####",
+      "#...#.#..H..#.#...#",
+      "#.#.#.#.###.#.#.#.#",
+      "#.#.......#.......#",
+      "#.#.#.###.#.###.#.#",
+      "#...#...#.#...#...#",
+      "#.#####.#.#.#.###.#",
+      "#........#........#",
+      "#.###.###.###.###.#",
+      "#o..#....P....#..o#",
+      "###.#.#.###.#.#.###",
+      "#.....#..#..#.....#",
+      "#.#########.#####.#",
+      "#.................#",
+      "###################",
+    ];
+    const ROWS = MAZE.length;   // 21
+    const COLS = MAZE[0].length; // 19
+    const T = 18;               // tile size in px
+
+    const canvas = document.getElementById('board');
+    const ctx = canvas.getContext('2d');
+    const scoreEl = document.getElementById('score');
+    const livesEl = document.getElementById('lives');
+    const levelEl = document.getElementById('level');
+    const overlay = document.getElementById('overlay');
+    const overlayTitle = document.getElementById('overlayTitle');
+    const overlayText = document.getElementById('overlayText');
+    const overlayBtn = document.getElementById('overlayBtn');
+
+    const DIRS = {
+      up: { x: 0, y: -1 }, down: { x: 0, y: 1 },
+      left: { x: -1, y: 0 }, right: { x: 1, y: 0 }
+    };
+    const GHOST_COLORS = ['#ef4444', '#f472b6', '#22d3ee', '#fb923c'];
+    const FRIGHT_MS = 7000;
+
+    let walls, pellets, pelletsRemaining;
+    let pac, ghosts, pacStart, ghostHome;
+    let score, lives, level, frightenedTimer, eatenChain;
+    let running, gameOver;
+    let rafId, lastTime;
+
+    function centerX(c) { return c * T + T / 2; }
+    function centerY(r) { return r * T + T / 2; }
+    function isWall(r, c) {
+      if (r < 0 || r >= ROWS || c < 0 || c >= COLS) return true;
+      return walls[r][c];
+    }
+
+    function parseMaze() {
+      walls = Array.from({ length: ROWS }, () => Array(COLS).fill(false));
+      pellets = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
+      pelletsRemaining = 0;
+      const ghostTiles = [];
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          const ch = MAZE[r][c];
+          if (ch === '#') walls[r][c] = true;
+          else if (ch === '.') { pellets[r][c] = 1; pelletsRemaining++; }
+          else if (ch === 'o') { pellets[r][c] = 2; pelletsRemaining++; }
+          else if (ch === 'P') pacStart = { r, c };
+          else if (ch === 'H') ghostHome = { r, c };
+        }
+      }
+      // Four ghost start tiles around the home row.
+      ghostTiles.push({ r: ghostHome.r, c: ghostHome.c });
+      ghostTiles.push({ r: ghostHome.r, c: ghostHome.c - 2 });
+      ghostTiles.push({ r: ghostHome.r, c: ghostHome.c + 2 });
+      ghostTiles.push({ r: ghostHome.r + 2, c: ghostHome.c });
+      return ghostTiles;
+    }
+
+    function makeEntity(tile) {
+      return {
+        r: tile.r, c: tile.c,
+        x: centerX(tile.c), y: centerY(tile.r),
+        dir: null, want: null, moving: false, tr: tile.r, tc: tile.c
+      };
+    }
+
+    function tryStart(e, d) {
+      if (!d) return false;
+      const nr = e.r + d.y, nc = e.c + d.x;
+      if (isWall(nr, nc)) return false;
+      e.dir = d; e.tr = nr; e.tc = nc; e.moving = true;
+      return true;
+    }
+
+    function ghostChoose(g) {
+      const frightened = frightenedTimer > 0;
+      const opts = [];
+      for (const key in DIRS) {
+        const d = DIRS[key];
+        if (g.dir && d.x === -g.dir.x && d.y === -g.dir.y) continue; // no reverse
+        const nr = g.r + d.y, nc = g.c + d.x;
+        if (!isWall(nr, nc)) opts.push({ d, nr, nc });
+      }
+      if (opts.length === 0) return g.dir ? { x: -g.dir.x, y: -g.dir.y } : null;
+      if (frightened) return opts[Math.floor(Math.random() * opts.length)].d;
+      // Chase: minimize distance to Pac (with a tiny random tie-break).
+      let best = opts[0], bestDist = Infinity;
+      for (const o of opts) {
+        const dist = Math.abs(o.nr - pac.r) + Math.abs(o.nc - pac.c) + Math.random() * 0.1;
+        if (dist < bestDist) { bestDist = dist; best = o; }
+      }
+      return best.d;
+    }
+
+    function stepEntity(e, speed, dt, isPac) {
+      if (!e.moving) {
+        let started;
+        if (isPac) started = tryStart(e, e.want) || tryStart(e, e.dir);
+        else started = tryStart(e, ghostChoose(e)) || tryStart(e, e.dir);
+        if (!started) { e.dir = null; return; }
+      }
+      const tx = centerX(e.tc), ty = centerY(e.tr);
+      const dx = tx - e.x, dy = ty - e.y;
+      const dist = Math.hypot(dx, dy);
+      const mv = speed * dt;
+      if (mv >= dist) {
+        e.x = tx; e.y = ty; e.r = e.tr; e.c = e.tc; e.moving = false;
+        if (isPac) eatAt(e.r, e.c);
+      } else {
+        e.x += (dx / dist) * mv;
+        e.y += (dy / dist) * mv;
+      }
+    }
+
+    function eatAt(r, c) {
+      const p = pellets[r][c];
+      if (p === 1) { score += 10; pellets[r][c] = 0; pelletsRemaining--; }
+      else if (p === 2) {
+        score += 50; pellets[r][c] = 0; pelletsRemaining--;
+        frightenedTimer = FRIGHT_MS; eatenChain = 0;
+      }
+      if (p) updateHud();
+      if (pelletsRemaining === 0) nextLevel();
+    }
+
+    function updateHud() {
+      scoreEl.textContent = score;
+      livesEl.textContent = lives > 0 ? '🟡'.repeat(lives) : '—';
+      levelEl.textContent = level;
+    }
+
+    function ghostSpeed() {
+      return frightenedTimer > 0 ? 52 : Math.min(104, 74 + (level - 1) * 6);
+    }
+
+    function resetPositions() {
+      pac = makeEntity(pacStart);
+      const tiles = [
+        { r: ghostHome.r, c: ghostHome.c },
+        { r: ghostHome.r, c: ghostHome.c - 2 },
+        { r: ghostHome.r, c: ghostHome.c + 2 },
+        { r: ghostHome.r + 2, c: ghostHome.c }
+      ];
+      ghosts.forEach((g, i) => {
+        const t = tiles[i];
+        g.r = t.r; g.c = t.c; g.x = centerX(t.c); g.y = centerY(t.r);
+        g.dir = null; g.moving = false; g.tr = t.r; g.tc = t.c;
+      });
+      frightenedTimer = 0;
+    }
+
+    function nextLevel() {
+      level++;
+      const ghostTiles = parseMaze(); // refill pellets
+      resetPositions();
+      updateHud();
+    }
+
+    function pacDie() {
+      lives--;
+      updateHud();
+      if (lives <= 0) { endGame(); return; }
+      resetPositions();
+    }
+
+    function eatGhost(g) {
+      score += 200 * Math.pow(2, eatenChain);
+      eatenChain++;
+      const t = { r: ghostHome.r, c: ghostHome.c };
+      g.r = t.r; g.c = t.c; g.x = centerX(t.c); g.y = centerY(t.r);
+      g.dir = null; g.moving = false;
+      updateHud();
+    }
+
+    function checkCollisions() {
+      for (const g of ghosts) {
+        if (Math.hypot(g.x - pac.x, g.y - pac.y) < T * 0.7) {
+          if (frightenedTimer > 0) eatGhost(g);
+          else { pacDie(); return; }
+        }
+      }
+    }
+
+    // --- Rendering ---
+    function drawWalls() {
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          if (!walls[r][c]) continue;
+          const x = c * T, y = r * T;
+          ctx.fillStyle = '#1e40af';
+          ctx.fillRect(x + 1, y + 1, T - 2, T - 2);
+          ctx.fillStyle = '#3b82f6';
+          ctx.fillRect(x + 3, y + 3, T - 6, T - 6);
+        }
+      }
+    }
+
+    function drawPellets(time) {
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          const p = pellets[r][c];
+          if (!p) continue;
+          ctx.fillStyle = '#ffd9a0';
+          ctx.beginPath();
+          if (p === 1) {
+            ctx.arc(centerX(c), centerY(r), 2, 0, Math.PI * 2);
+          } else {
+            const pulse = 4 + Math.sin(time / 180) * 1.5;
+            ctx.arc(centerX(c), centerY(r), pulse, 0, Math.PI * 2);
+          }
+          ctx.fill();
+        }
+      }
+    }
+
+    function drawPac(time) {
+      const open = 0.12 + 0.18 * Math.abs(Math.sin(time / 90));
+      const ang = pac.dir ? Math.atan2(pac.dir.y, pac.dir.x) : 0;
+      ctx.save();
+      ctx.translate(pac.x, pac.y);
+      ctx.rotate(ang);
+      ctx.fillStyle = '#fde047';
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.arc(0, 0, T * 0.5, open * Math.PI, (2 - open) * Math.PI);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawGhost(g) {
+      const x = g.x, y = g.y, rad = T * 0.46;
+      const frightened = frightenedTimer > 0;
+      let color = g.color;
+      if (frightened) {
+        const blink = frightenedTimer < 2000 && Math.floor(frightenedTimer / 220) % 2 === 0;
+        color = blink ? '#e2e8f0' : '#2563eb';
+      }
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(x, y - 2, rad, Math.PI, 0);
+      ctx.lineTo(x + rad, y + rad - 2);
+      const feet = 3, step = (2 * rad) / feet;
+      for (let i = 0; i < feet; i++) {
+        const fx = x + rad - step * i;
+        ctx.lineTo(fx - step / 2, y + rad - 6);
+        ctx.lineTo(fx - step, y + rad - 2);
+      }
+      ctx.closePath();
+      ctx.fill();
+      // eyes
+      if (frightened) {
+        ctx.fillStyle = color === '#2563eb' ? '#fde047' : '#ef4444';
+        ctx.fillRect(x - 5, y - 3, 3, 3);
+        ctx.fillRect(x + 2, y - 3, 3, 3);
+      } else {
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.arc(x - 4, y - 2, 3, 0, Math.PI * 2);
+        ctx.arc(x + 4, y - 2, 3, 0, Math.PI * 2);
+        ctx.fill();
+        const ex = g.dir ? g.dir.x : 0, ey = g.dir ? g.dir.y : 0;
+        ctx.fillStyle = '#1e3a8a';
+        ctx.beginPath();
+        ctx.arc(x - 4 + ex * 1.4, y - 2 + ey * 1.4, 1.5, 0, Math.PI * 2);
+        ctx.arc(x + 4 + ex * 1.4, y - 2 + ey * 1.4, 1.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    function draw(time) {
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      drawWalls();
+      drawPellets(time);
+      drawPac(time);
+      ghosts.forEach(drawGhost);
+    }
+
+    function loop(time) {
+      if (!running) return;
+      if (!lastTime) lastTime = time;
+      const dt = Math.min(0.05, (time - lastTime) / 1000);
+      lastTime = time;
+
+      stepEntity(pac, 92, dt, true);
+      const gs = ghostSpeed();
+      for (const g of ghosts) stepEntity(g, gs, dt, false);
+      if (frightenedTimer > 0) frightenedTimer = Math.max(0, frightenedTimer - dt * 1000);
+      checkCollisions();
+
+      if (!running) return; // endGame may have stopped us
+      draw(time);
+      rafId = requestAnimationFrame(loop);
+    }
+
+    function startGame() {
+      const ghostTiles = parseMaze();
+      score = 0; lives = 3; level = 1;
+      frightenedTimer = 0; eatenChain = 0;
+      pac = makeEntity(pacStart);
+      ghosts = ghostTiles.map((t, i) => {
+        const e = makeEntity(t);
+        e.color = GHOST_COLORS[i % GHOST_COLORS.length];
+        return e;
+      });
+      updateHud();
+      overlay.classList.remove('show');
+      running = true; gameOver = false; lastTime = 0;
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(loop);
+    }
+
+    function endGame() {
+      running = false; gameOver = true;
+      cancelAnimationFrame(rafId);
+      overlayTitle.textContent = 'Game Over';
+      overlayText.innerHTML = `Final score: <strong>${score}</strong> &middot; Level ${level}`;
+      overlayBtn.textContent = 'Play Again';
+      overlay.classList.add('show');
+    }
+
+    // --- Input ---
+    function setWant(dirKey) {
+      if (pac) pac.want = DIRS[dirKey];
+    }
+
+    document.addEventListener('keydown', (e) => {
+      const map = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' };
+      if (map[e.key]) { e.preventDefault(); setWant(map[e.key]); }
+    });
+
+    document.querySelectorAll('.dpad button').forEach(btn => {
+      btn.addEventListener('pointerdown', (e) => { e.preventDefault(); setWant(btn.dataset.dir); });
+    });
+
+    // Swipe on the board
+    let swipeStart = null;
+    canvas.addEventListener('pointerdown', (e) => { swipeStart = { x: e.clientX, y: e.clientY }; });
+    canvas.addEventListener('pointerup', (e) => {
+      if (!swipeStart) return;
+      const dx = e.clientX - swipeStart.x, dy = e.clientY - swipeStart.y;
+      swipeStart = null;
+      if (Math.abs(dx) < 12 && Math.abs(dy) < 12) return;
+      if (Math.abs(dx) > Math.abs(dy)) setWant(dx > 0 ? 'right' : 'left');
+      else setWant(dy > 0 ? 'down' : 'up');
+    });
+
+    // Block double-tap / double-click zoom on the play area.
+    const boardWrap = document.querySelector('.board-wrap');
+    let lastTapEnd = 0;
+    boardWrap.addEventListener('touchend', (e) => {
+      const now = Date.now();
+      if (now - lastTapEnd <= 350) e.preventDefault();
+      lastTapEnd = now;
+    }, { passive: false });
+    boardWrap.addEventListener('dblclick', (e) => e.preventDefault());
+
+    overlayBtn.addEventListener('click', startGame);
+
+    // --- Control scheme ---
+    const ctrlTouchBtn = document.getElementById('ctrlTouch');
+    const ctrlKeyboardBtn = document.getElementById('ctrlKeyboard');
+    const CONTROLS_KEY = 'pacman-control-scheme';
+    function setControlScheme(scheme) {
+      document.body.classList.toggle('mode-touch', scheme === 'touch');
+      ctrlTouchBtn.classList.toggle('active', scheme === 'touch');
+      ctrlKeyboardBtn.classList.toggle('active', scheme === 'keyboard');
+      try { localStorage.setItem(CONTROLS_KEY, scheme); } catch (e) { /* ignore */ }
+    }
+    ctrlTouchBtn.addEventListener('click', () => setControlScheme('touch'));
+    ctrlKeyboardBtn.addEventListener('click', () => setControlScheme('keyboard'));
+    let savedScheme = null;
+    try { savedScheme = localStorage.getItem(CONTROLS_KEY); } catch (e) { /* ignore */ }
+    const isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+    setControlScheme(savedScheme || (isTouchDevice ? 'touch' : 'keyboard'));
+
+    // Draw an idle frame behind the start overlay.
+    parseMaze();
+    pac = makeEntity(pacStart);
+    ghosts = [];
+    draw(0);
+  </script>
+</body>
+</html>
