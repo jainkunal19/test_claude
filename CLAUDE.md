@@ -65,8 +65,8 @@ page works standalone on GitHub Pages.
   size. **Mango** is a pineapple laser-shooter: pineapples fall and the player
   taps/clicks to fire a laser (pointer input works for mouse and touch alike);
   10 hearts, −½ heart per pineapple that reaches the ground, game over at 0;
-  types are regular (100), golden (1000), and surgeon (heals one heart, capped
-  at 10), chosen by weighted random.
+  types are regular pineapple (100), golden pineapple (1000), and a mango
+  (🥭, heals one heart, capped at 10), chosen by weighted random.
 
 ## Adding a new game
 
