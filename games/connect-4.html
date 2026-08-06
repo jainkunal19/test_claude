@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Connect 4 &middot; Alisha Arcade</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #1e293b;
+      --cell: #334155;
+      --text: #e2e8f0;
+      --accent: #a78bfa;
+      --board-blue: #1d4ed8;
+      --hole: #0b1120;
+      --r-color: #ef4444;
+      --y-color: #facc15;
+      --win: #22c55e;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* Prevent double-tap-to-zoom and selection on interactive elements */
+    button, .board, .back-link, .cell {
+      touch-action: manipulation;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at top, #1e293b, var(--bg));
+      color: var(--text);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      padding: 16px;
+    }
+
+    .game {
+      background: var(--panel);
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+      width: 100%;
+      max-width: 480px;
+    }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+      opacity: 0.85;
+      transition: opacity 0.15s ease;
+    }
+    .back-link:hover { opacity: 1; }
+
+    h1 {
+      text-align: center;
+      font-size: 1.9rem;
+      margin-bottom: 4px;
+      background: linear-gradient(90deg, var(--r-color), var(--accent), var(--y-color));
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .mode-select {
+      display: flex;
+      gap: 6px;
+      background: var(--cell);
+      border-radius: 12px;
+      padding: 5px;
+      margin: 14px 0 10px;
+    }
+    .mode-btn {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      border-radius: 9px;
+      background: transparent;
+      color: #94a3b8;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+    .mode-btn:hover { color: var(--text); }
+    .mode-btn.active { background: var(--accent); color: #fff; }
+
+    .difficulty { margin: 0 0 10px; }
+    .difficulty .mode-btn { font-size: 0.82rem; padding: 8px; }
+
+    .status {
+      text-align: center;
+      font-size: 1.05rem;
+      min-height: 1.5rem;
+      margin-bottom: 14px;
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 2.2%;
+      background: var(--board-blue);
+      border-radius: 14px;
+      padding: 3%;
+      width: 100%;
+      aspect-ratio: 7 / 6;
+      margin: 0 auto;
+    }
+
+    .cell {
+      background: var(--hole);
+      border-radius: 50%;
+      aspect-ratio: 1 / 1;
+      position: relative;
+      cursor: pointer;
+      transition: background 0.12s ease;
+    }
+    .cell.col-hover { background: #16223b; }
+
+    .disc {
+      position: absolute;
+      inset: 7%;
+      border-radius: 50%;
+      background: transparent;
+    }
+    .cell.r .disc { background: radial-gradient(circle at 35% 30%, #f87171, #dc2626); }
+    .cell.y .disc { background: radial-gradient(circle at 35% 30%, #fde047, #eab308); }
+
+    .cell.drop .disc { animation: dropIn 0.35s cubic-bezier(0.3, 0.7, 0.4, 1); }
+    @keyframes dropIn {
+      from { transform: translateY(-520%); }
+      to { transform: translateY(0); }
+    }
+
+    .cell.win .disc {
+      box-shadow: 0 0 12px 3px rgba(34, 197, 94, 0.9);
+      animation: winPulse 0.7s ease infinite alternate;
+    }
+    @keyframes winPulse {
+      from { box-shadow: 0 0 6px 2px rgba(34, 197, 94, 0.7); }
+      to { box-shadow: 0 0 16px 5px rgba(34, 197, 94, 1); }
+    }
+
+    .scoreboard {
+      display: flex;
+      justify-content: space-around;
+      margin: 18px 0 16px;
+      text-align: center;
+    }
+    .score { display: flex; flex-direction: column; gap: 2px; }
+    .score .label { font-size: 0.75rem; opacity: 0.7; text-transform: uppercase; letter-spacing: 1px; }
+    .score .value { font-size: 1.4rem; font-weight: 700; }
+    .score.r .value { color: var(--r-color); }
+    .score.y .value { color: var(--y-color); }
+
+    .controls { display: flex; gap: 10px; }
+    button.action {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      color: #fff;
+      transition: opacity 0.15s ease, transform 0.1s ease;
+    }
+    button.action:hover { opacity: 0.88; transform: translateY(-1px); }
+    button.action:active { transform: translateY(0); }
+    .btn-new { background: var(--accent); }
+    .btn-reset { background: var(--cell); }
+
+    footer {
+      text-align: center;
+      margin-top: 14px;
+      font-size: 0.75rem;
+      opacity: 0.5;
+    }
+  </style>
+</head>
+<body>
+  <main class="game">
+    <a class="back-link" href="../index.html">&larr; Back to Alisha Arcade</a>
+    <h1>Connect 4</h1>
+
+    <div class="mode-select">
+      <button class="mode-btn active" id="mode1" data-mode="1">1 Player</button>
+      <button class="mode-btn" id="mode2" data-mode="2">2 Players</button>
+    </div>
+
+    <div class="mode-select difficulty" id="difficulty">
+      <button class="mode-btn" data-level="easy">Easy</button>
+      <button class="mode-btn active" data-level="medium">Medium</button>
+      <button class="mode-btn" data-level="hard">Hard</button>
+    </div>
+
+    <p class="status" id="status">Your turn</p>
+
+    <div class="board" id="board"></div>
+
+    <div class="scoreboard">
+      <div class="score r"><span class="label" id="labelR">You</span><span class="value" id="scoreR">0</span></div>
+      <div class="score draw"><span class="label">Draws</span><span class="value" id="scoreDraw">0</span></div>
+      <div class="score y"><span class="label" id="labelY">Bot</span><span class="value" id="scoreY">0</span></div>
+    </div>
+
+    <div class="controls">
+      <button class="action btn-new" id="newRound">New Round</button>
+      <button class="action btn-reset" id="resetScores">Reset Scores</button>
+    </div>
+
+    <footer>Drop a disc &middot; connect four in a row to win</footer>
+  </main>
+
+  <script>
+    const ROWS = 6;
+    const COLS = 7;
+    const HUMAN = 'R';  // human plays red and moves first
+    const BOT = 'Y';    // bot plays yellow in 1-player mode
+
+    const boardEl = document.getElementById('board');
+    const statusEl = document.getElementById('status');
+    const labelR = document.getElementById('labelR');
+    const labelY = document.getElementById('labelY');
+    const mode1Btn = document.getElementById('mode1');
+    const mode2Btn = document.getElementById('mode2');
+    const difficultyEl = document.getElementById('difficulty');
+    const levelBtns = Array.from(difficultyEl.querySelectorAll('.mode-btn'));
+    const scoreEls = {
+      R: document.getElementById('scoreR'),
+      Y: document.getElementById('scoreY'),
+      draw: document.getElementById('scoreDraw')
+    };
+
+    let board;                // ROWS x COLS grid of '' | 'R' | 'Y'
+    let cellEls = [];         // matching DOM nodes
+    let currentPlayer = 'R';
+    let gameOver = false;
+    let gameMode = 1;         // 1 = vs bot, 2 = two players
+    let botLevel = 'medium';  // easy | medium | hard
+    let inputLocked = false;  // blocks input while the bot moves
+    const scores = { R: 0, Y: 0, draw: 0 };
+
+    // --- Board helpers ---
+    function newBoard() {
+      return Array.from({ length: ROWS }, () => Array(COLS).fill(''));
+    }
+
+    function buildDom() {
+      boardEl.innerHTML = '';
+      cellEls = Array.from({ length: ROWS }, () => Array(COLS).fill(null));
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          const cell = document.createElement('div');
+          cell.className = 'cell';
+          cell.dataset.row = r;
+          cell.dataset.col = c;
+          const disc = document.createElement('div');
+          disc.className = 'disc';
+          cell.appendChild(disc);
+          cell.addEventListener('click', () => handleColumnClick(c));
+          boardEl.appendChild(cell);
+          cellEls[r][c] = cell;
+        }
+      }
+    }
+
+    function dropRow(g, col) {
+      for (let r = ROWS - 1; r >= 0; r--) if (!g[r][col]) return r;
+      return -1;
+    }
+
+    function validCols(g) {
+      const cols = [];
+      for (let c = 0; c < COLS; c++) if (!g[0][c]) cols.push(c);
+      return cols;
+    }
+
+    function cloneGrid(g) { return g.map(row => row.slice()); }
+
+    // Returns { player, cells:[[r,c]...] } for a 4-in-a-row, else null.
+    function getWin(g) {
+      const dirs = [[0, 1], [1, 0], [1, 1], [1, -1]];
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          const p = g[r][c];
+          if (!p) continue;
+          for (const [dr, dc] of dirs) {
+            const cells = [[r, c]];
+            let ok = true;
+            for (let k = 1; k < 4; k++) {
+              const nr = r + dr * k, nc = c + dc * k;
+              if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS || g[nr][nc] !== p) { ok = false; break; }
+              cells.push([nr, nc]);
+            }
+            if (ok) return { player: p, cells };
+          }
+        }
+      }
+      return null;
+    }
+
+    function winnerOf(g) { const w = getWin(g); return w ? w.player : null; }
+
+    // --- Gameplay ---
+    function handleColumnClick(col) {
+      if (gameOver || inputLocked) return;
+      if (gameMode === 1 && currentPlayer !== HUMAN) return;
+      if (dropRow(board, col) === -1) return; // column full
+      makeMove(col, currentPlayer);
+    }
+
+    function makeMove(col, player) {
+      const r = dropRow(board, col);
+      if (r === -1) return;
+      board[r][col] = player;
+      const cell = cellEls[r][col];
+      cell.classList.add(player.toLowerCase(), 'drop');
+
+      const win = getWin(board);
+      if (win) {
+        endGame(win.player, win.cells);
+      } else if (validCols(board).length === 0) {
+        endGame(null);
+      } else {
+        currentPlayer = player === 'R' ? 'Y' : 'R';
+        updateStatus();
+        if (gameMode === 1 && currentPlayer === BOT) triggerBotMove();
+      }
+    }
+
+    function triggerBotMove() {
+      inputLocked = true;
+      setTimeout(() => {
+        inputLocked = false;
+        if (gameOver) return;
+        makeMove(bestBotMove(), BOT);
+      }, 450);
+    }
+
+    function updateStatus() {
+      if (gameMode === 1) {
+        statusEl.textContent = currentPlayer === HUMAN ? 'Your turn' : 'Bot is thinking…';
+      } else {
+        statusEl.textContent = currentPlayer === 'R' ? "Red's turn" : "Yellow's turn";
+      }
+    }
+
+    function endGame(winner, winCells) {
+      gameOver = true;
+      if (winner) {
+        scores[winner]++;
+        scoreEls[winner].textContent = scores[winner];
+        winCells.forEach(([r, c]) => cellEls[r][c].classList.add('win'));
+        if (gameMode === 1) {
+          statusEl.textContent = winner === HUMAN ? 'You win! 🎉' : 'Bot wins!';
+        } else {
+          statusEl.textContent = winner === 'R' ? 'Red wins! 🎉' : 'Yellow wins! 🎉';
+        }
+      } else {
+        scores.draw++;
+        scoreEls.draw.textContent = scores.draw;
+        statusEl.textContent = "It's a draw!";
+      }
+    }
+
+    // --- Bot: alpha-beta minimax with a positional heuristic ---
+    function scoreWindow(cells, me, opp) {
+      let meC = 0, oppC = 0, emptyC = 0;
+      for (const v of cells) {
+        if (v === me) meC++;
+        else if (v === opp) oppC++;
+        else emptyC++;
+      }
+      let s = 0;
+      if (meC === 4) s += 100000;
+      else if (meC === 3 && emptyC === 1) s += 100;
+      else if (meC === 2 && emptyC === 2) s += 10;
+      if (oppC === 3 && emptyC === 1) s -= 120; // prioritize blocking
+      else if (oppC === 2 && emptyC === 2) s -= 8;
+      return s;
+    }
+
+    function evaluate(g) {
+      const me = BOT, opp = HUMAN;
+      let score = 0;
+      for (let r = 0; r < ROWS; r++) if (g[r][3] === me) score += 6; // center bias
+      const dirs = [[0, 1], [1, 0], [1, 1], [1, -1]];
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          for (const [dr, dc] of dirs) {
+            const cells = [];
+            let ok = true;
+            for (let k = 0; k < 4; k++) {
+              const nr = r + dr * k, nc = c + dc * k;
+              if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) { ok = false; break; }
+              cells.push(g[nr][nc]);
+            }
+            if (ok) score += scoreWindow(cells, me, opp);
+          }
+        }
+      }
+      return score;
+    }
+
+    function minimax(g, depth, alpha, beta, maximizing) {
+      const winner = winnerOf(g);
+      if (winner === BOT) return { score: 1000000 + depth };
+      if (winner === HUMAN) return { score: -1000000 - depth };
+      const valid = validCols(g);
+      if (valid.length === 0) return { score: 0 };
+      if (depth === 0) return { score: evaluate(g) };
+
+      // Search center-out for better pruning.
+      valid.sort((a, b) => Math.abs(3 - a) - Math.abs(3 - b));
+
+      let bestCol = valid[0];
+      if (maximizing) {
+        let value = -Infinity;
+        for (const c of valid) {
+          const r = dropRow(g, c);
+          g[r][c] = BOT;
+          const s = minimax(g, depth - 1, alpha, beta, false).score;
+          g[r][c] = '';
+          if (s > value) { value = s; bestCol = c; }
+          alpha = Math.max(alpha, value);
+          if (alpha >= beta) break;
+        }
+        return { score: value, col: bestCol };
+      } else {
+        let value = Infinity;
+        for (const c of valid) {
+          const r = dropRow(g, c);
+          g[r][c] = HUMAN;
+          const s = minimax(g, depth - 1, alpha, beta, true).score;
+          g[r][c] = '';
+          if (s < value) { value = s; bestCol = c; }
+          beta = Math.min(beta, value);
+          if (alpha >= beta) break;
+        }
+        return { score: value, col: bestCol };
+      }
+    }
+
+    function randomCol() {
+      const v = validCols(board);
+      return v[Math.floor(Math.random() * v.length)];
+    }
+
+    function optimalCol(depth) {
+      const move = minimax(cloneGrid(board), depth, -Infinity, Infinity, true);
+      return move.col !== undefined ? move.col : randomCol();
+    }
+
+    function bestBotMove() {
+      if (botLevel === 'easy') return randomCol();
+      if (botLevel === 'hard') return optimalCol(5);
+      return Math.random() < 0.7 ? optimalCol(3) : randomCol(); // medium
+    }
+
+    // --- Controls / modes ---
+    function newRound() {
+      board = newBoard();
+      currentPlayer = 'R';
+      gameOver = false;
+      inputLocked = false;
+      buildDom();
+      updateStatus();
+    }
+
+    function resetScores() {
+      scores.R = scores.Y = scores.draw = 0;
+      scoreEls.R.textContent = '0';
+      scoreEls.Y.textContent = '0';
+      scoreEls.draw.textContent = '0';
+      newRound();
+    }
+
+    function setMode(mode) {
+      gameMode = mode;
+      mode1Btn.classList.toggle('active', mode === 1);
+      mode2Btn.classList.toggle('active', mode === 2);
+      difficultyEl.style.display = mode === 1 ? 'flex' : 'none';
+      if (mode === 1) {
+        labelR.textContent = 'You';
+        labelY.textContent = 'Bot';
+      } else {
+        labelR.textContent = 'Red';
+        labelY.textContent = 'Yellow';
+      }
+      resetScores();
+    }
+
+    function setLevel(level) {
+      botLevel = level;
+      levelBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.level === level));
+    }
+
+    // Column hover highlight (desktop pointers).
+    boardEl.addEventListener('mouseover', (e) => {
+      const cell = e.target.closest('.cell');
+      if (!cell || gameOver) return;
+      const col = cell.dataset.col;
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          cellEls[r][c].classList.toggle('col-hover', String(c) === col && !board[r][c]);
+        }
+      }
+    });
+    boardEl.addEventListener('mouseleave', () => {
+      for (let r = 0; r < ROWS; r++)
+        for (let c = 0; c < COLS; c++)
+          cellEls[r][c].classList.remove('col-hover');
+    });
+
+    document.getElementById('newRound').addEventListener('click', newRound);
+    document.getElementById('resetScores').addEventListener('click', resetScores);
+    mode1Btn.addEventListener('click', () => setMode(1));
+    mode2Btn.addEventListener('click', () => setMode(2));
+    levelBtns.forEach(btn => btn.addEventListener('click', () => setLevel(btn.dataset.level)));
+
+    // Start in 1-player mode, medium difficulty.
+    setMode(1);
+  </script>
+</body>
+</html>
