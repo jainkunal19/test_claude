@@ -548,15 +548,16 @@
       ctx.fillStyle = 'rgba(239,68,68,0.35)';
       ctx.fillRect(0, 0, W, H);
       overlayTitle.textContent = 'Crashed! 💥';
-      overlayText.innerHTML = `You reached Level ${level}.<br>Final score: <strong>${score}</strong>`;
-      overlayBtn.textContent = 'Play Again';
+      overlayText.innerHTML = `Level ${level} &middot; Score so far: <strong>${score}</strong><br>Retry this level?`;
+      overlayBtn.textContent = `Retry Level ${level}`;
       phase = 'gameover';
       overlay.classList.add('show');
     }
 
     overlayBtn.addEventListener('click', () => {
-      if (phase === 'done') { level++; startLevel(); }
-      else startGame();
+      if (phase === 'done') { level++; startLevel(); }        // finished -> next level
+      else if (phase === 'gameover') { startLevel(); }        // crashed -> retry the same level
+      else { startGame(); }                                   // first start -> fresh from level 1
     });
 
     // --- Input ---
