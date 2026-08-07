@@ -237,9 +237,10 @@
           or lower and the run ends). Each level adds more traffic, plus
           <b style="color:#f87171">aggressive cars</b> that swerve into you and
           slower <b>big rigs</b> that block the road.<br><br>
-          Grab the <b style="color:#fbbf24">⭐ star</b> on the track (one per
-          level) for a few seconds of invincibility — plow through cars without
-          crashing. A glowing ring on your car counts down the remaining time.<br><br>
+          From level 2 on, grab the <b style="color:#fbbf24">⭐ star</b> on the
+          track (one per level) for a few seconds of invincibility — plow
+          through cars without crashing. A glowing ring on your car counts down
+          the remaining time.<br><br>
           <b>Controls:</b> drag to steer, and drag below the car to brake or
           above it to speed up (or use ← → and ↑/↓). Your score adds up across
           levels.
@@ -649,9 +650,14 @@
       player.x = player.targetX = (W - P_W) / 2;
       bots = makeBots();
       finishDist = 3400 + level * 1200;
-      // One power-up per level, sitting mid-track in a random lane.
-      const pLane = Math.floor(Math.random() * LANES);
-      powerUp = { xC: laneCenterX(pLane), progC: rand(finishDist * 0.35, finishDist * 0.7), r: 16, taken: false };
+      // One power-up per level, but only from level 2+ (once cars start
+      // moving between lanes). Level 1 has none.
+      if (level >= 2) {
+        const pLane = Math.floor(Math.random() * LANES);
+        powerUp = { xC: laneCenterX(pLane), progC: rand(finishDist * 0.35, finishDist * 0.7), r: 16, taken: false };
+      } else {
+        powerUp = null;
+      }
       invincibleTimer = 0;
       updateHud();
       overlay.classList.remove('show');
