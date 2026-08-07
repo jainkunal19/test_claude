@@ -510,107 +510,107 @@
       ctx.closePath();
     }
 
+    // Cached gradients (built once) so we don't allocate every frame, and no
+    // per-frame shadowBlur — both are big canvas perf wins on mobile.
+    let bodyGrad = null, flameGrad = null;
+
     function drawPlayerCar(x, yRear, w, h) {
-      const y = yRear - h;      // front of the car (top of screen)
-      const cx = x + w / 2;
       const boosting = upHeld || touchAccel > 0;
       const braking = downHeld || touchAccel < 0;
+      const cx = w / 2;
 
-      // Exhaust flame behind the car when boosting.
+      ctx.save();
+      ctx.translate(x, yRear - h); // local coords: car spans (0..w, 0..h)
+
+      // Exhaust flame (behind the rear at y = h) when boosting.
       if (boosting) {
+        if (!flameGrad) {
+          flameGrad = ctx.createLinearGradient(0, h, 0, h + 30);
+          flameGrad.addColorStop(0, '#fde047');
+          flameGrad.addColorStop(0.5, '#fb923c');
+          flameGrad.addColorStop(1, 'rgba(239,68,68,0)');
+        }
         const fl = 12 + Math.random() * 12;
-        const g = ctx.createLinearGradient(0, yRear, 0, yRear + fl + 8);
-        g.addColorStop(0, '#fde047');
-        g.addColorStop(0.5, '#fb923c');
-        g.addColorStop(1, 'rgba(239,68,68,0)');
-        ctx.fillStyle = g;
+        ctx.fillStyle = flameGrad;
         ctx.beginPath();
-        ctx.moveTo(cx - 7, yRear - 2);
-        ctx.lineTo(cx, yRear + fl + 8);
-        ctx.lineTo(cx + 7, yRear - 2);
+        ctx.moveTo(cx - 7, h - 2);
+        ctx.lineTo(cx, h + fl + 8);
+        ctx.lineTo(cx + 7, h - 2);
         ctx.closePath();
         ctx.fill();
       }
 
+      // Cheap glow halo (a translucent rounded rect instead of shadowBlur).
+      ctx.fillStyle = 'rgba(34,211,238,0.22)';
+      roundRect(-3, -3, w + 6, h + 6, 11); ctx.fill();
+
       // Wheels.
       ctx.fillStyle = '#0b1120';
-      ctx.fillRect(x - 4, y + h * 0.15, 5, h * 0.22);
-      ctx.fillRect(x + w - 1, y + h * 0.15, 5, h * 0.22);
-      ctx.fillRect(x - 4, y + h * 0.60, 5, h * 0.22);
-      ctx.fillRect(x + w - 1, y + h * 0.60, 5, h * 0.22);
+      ctx.fillRect(-4, h * 0.15, 5, h * 0.22);
+      ctx.fillRect(w - 1, h * 0.15, 5, h * 0.22);
+      ctx.fillRect(-4, h * 0.60, 5, h * 0.22);
+      ctx.fillRect(w - 1, h * 0.60, 5, h * 0.22);
 
-      // Glowing body with a side-to-side gradient.
-      ctx.save();
-      ctx.shadowColor = '#22d3ee';
-      ctx.shadowBlur = 16;
-      const bg = ctx.createLinearGradient(x, 0, x + w, 0);
-      bg.addColorStop(0, '#0369a1');
-      bg.addColorStop(0.5, '#38bdf8');
-      bg.addColorStop(1, '#0369a1');
-      ctx.fillStyle = bg;
-      roundRect(x, y, w, h, 9);
-      ctx.fill();
-      ctx.restore();
+      // Body with a cached side-to-side gradient.
+      if (!bodyGrad) {
+        bodyGrad = ctx.createLinearGradient(0, 0, w, 0);
+        bodyGrad.addColorStop(0, '#0369a1');
+        bodyGrad.addColorStop(0.5, '#38bdf8');
+        bodyGrad.addColorStop(1, '#0369a1');
+      }
+      ctx.fillStyle = bodyGrad;
+      roundRect(0, 0, w, h, 9); ctx.fill();
 
       // Racing stripes.
       ctx.fillStyle = 'rgba(255,255,255,0.92)';
-      ctx.fillRect(cx - 6, y + 5, 3, h - 20);
-      ctx.fillRect(cx + 3, y + 5, 3, h - 20);
+      ctx.fillRect(cx - 6, 5, 3, h - 20);
+      ctx.fillRect(cx + 3, 5, 3, h - 20);
 
       // Cockpit + driver helmet.
       ctx.fillStyle = 'rgba(8,15,30,0.82)';
-      roundRect(x + 6, y + h * 0.30, w - 12, h * 0.26, 4);
-      ctx.fill();
+      roundRect(6, h * 0.30, w - 12, h * 0.26, 4); ctx.fill();
       ctx.fillStyle = '#e2e8f0';
       ctx.beginPath();
-      ctx.arc(cx, y + h * 0.43, 3.4, 0, Math.PI * 2);
+      ctx.arc(cx, h * 0.43, 3.4, 0, Math.PI * 2);
       ctx.fill();
 
       // Headlights (front).
       ctx.fillStyle = '#fef08a';
-      roundRect(x + 5, y + 3, 6, 4, 2); ctx.fill();
-      roundRect(x + w - 11, y + 3, 6, 4, 2); ctx.fill();
+      roundRect(5, 3, 6, 4, 2); ctx.fill();
+      roundRect(w - 11, 3, 6, 4, 2); ctx.fill();
 
       // Rear spoiler.
       ctx.fillStyle = '#0284c7';
-      roundRect(x - 4, yRear - 9, w + 8, 5, 2); ctx.fill();
+      roundRect(-4, h - 9, w + 8, 5, 2); ctx.fill();
       ctx.fillStyle = '#0b1120';
-      ctx.fillRect(x + 6, yRear - 12, 4, 6);
-      ctx.fillRect(x + w - 10, yRear - 12, 4, 6);
+      ctx.fillRect(6, h - 12, 4, 6);
+      ctx.fillRect(w - 10, h - 12, 4, 6);
 
       // Tail lights (brighter when braking).
-      ctx.save();
-      if (braking) { ctx.shadowColor = '#ff0000'; ctx.shadowBlur = 12; }
-      ctx.fillStyle = braking ? '#ff5555' : '#b91c1c';
-      roundRect(x + 5, y + h - 8, 6, 4, 2); ctx.fill();
-      roundRect(x + w - 11, y + h - 8, 6, 4, 2); ctx.fill();
-      ctx.restore();
+      ctx.fillStyle = braking ? '#ff6b6b' : '#b91c1c';
+      roundRect(5, h - 8, 6, 4, 2); ctx.fill();
+      roundRect(w - 11, h - 8, 6, 4, 2); ctx.fill();
 
-      // Power-up aura + shrinking timer ring show how long invincibility lasts.
+      // Power-up aura + shrinking timer ring (no shadowBlur).
       if (invincibleTimer > 0) {
         const frac = invincibleTimer / POWER_MS;
         const low = invincibleTimer < 1500;
         const blinkOn = !low || Math.floor(invincibleTimer / 150) % 2 === 0;
         if (blinkOn) {
-          ctx.save();
           ctx.globalAlpha = 0.3;
           ctx.fillStyle = POWER_COLOR;
-          roundRect(x, y, w, h, 9);
-          ctx.fill();
-          ctx.restore();
-
-          ctx.save();
+          roundRect(0, 0, w, h, 9); ctx.fill();
+          ctx.globalAlpha = 1;
           ctx.strokeStyle = POWER_COLOR;
-          ctx.shadowColor = POWER_COLOR;
-          ctx.shadowBlur = 12;
           ctx.lineWidth = 3;
           const rr = Math.max(w, h) * 0.62;
           ctx.beginPath();
-          ctx.arc(cx, y + h / 2, rr, -Math.PI / 2, -Math.PI / 2 + frac * Math.PI * 2);
+          ctx.arc(cx, h / 2, rr, -Math.PI / 2, -Math.PI / 2 + frac * Math.PI * 2);
           ctx.stroke();
-          ctx.restore();
         }
       }
+
+      ctx.restore();
     }
 
     function draw() {
@@ -619,14 +619,14 @@
       if (powerUp && !powerUp.taken) {
         const py = worldToScreenY(powerUp.progC);
         if (py > -30 && py < H + 30) {
-          ctx.save();
-          ctx.shadowColor = POWER_COLOR;
-          ctx.shadowBlur = 16;
+          ctx.fillStyle = 'rgba(251,191,36,0.35)';
+          ctx.beginPath();
+          ctx.arc(powerUp.xC, py, 16, 0, Math.PI * 2);
+          ctx.fill();
           ctx.font = '30px serif';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           ctx.fillText('⭐', powerUp.xC, py);
-          ctx.restore();
         }
       }
       for (const b of bots) {
@@ -710,8 +710,9 @@
           `+${gained} points &nbsp;·&nbsp; Total: <strong>${score}</strong><br>Top 3 advance — on to Level ${level + 1}!`;
         overlayBtn.textContent = 'Next Level';
         phase = 'done';
+        overlay.classList.add('show');
       } else {
-        // Outside the top 3 — counts as a failed attempt.
+        // Outside the top 3 — counts as a failed attempt (showFailure shows the overlay).
         showFailure(`Finished ${ordinal(rank)} 🏁`,
           `+${gained} points &nbsp;·&nbsp; Total: <strong>${score}</strong> &middot; only top 3 advance`);
       }
