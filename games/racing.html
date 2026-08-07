@@ -230,8 +230,10 @@
       <div class="modal-card">
         <h2>How to Play</h2>
         <p class="how-to">
-          Race up the track and avoid touching any other car — a single crash
-          ends the game. Cross the finish line and you score by your placing:
+          Race up the track and avoid touching any other car — crashing (or
+          finishing outside the top 3) uses up one of your <b>3 retries</b> for
+          the level; run out and it's game over. Cross the finish line and you
+          score by your placing:
           <b>1st = 10,000</b>, 2nd = 7,000, 3rd = 3,000, anything lower = 1,000.
           Only the <b>top 3</b> finishers advance to the next level (finish 4th
           or lower and the run ends). Each level adds more traffic, plus
@@ -279,7 +281,7 @@
     const POWER_MS = 6000;
     const POWER_COLOR = '#fbbf24';
 
-    let player, bots, level, score;
+    let player, bots, level, score, retriesLeft;
     let powerUp = null, invincibleTimer = 0;
     let running, gameOver, phase; // phase: 'race' | 'done'
     let finishDist;
@@ -666,10 +668,30 @@
       rafId = requestAnimationFrame(loop);
     }
 
+    const MAX_RETRIES = 3;
+
     function startGame() {
-      level = 1; score = 0;
+      level = 1; score = 0; retriesLeft = MAX_RETRIES;
       player = makePlayer();
       startLevel();
+    }
+
+    // Shared failure screen (crash or finishing outside the top 3): offer a
+    // retry while any remain, otherwise it's game over.
+    function showFailure(titleText, detailHtml) {
+      if (retriesLeft > 0) {
+        phase = 'retry';
+        overlayTitle.textContent = titleText;
+        overlayText.innerHTML =
+          `${detailHtml}<br>${retriesLeft} ${retriesLeft === 1 ? 'retry' : 'retries'} left on Level ${level}`;
+        overlayBtn.textContent = `Retry Level ${level}`;
+      } else {
+        phase = 'gameover';
+        overlayTitle.textContent = 'Game Over';
+        overlayText.innerHTML = `${detailHtml}<br>No retries left.`;
+        overlayBtn.textContent = 'Play Again';
+      }
+      overlay.classList.add('show');
     }
 
     function finishRace() {
@@ -689,14 +711,10 @@
         overlayBtn.textContent = 'Next Level';
         phase = 'done';
       } else {
-        // Outside the top 3 — the run ends here.
-        overlayTitle.textContent = `Finished ${ordinal(rank)} 🏁`;
-        overlayText.innerHTML =
-          `+${gained} points &nbsp;·&nbsp; Total: <strong>${score}</strong><br>Only the top 3 advance — retry this level?`;
-        overlayBtn.textContent = `Retry Level ${level}`;
-        phase = 'gameover';
+        // Outside the top 3 — counts as a failed attempt.
+        showFailure(`Finished ${ordinal(rank)} 🏁`,
+          `+${gained} points &nbsp;·&nbsp; Total: <strong>${score}</strong> &middot; only top 3 advance`);
       }
-      overlay.classList.add('show');
     }
 
     function crash() {
@@ -707,17 +725,13 @@
       // crash flash
       ctx.fillStyle = 'rgba(239,68,68,0.35)';
       ctx.fillRect(0, 0, W, H);
-      overlayTitle.textContent = 'Crashed! 💥';
-      overlayText.innerHTML = `Level ${level} &middot; Score so far: <strong>${score}</strong><br>Retry this level?`;
-      overlayBtn.textContent = `Retry Level ${level}`;
-      phase = 'gameover';
-      overlay.classList.add('show');
+      showFailure('Crashed! 💥', `Level ${level} &middot; Score so far: <strong>${score}</strong>`);
     }
 
     overlayBtn.addEventListener('click', () => {
-      if (phase === 'done') { level++; startLevel(); }        // finished -> next level
-      else if (phase === 'gameover') { startLevel(); }        // crashed -> retry the same level
-      else { startGame(); }                                   // first start -> fresh from level 1
+      if (phase === 'done') { level++; retriesLeft = MAX_RETRIES; startLevel(); } // next level, retries reset
+      else if (phase === 'retry') { retriesLeft--; startLevel(); }                // use a retry, same level
+      else { startGame(); }                                                       // game over / first start -> fresh
     });
 
     // --- Input ---
