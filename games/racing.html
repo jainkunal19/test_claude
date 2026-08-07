@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Racing &middot; Alisha Arcade</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #1e293b;
+      --cell: #334155;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --accent: #f43f5e;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    button, .back-link, canvas {
+      touch-action: manipulation;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at top, #1e293b, var(--bg));
+      color: var(--text);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      padding: 14px;
+    }
+
+    .game {
+      background: var(--panel);
+      border-radius: 20px;
+      padding: 20px 22px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+      width: 100%;
+      max-width: 440px;
+    }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 10px;
+      opacity: 0.85;
+      transition: opacity 0.15s ease;
+    }
+    .back-link:hover { opacity: 1; }
+
+    h1 {
+      text-align: center;
+      font-size: 1.9rem;
+      margin-bottom: 12px;
+      background: linear-gradient(90deg, #f43f5e, #fb923c, #f43f5e);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hud {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .stat {
+      flex: 1;
+      background: var(--cell);
+      border-radius: 10px;
+      padding: 7px 10px;
+      text-align: center;
+    }
+    .stat .label {
+      font-size: 0.62rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--muted);
+      margin-bottom: 2px;
+    }
+    .stat .value { font-size: 1.1rem; font-weight: 700; }
+
+    .board-wrap { position: relative; width: fit-content; margin: 0 auto; }
+    .board-wrap, .overlay { touch-action: manipulation; }
+
+    canvas#board {
+      background: #14532d;
+      border-radius: 12px;
+      display: block;
+      width: 100%;
+      max-width: 360px;
+      height: auto;
+      touch-action: none;
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      background: rgba(0, 0, 0, 0.82);
+      border-radius: 12px;
+      text-align: center;
+      padding: 24px;
+    }
+    .overlay.show { display: flex; }
+    .overlay h2 { font-size: 1.4rem; }
+    .overlay p { color: var(--muted); font-size: 0.92rem; line-height: 1.55; }
+
+    button.action {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      color: #fff;
+      background: var(--accent);
+      transition: opacity 0.15s ease, transform 0.1s ease;
+    }
+    button.action:hover { opacity: 0.9; transform: translateY(-1px); }
+    button.action:active { transform: translateY(0); }
+
+    .controls-help {
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 0.8rem;
+      line-height: 1.6;
+      text-align: center;
+    }
+    .controls-help kbd {
+      background: var(--cell);
+      border-radius: 5px;
+      padding: 1px 7px;
+      font-family: inherit;
+      font-size: 0.72rem;
+      color: var(--text);
+    }
+
+    /* Info menu */
+    .info-btn {
+      float: right;
+      background: var(--cell);
+      color: var(--text);
+      border: none;
+      border-radius: 9px;
+      padding: 6px 12px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .info-btn:hover { opacity: 0.88; }
+    .modal {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.62);
+      z-index: 50;
+      padding: 20px;
+    }
+    .modal.show { display: flex; }
+    .modal-card {
+      background: var(--panel);
+      border-radius: 16px;
+      padding: 24px;
+      width: 100%;
+      max-width: 360px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    }
+    .modal-card h2 { margin-bottom: 10px; font-size: 1.25rem; }
+    .modal-card .how-to { color: #94a3b8; font-size: 0.9rem; line-height: 1.6; margin-bottom: 16px; }
+    .modal-card .highscore {
+      background: var(--cell);
+      border-radius: 10px;
+      padding: 12px;
+      text-align: center;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+    .modal-card .highscore span { color: var(--accent); font-size: 1.2rem; }
+    .modal-card .close-row { text-align: right; }
+  </style>
+</head>
+<body>
+  <main class="game">
+    <a class="back-link" href="../index.html">&larr; Back to Alisha Arcade</a>
+    <button class="info-btn" id="infoBtn">ⓘ Info</button>
+    <h1>Racing</h1>
+
+    <div class="hud">
+      <div class="stat"><div class="label">Score</div><div class="value" id="score">0</div></div>
+      <div class="stat"><div class="label">Rank</div><div class="value" id="rank">1st</div></div>
+      <div class="stat"><div class="label">Level</div><div class="value" id="level">1</div></div>
+    </div>
+
+    <div class="board-wrap">
+      <canvas id="board" width="360" height="560"></canvas>
+      <div class="overlay show" id="overlay">
+        <h2 id="overlayTitle">Racing 🏎️</h2>
+        <p id="overlayText">
+          Steer up the track and dodge the other cars.<br>
+          Reach the finish line — the higher you place, the bigger the score.<br>
+          One crash and it's game over!
+        </p>
+        <button class="action" id="overlayBtn">Start</button>
+      </div>
+    </div>
+
+    <div class="controls-help">
+      <b>Drag</b> on the track to steer &middot; or <kbd>&larr;</kbd> <kbd>&rarr;</kbd>
+      &middot; <kbd>&uarr;</kbd>/<kbd>&darr;</kbd> throttle
+    </div>
+
+    <div class="modal" id="infoModal">
+      <div class="modal-card">
+        <h2>How to Play</h2>
+        <p class="how-to">
+          Race up the track and avoid touching any other car — a single crash
+          ends the game. Cross the finish line and you score by your placing:
+          <b>1st = 10,000</b>, 2nd = 7,000, 3rd = 3,000, anything lower = 1,000.
+          Each finish advances a level with more traffic, plus
+          <b style="color:#f87171">aggressive cars</b> that swerve into you and
+          slower <b>big rigs</b> that block the road.<br><br>
+          <b>Controls:</b> drag on the track to steer (or ← →), and ↑/↓ to speed
+          up or brake. Your score adds up across levels.
+        </p>
+        <div class="highscore">Highest Score: <span id="highScore">0</span></div>
+        <div class="close-row"><button class="action" id="infoClose" style="padding:10px 20px;">Close</button></div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const canvas = document.getElementById('board');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width;   // 360
+    const H = canvas.height;  // 560
+
+    const scoreEl = document.getElementById('score');
+    const rankEl = document.getElementById('rank');
+    const levelEl = document.getElementById('level');
+    const overlay = document.getElementById('overlay');
+    const overlayTitle = document.getElementById('overlayTitle');
+    const overlayText = document.getElementById('overlayText');
+    const overlayBtn = document.getElementById('overlayBtn');
+
+    const ROAD_L = 44, ROAD_R = W - 44;
+    const ROAD_W = ROAD_R - ROAD_L;
+    const PLAYER_SCREEN_Y = H * 0.76; // where the player's rear sits on screen
+
+    // Car sizes (world units == pixels).
+    const P_W = 38, P_H = 62;
+
+    let player, bots, level, score;
+    let running, gameOver, phase; // phase: 'race' | 'done'
+    let finishDist;
+    let leftHeld, rightHeld, upHeld, downHeld;
+    let rafId, lastTime;
+
+    function rand(a, b) { return a + Math.random() * (b - a); }
+    function clampX(x, w) { return Math.max(ROAD_L, Math.min(ROAD_R - w, x)); }
+    function ordinal(n) {
+      if (n === 1) return '1st';
+      if (n === 2) return '2nd';
+      if (n === 3) return '3rd';
+      return n + 'th';
+    }
+
+    function makePlayer() {
+      const x = (W - P_W) / 2;
+      return { x, targetX: x, w: P_W, h: P_H, progress: 0, speed: 250, color: '#38bdf8' };
+    }
+
+    function botType() {
+      // Big rigs from level 2, aggressive cars from level 3.
+      const r = Math.random();
+      if (level >= 3 && r < 0.28) return 'aggressive';
+      if (level >= 2 && r < 0.5) return 'big';
+      return 'regular';
+    }
+
+    function makeBots() {
+      const n = Math.min(4 + level, 8);
+      const list = [];
+      const palette = ['#22c55e', '#fb923c', '#a78bfa', '#eab308', '#f472b6'];
+      for (let i = 0; i < n; i++) {
+        const type = botType();
+        const big = type === 'big';
+        const w = big ? 56 : 38;
+        const h = big ? 92 : 62;
+        let base = big ? 175 : (type === 'aggressive' ? 240 : rand(200, 245));
+        base += (level - 1) * 8;
+        list.push({
+          type, w, h,
+          x: clampX(rand(ROAD_L, ROAD_R - w), w),
+          targetX: 0,
+          progress: 90 + i * 96 + rand(-20, 20), // field ahead of the player
+          speed: base,
+          baseSpeed: base,
+          color: big ? '#64748b' : (type === 'aggressive' ? '#ef4444' : palette[i % palette.length]),
+          driftTimer: rand(0.5, 2.5)
+        });
+        list[i].targetX = list[i].x;
+      }
+      return list;
+    }
+
+    function liveRank() {
+      let ahead = 0;
+      for (const b of bots) if (b.progress > player.progress) ahead++;
+      return ahead + 1;
+    }
+
+    function updateHud() {
+      scoreEl.textContent = score;
+      rankEl.textContent = ordinal(liveRank()) + ' / ' + (bots.length + 1);
+      levelEl.textContent = level;
+    }
+
+    function collides(a, b) {
+      return a.x < b.x + b.w && a.x + a.w > b.x &&
+             a.progress < b.progress + b.h && a.progress + a.h > b.progress;
+    }
+
+    function update(dt) {
+      // --- Player throttle ---
+      let target = 250 + (level - 1) * 8;
+      if (upHeld) target = 330 + (level - 1) * 8;
+      if (downHeld) target = 150;
+      player.speed += (target - player.speed) * Math.min(1, dt * 3);
+      player.progress += player.speed * dt;
+
+      // --- Player steering ---
+      const steer = 320;
+      if (leftHeld) player.targetX -= steer * dt;
+      if (rightHeld) player.targetX += steer * dt;
+      player.targetX = clampX(player.targetX, player.w);
+      player.x += (player.targetX - player.x) * Math.min(1, dt * 16);
+      player.x = clampX(player.x, player.w);
+
+      // --- Bots ---
+      for (const b of bots) {
+        if (b.type === 'aggressive' && Math.abs(b.progress - player.progress) < 220) {
+          // Swerve toward the player and push the pace.
+          b.targetX = clampX(player.x + (player.w - b.w) / 2, b.w);
+          b.speed += (b.baseSpeed + 40 - b.speed) * Math.min(1, dt * 2);
+        } else {
+          b.driftTimer -= dt;
+          if (b.driftTimer <= 0) {
+            b.targetX = clampX(rand(ROAD_L, ROAD_R - b.w), b.w);
+            b.driftTimer = rand(1.2, 3.5);
+          }
+          b.speed += (b.baseSpeed - b.speed) * Math.min(1, dt * 2);
+        }
+        b.x += (b.targetX - b.x) * Math.min(1, dt * 2.2);
+        b.x = clampX(b.x, b.w);
+        b.progress += b.speed * dt;
+      }
+
+      // --- Collisions ---
+      for (const b of bots) {
+        if (collides(player, b)) { crash(); return; }
+      }
+
+      // --- Finish ---
+      if (player.progress + player.h >= finishDist) { finishRace(); return; }
+
+      updateHud();
+    }
+
+    // --- Rendering ---
+    function worldToScreenY(progress) {
+      // A car's rear at `progress` maps here; camera follows the player.
+      return PLAYER_SCREEN_Y - (progress - player.progress);
+    }
+
+    function drawRoad() {
+      // grass
+      ctx.fillStyle = '#14532d';
+      ctx.fillRect(0, 0, W, H);
+      // road
+      ctx.fillStyle = '#334155';
+      ctx.fillRect(ROAD_L, 0, ROAD_W, H);
+      // curbs
+      const stripe = 20;
+      const off = ((player.progress % (stripe * 2)) + stripe * 2) % (stripe * 2);
+      for (let y = -stripe * 2 + off; y < H; y += stripe * 2) {
+        ctx.fillStyle = '#e2e8f0';
+        ctx.fillRect(ROAD_L - 8, y, 8, stripe);
+        ctx.fillRect(ROAD_R, y, 8, stripe);
+        ctx.fillStyle = '#ef4444';
+        ctx.fillRect(ROAD_L - 8, y + stripe, 8, stripe);
+        ctx.fillRect(ROAD_R, y + stripe, 8, stripe);
+      }
+      // lane dashes (2 dividers -> 3 lanes)
+      ctx.fillStyle = '#e2e8f0';
+      const dash = 24, gap = 24;
+      const doff = ((player.progress % (dash + gap)) + (dash + gap)) % (dash + gap);
+      for (let k = 1; k <= 2; k++) {
+        const x = ROAD_L + (ROAD_W * k) / 3 - 2;
+        for (let y = -dash + doff; y < H; y += dash + gap) {
+          ctx.fillRect(x, y, 4, dash);
+        }
+      }
+      // finish line
+      const fy = worldToScreenY(finishDist);
+      if (fy > -20 && fy < H + 20) {
+        const sq = 12;
+        for (let row = 0; row < 2; row++) {
+          for (let cx = ROAD_L, i = 0; cx < ROAD_R; cx += sq, i++) {
+            ctx.fillStyle = (i + row) % 2 === 0 ? '#f8fafc' : '#0f172a';
+            ctx.fillRect(cx, fy - sq * 2 + row * sq, sq, sq);
+          }
+        }
+      }
+    }
+
+    function drawCar(x, yRear, w, h, color, aggressive) {
+      const y = yRear - h; // top of the car on screen
+      if (y > H || yRear < 0) return;
+      // body
+      ctx.fillStyle = color;
+      roundRect(x, y, w, h, 8);
+      ctx.fill();
+      // windshield
+      ctx.fillStyle = 'rgba(15,23,42,0.65)';
+      roundRect(x + 5, y + h * 0.18, w - 10, h * 0.26, 4);
+      ctx.fill();
+      // rear window
+      roundRect(x + 5, y + h * 0.62, w - 10, h * 0.2, 4);
+      ctx.fill();
+      // wheels
+      ctx.fillStyle = '#0b1120';
+      ctx.fillRect(x - 3, y + h * 0.16, 4, h * 0.22);
+      ctx.fillRect(x + w - 1, y + h * 0.16, 4, h * 0.22);
+      ctx.fillRect(x - 3, y + h * 0.62, 4, h * 0.22);
+      ctx.fillRect(x + w - 1, y + h * 0.62, 4, h * 0.22);
+      if (aggressive) {
+        ctx.fillStyle = '#fde047';
+        ctx.beginPath();
+        ctx.moveTo(x + w / 2, y + 3);
+        ctx.lineTo(x + w / 2 - 5, y + 12);
+        ctx.lineTo(x + w / 2 + 5, y + 12);
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+
+    function roundRect(x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w, y, x + w, y + h, r);
+      ctx.arcTo(x + w, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r);
+      ctx.arcTo(x, y, x + w, y, r);
+      ctx.closePath();
+    }
+
+    function draw() {
+      drawRoad();
+      for (const b of bots) {
+        drawCar(b.x, worldToScreenY(b.progress), b.w, b.h, b.color, b.type === 'aggressive');
+      }
+      drawCar(player.x, worldToScreenY(player.progress), player.w, player.h, player.color, false);
+    }
+
+    function loop(time) {
+      if (!running) return;
+      if (!lastTime) lastTime = time;
+      const dt = Math.min(0.05, (time - lastTime) / 1000);
+      lastTime = time;
+      update(dt);
+      if (!running) return; // crash/finish may have stopped the loop
+      draw();
+      rafId = requestAnimationFrame(loop);
+    }
+
+    function startLevel() {
+      player.progress = 0;
+      player.speed = 250;
+      player.x = player.targetX = (W - P_W) / 2;
+      bots = makeBots();
+      finishDist = 3400 + level * 1200;
+      updateHud();
+      overlay.classList.remove('show');
+      running = true; gameOver = false; phase = 'race'; lastTime = 0;
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(loop);
+    }
+
+    function startGame() {
+      level = 1; score = 0;
+      player = makePlayer();
+      startLevel();
+    }
+
+    function finishRace() {
+      running = false;
+      const rank = liveRank();
+      const gained = rank === 1 ? 10000 : rank === 2 ? 7000 : rank === 3 ? 3000 : 1000;
+      score += gained;
+      updateHud();
+      maybeUpdateHigh(score);
+      cancelAnimationFrame(rafId);
+      draw();
+      overlayTitle.textContent = `Finished ${ordinal(rank)}! 🏁`;
+      overlayText.innerHTML =
+        `+${gained} points &nbsp;·&nbsp; Total: <strong>${score}</strong><br>Next up: Level ${level + 1}`;
+      overlayBtn.textContent = 'Next Level';
+      phase = 'done';
+      overlay.classList.add('show');
+    }
+
+    function crash() {
+      running = false; gameOver = true;
+      maybeUpdateHigh(score);
+      cancelAnimationFrame(rafId);
+      draw();
+      // crash flash
+      ctx.fillStyle = 'rgba(239,68,68,0.35)';
+      ctx.fillRect(0, 0, W, H);
+      overlayTitle.textContent = 'Crashed! 💥';
+      overlayText.innerHTML = `You reached Level ${level}.<br>Final score: <strong>${score}</strong>`;
+      overlayBtn.textContent = 'Play Again';
+      phase = 'gameover';
+      overlay.classList.add('show');
+    }
+
+    overlayBtn.addEventListener('click', () => {
+      if (phase === 'done') { level++; startLevel(); }
+      else startGame();
+    });
+
+    // --- Input ---
+    document.addEventListener('keydown', (e) => {
+      const k = e.key;
+      if (k === 'ArrowLeft') { leftHeld = true; e.preventDefault(); }
+      else if (k === 'ArrowRight') { rightHeld = true; e.preventDefault(); }
+      else if (k === 'ArrowUp') { upHeld = true; e.preventDefault(); }
+      else if (k === 'ArrowDown') { downHeld = true; e.preventDefault(); }
+    });
+    document.addEventListener('keyup', (e) => {
+      const k = e.key;
+      if (k === 'ArrowLeft') leftHeld = false;
+      else if (k === 'ArrowRight') rightHeld = false;
+      else if (k === 'ArrowUp') upHeld = false;
+      else if (k === 'ArrowDown') downHeld = false;
+    });
+
+    // Touch/drag steering
+    function canvasX(e) {
+      const rect = canvas.getBoundingClientRect();
+      return ((e.clientX - rect.left) / rect.width) * W;
+    }
+    let dragging = false;
+    canvas.addEventListener('pointerdown', (e) => {
+      if (!running) return;
+      e.preventDefault();
+      dragging = true;
+      if (canvas.setPointerCapture) canvas.setPointerCapture(e.pointerId);
+      player.targetX = clampX(canvasX(e) - player.w / 2, player.w);
+    });
+    canvas.addEventListener('pointermove', (e) => {
+      if (dragging && running) player.targetX = clampX(canvasX(e) - player.w / 2, player.w);
+    });
+    canvas.addEventListener('pointerup', () => { dragging = false; });
+    canvas.addEventListener('pointercancel', () => { dragging = false; });
+
+    // Block double-tap zoom on the play area.
+    const boardWrap = document.querySelector('.board-wrap');
+    let lastTapEnd = 0;
+    boardWrap.addEventListener('touchend', (e) => {
+      const now = Date.now();
+      if (now - lastTapEnd <= 350) e.preventDefault();
+      lastTapEnd = now;
+    }, { passive: false });
+    boardWrap.addEventListener('dblclick', (e) => e.preventDefault());
+
+    // --- Info menu & high score ---
+    const HS_KEY = 'racing-highscore';
+    const infoBtn = document.getElementById('infoBtn');
+    const infoModal = document.getElementById('infoModal');
+    const infoClose = document.getElementById('infoClose');
+    const highScoreEl = document.getElementById('highScore');
+    function getHigh() { try { return Number(localStorage.getItem(HS_KEY)) || 0; } catch (e) { return 0; } }
+    function maybeUpdateHigh(v) { if (v > getHigh()) { try { localStorage.setItem(HS_KEY, String(v)); } catch (e) { /* ignore */ } } }
+    infoBtn.addEventListener('click', () => { highScoreEl.textContent = getHigh(); infoModal.classList.add('show'); });
+    infoClose.addEventListener('click', () => infoModal.classList.remove('show'));
+    infoModal.addEventListener('click', (e) => { if (e.target === infoModal) infoModal.classList.remove('show'); });
+
+    // Idle frame behind the start overlay.
+    level = 1; score = 0;
+    player = makePlayer();
+    bots = makeBots();
+    finishDist = 3400 + level * 1200;
+    draw();
+  </script>
+</body>
+</html>
