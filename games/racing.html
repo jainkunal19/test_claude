@@ -484,12 +484,89 @@
       ctx.closePath();
     }
 
+    function drawPlayerCar(x, yRear, w, h) {
+      const y = yRear - h;      // front of the car (top of screen)
+      const cx = x + w / 2;
+      const boosting = upHeld || touchAccel > 0;
+      const braking = downHeld || touchAccel < 0;
+
+      // Exhaust flame behind the car when boosting.
+      if (boosting) {
+        const fl = 12 + Math.random() * 12;
+        const g = ctx.createLinearGradient(0, yRear, 0, yRear + fl + 8);
+        g.addColorStop(0, '#fde047');
+        g.addColorStop(0.5, '#fb923c');
+        g.addColorStop(1, 'rgba(239,68,68,0)');
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.moveTo(cx - 7, yRear - 2);
+        ctx.lineTo(cx, yRear + fl + 8);
+        ctx.lineTo(cx + 7, yRear - 2);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      // Wheels.
+      ctx.fillStyle = '#0b1120';
+      ctx.fillRect(x - 4, y + h * 0.15, 5, h * 0.22);
+      ctx.fillRect(x + w - 1, y + h * 0.15, 5, h * 0.22);
+      ctx.fillRect(x - 4, y + h * 0.60, 5, h * 0.22);
+      ctx.fillRect(x + w - 1, y + h * 0.60, 5, h * 0.22);
+
+      // Glowing body with a side-to-side gradient.
+      ctx.save();
+      ctx.shadowColor = '#22d3ee';
+      ctx.shadowBlur = 16;
+      const bg = ctx.createLinearGradient(x, 0, x + w, 0);
+      bg.addColorStop(0, '#0369a1');
+      bg.addColorStop(0.5, '#38bdf8');
+      bg.addColorStop(1, '#0369a1');
+      ctx.fillStyle = bg;
+      roundRect(x, y, w, h, 9);
+      ctx.fill();
+      ctx.restore();
+
+      // Racing stripes.
+      ctx.fillStyle = 'rgba(255,255,255,0.92)';
+      ctx.fillRect(cx - 6, y + 5, 3, h - 20);
+      ctx.fillRect(cx + 3, y + 5, 3, h - 20);
+
+      // Cockpit + driver helmet.
+      ctx.fillStyle = 'rgba(8,15,30,0.82)';
+      roundRect(x + 6, y + h * 0.30, w - 12, h * 0.26, 4);
+      ctx.fill();
+      ctx.fillStyle = '#e2e8f0';
+      ctx.beginPath();
+      ctx.arc(cx, y + h * 0.43, 3.4, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Headlights (front).
+      ctx.fillStyle = '#fef08a';
+      roundRect(x + 5, y + 3, 6, 4, 2); ctx.fill();
+      roundRect(x + w - 11, y + 3, 6, 4, 2); ctx.fill();
+
+      // Rear spoiler.
+      ctx.fillStyle = '#0284c7';
+      roundRect(x - 4, yRear - 9, w + 8, 5, 2); ctx.fill();
+      ctx.fillStyle = '#0b1120';
+      ctx.fillRect(x + 6, yRear - 12, 4, 6);
+      ctx.fillRect(x + w - 10, yRear - 12, 4, 6);
+
+      // Tail lights (brighter when braking).
+      ctx.save();
+      if (braking) { ctx.shadowColor = '#ff0000'; ctx.shadowBlur = 12; }
+      ctx.fillStyle = braking ? '#ff5555' : '#b91c1c';
+      roundRect(x + 5, y + h - 8, 6, 4, 2); ctx.fill();
+      roundRect(x + w - 11, y + h - 8, 6, 4, 2); ctx.fill();
+      ctx.restore();
+    }
+
     function draw() {
       drawRoad();
       for (const b of bots) {
         drawCar(b.x, worldToScreenY(b.progress), b.w, b.h, b.color, b.type === 'aggressive');
       }
-      drawCar(player.x, worldToScreenY(player.progress), player.w, player.h, player.color, false);
+      drawPlayerCar(player.x, worldToScreenY(player.progress), player.w, player.h);
     }
 
     function loop(time) {
