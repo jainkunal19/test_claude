@@ -710,8 +710,9 @@
           `+${gained} points &nbsp;·&nbsp; Total: <strong>${score}</strong><br>Top 3 advance — on to Level ${level + 1}!`;
         overlayBtn.textContent = 'Next Level';
         phase = 'done';
+        overlay.classList.add('show');
       } else {
-        // Outside the top 3 — counts as a failed attempt.
+        // Outside the top 3 — counts as a failed attempt (showFailure shows the overlay).
         showFailure(`Finished ${ordinal(rank)} 🏁`,
           `+${gained} points &nbsp;·&nbsp; Total: <strong>${score}</strong> &middot; only top 3 advance`);
       }
