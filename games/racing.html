@@ -237,6 +237,9 @@
           or lower and the run ends). Each level adds more traffic, plus
           <b style="color:#f87171">aggressive cars</b> that swerve into you and
           slower <b>big rigs</b> that block the road.<br><br>
+          Grab the <b style="color:#fbbf24">⭐ star</b> on the track (one per
+          level) for a few seconds of invincibility — plow through cars without
+          crashing. A glowing ring on your car counts down the remaining time.<br><br>
           <b>Controls:</b> drag to steer, and drag below the car to brake or
           above it to speed up (or use ← → and ↑/↓). Your score adds up across
           levels.
@@ -271,7 +274,12 @@
     // Car sizes (world units == pixels).
     const P_W = 38, P_H = 62;
 
+    // Power-up: one shield star per level; grants brief invincibility.
+    const POWER_MS = 6000;
+    const POWER_COLOR = '#fbbf24';
+
     let player, bots, level, score;
+    let powerUp = null, invincibleTimer = 0;
     let running, gameOver, phase; // phase: 'race' | 'done'
     let finishDist;
     let leftHeld, rightHeld, upHeld, downHeld, touchAccel = 0; // touchAccel: -1 brake, 0 cruise, +1 boost
@@ -362,6 +370,15 @@
       player.x += (player.targetX - player.x) * Math.min(1, dt * 16);
       player.x = clampX(player.x, player.w);
 
+      // --- Power-up timer & pickup ---
+      if (invincibleTimer > 0) invincibleTimer = Math.max(0, invincibleTimer - dt * 1000);
+      if (powerUp && !powerUp.taken &&
+          player.x < powerUp.xC + powerUp.r && player.x + player.w > powerUp.xC - powerUp.r &&
+          player.progress < powerUp.progC + powerUp.r && player.progress + player.h > powerUp.progC - powerUp.r) {
+        powerUp.taken = true;
+        invincibleTimer = POWER_MS;
+      }
+
       // --- Bots ---
       for (const b of bots) {
         if (b.type === 'aggressive' && Math.abs(b.progress - player.progress) < 220) {
@@ -388,7 +405,12 @@
 
       // --- Collisions ---
       for (const b of bots) {
-        if (collides(player, b)) { crash(); return; }
+        if (!collides(player, b)) continue;
+        if (invincibleTimer > 0) {
+          b.progress = player.progress - b.h - 6; // powered up: plow through, shove it behind
+        } else {
+          crash(); return;
+        }
       }
 
       // --- Finish ---
@@ -560,10 +582,50 @@
       roundRect(x + 5, y + h - 8, 6, 4, 2); ctx.fill();
       roundRect(x + w - 11, y + h - 8, 6, 4, 2); ctx.fill();
       ctx.restore();
+
+      // Power-up aura + shrinking timer ring show how long invincibility lasts.
+      if (invincibleTimer > 0) {
+        const frac = invincibleTimer / POWER_MS;
+        const low = invincibleTimer < 1500;
+        const blinkOn = !low || Math.floor(invincibleTimer / 150) % 2 === 0;
+        if (blinkOn) {
+          ctx.save();
+          ctx.globalAlpha = 0.3;
+          ctx.fillStyle = POWER_COLOR;
+          roundRect(x, y, w, h, 9);
+          ctx.fill();
+          ctx.restore();
+
+          ctx.save();
+          ctx.strokeStyle = POWER_COLOR;
+          ctx.shadowColor = POWER_COLOR;
+          ctx.shadowBlur = 12;
+          ctx.lineWidth = 3;
+          const rr = Math.max(w, h) * 0.62;
+          ctx.beginPath();
+          ctx.arc(cx, y + h / 2, rr, -Math.PI / 2, -Math.PI / 2 + frac * Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
     }
 
     function draw() {
       drawRoad();
+      // Power-up star lying on the road.
+      if (powerUp && !powerUp.taken) {
+        const py = worldToScreenY(powerUp.progC);
+        if (py > -30 && py < H + 30) {
+          ctx.save();
+          ctx.shadowColor = POWER_COLOR;
+          ctx.shadowBlur = 16;
+          ctx.font = '30px serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('⭐', powerUp.xC, py);
+          ctx.restore();
+        }
+      }
       for (const b of bots) {
         drawCar(b.x, worldToScreenY(b.progress), b.w, b.h, b.color, b.type === 'aggressive');
       }
@@ -587,6 +649,10 @@
       player.x = player.targetX = (W - P_W) / 2;
       bots = makeBots();
       finishDist = 3400 + level * 1200;
+      // One power-up per level, sitting mid-track in a random lane.
+      const pLane = Math.floor(Math.random() * LANES);
+      powerUp = { xC: laneCenterX(pLane), progC: rand(finishDist * 0.35, finishDist * 0.7), r: 16, taken: false };
+      invincibleTimer = 0;
       updateHud();
       overlay.classList.remove('show');
       running = true; gameOver = false; phase = 'race'; lastTime = 0;
