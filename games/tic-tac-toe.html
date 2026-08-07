@@ -170,11 +170,58 @@
       font-size: 0.75rem;
       opacity: 0.5;
     }
+
+    /* Info menu */
+    .info-btn {
+      float: right;
+      background: var(--cell);
+      color: var(--text);
+      border: none;
+      border-radius: 9px;
+      padding: 6px 12px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .info-btn:hover { opacity: 0.88; }
+    .modal {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.62);
+      z-index: 50;
+      padding: 20px;
+    }
+    .modal.show { display: flex; }
+    .modal-card {
+      background: var(--panel);
+      border-radius: 16px;
+      padding: 24px;
+      width: 100%;
+      max-width: 360px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    }
+    .modal-card h2 { margin-bottom: 10px; font-size: 1.25rem; }
+    .modal-card .how-to { color: #94a3b8; font-size: 0.9rem; line-height: 1.6; margin-bottom: 16px; }
+    .modal-card .highscore {
+      background: var(--cell);
+      border-radius: 10px;
+      padding: 12px;
+      text-align: center;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+    .modal-card .highscore span { color: var(--accent); font-size: 1.2rem; }
+    .modal-card .close-row { text-align: right; }
   </style>
 </head>
 <body>
   <main class="game">
     <a class="back-link" href="../index.html">&larr; Back to Alisha Arcade</a>
+    <button class="info-btn" id="infoBtn">ⓘ Info</button>
     <h1>Tic Tac Toe</h1>
 
     <div class="mode-select">
@@ -214,6 +261,22 @@
     </div>
 
     <footer>Get three in a row to win</footer>
+
+    <div class="modal" id="infoModal">
+      <div class="modal-card">
+        <h2>How to Play</h2>
+        <p class="how-to">
+          Take turns placing your mark on the 3×3 grid. Get three of your marks
+          in a row — horizontally, vertically, or diagonally — to win. In
+          1-player mode you are X and move first against the bot (Easy, Medium,
+          or Hard); 2-player mode is hot-seat X vs O.<br><br>
+          <b>Highest Score</b> is the most wins reached in a single run (it
+          resets when you Reset Scores or switch mode, but the best is kept).
+        </p>
+        <div class="highscore">Highest Score: <span id="highScore">0</span></div>
+        <div class="close-row"><button class="action btn-new" id="infoClose" style="flex:none; padding:10px 20px;">Close</button></div>
+      </div>
+    </div>
   </main>
 
   <script>
@@ -321,6 +384,7 @@
         scoreEls.draw.textContent = scores.draw;
         statusEl.textContent = "It's a draw!";
       }
+      maybeUpdateHigh(Math.max(scores.X, scores.O));
     }
 
     // --- Bot: unbeatable minimax play ---
@@ -427,6 +491,18 @@
     mode1Btn.addEventListener('click', () => setMode(1));
     mode2Btn.addEventListener('click', () => setMode(2));
     levelBtns.forEach(btn => btn.addEventListener('click', () => setLevel(btn.dataset.level)));
+
+    // --- Info menu & high score ---
+    const HS_KEY = 'tictactoe-highscore';
+    const infoBtn = document.getElementById('infoBtn');
+    const infoModal = document.getElementById('infoModal');
+    const infoClose = document.getElementById('infoClose');
+    const highScoreEl = document.getElementById('highScore');
+    function getHigh() { try { return Number(localStorage.getItem(HS_KEY)) || 0; } catch (e) { return 0; } }
+    function maybeUpdateHigh(v) { if (v > getHigh()) { try { localStorage.setItem(HS_KEY, String(v)); } catch (e) { /* ignore */ } } }
+    infoBtn.addEventListener('click', () => { highScoreEl.textContent = getHigh(); infoModal.classList.add('show'); });
+    infoClose.addEventListener('click', () => infoModal.classList.remove('show'));
+    infoModal.addEventListener('click', (e) => { if (e.target === infoModal) infoModal.classList.remove('show'); });
 
     // Start in 1-player mode, medium difficulty, by default.
     setMode(1);

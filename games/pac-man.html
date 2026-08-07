@@ -149,11 +149,58 @@
       font-size: 0.72rem;
       color: var(--text);
     }
+
+    /* Info menu */
+    .info-btn {
+      float: right;
+      background: var(--cell);
+      color: var(--text);
+      border: none;
+      border-radius: 9px;
+      padding: 6px 12px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .info-btn:hover { opacity: 0.88; }
+    .modal {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.62);
+      z-index: 50;
+      padding: 20px;
+    }
+    .modal.show { display: flex; }
+    .modal-card {
+      background: var(--panel);
+      border-radius: 16px;
+      padding: 24px;
+      width: 100%;
+      max-width: 360px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    }
+    .modal-card h2 { margin-bottom: 10px; font-size: 1.25rem; }
+    .modal-card .how-to { color: #94a3b8; font-size: 0.9rem; line-height: 1.6; margin-bottom: 16px; }
+    .modal-card .highscore {
+      background: var(--cell);
+      border-radius: 10px;
+      padding: 12px;
+      text-align: center;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+    .modal-card .highscore span { color: var(--accent); font-size: 1.2rem; }
+    .modal-card .close-row { text-align: right; }
   </style>
 </head>
 <body>
   <main class="game">
     <a class="back-link" href="../index.html">&larr; Back to Alisha Arcade</a>
+    <button class="info-btn" id="infoBtn">ⓘ Info</button>
     <h1>Pac-Man</h1>
 
     <div class="hud">
@@ -178,6 +225,22 @@
     <div class="controls-help">
       Touch and drag on the board to steer Pac-Man &middot;
       or use <kbd>&larr;</kbd> <kbd>&uarr;</kbd> <kbd>&darr;</kbd> <kbd>&rarr;</kbd>
+    </div>
+
+    <div class="modal" id="infoModal">
+      <div class="modal-card">
+        <h2>How to Play</h2>
+        <p class="how-to">
+          Eat all the dots to clear the maze. Grab a <b style="color:#fde047">power
+          pellet</b> to turn the ghosts blue and chomp them for bonus points
+          (200 → 400 → 800 → 1600). Otherwise avoid the ghosts — you have 3
+          lives.<br><br>
+          <b>Controls:</b> touch and drag on the board to steer Pac-Man toward
+          your finger, or use the arrow keys.
+        </p>
+        <div class="highscore">Highest Score: <span id="highScore">0</span></div>
+        <div class="close-row"><button class="action" id="infoClose" style="padding:10px 20px;">Close</button></div>
+      </div>
     </div>
   </main>
 
@@ -521,6 +584,7 @@
     function endGame() {
       running = false; gameOver = true;
       cancelAnimationFrame(rafId);
+      maybeUpdateHigh(score);
       overlayTitle.textContent = 'Game Over';
       overlayText.innerHTML = `Final score: <strong>${score}</strong> &middot; Level ${level}`;
       overlayBtn.textContent = 'Play Again';
@@ -575,6 +639,18 @@
     boardWrap.addEventListener('dblclick', (e) => e.preventDefault());
 
     overlayBtn.addEventListener('click', startGame);
+
+    // --- Info menu & high score ---
+    const HS_KEY = 'pacman-highscore';
+    const infoBtn = document.getElementById('infoBtn');
+    const infoModal = document.getElementById('infoModal');
+    const infoClose = document.getElementById('infoClose');
+    const highScoreEl = document.getElementById('highScore');
+    function getHigh() { try { return Number(localStorage.getItem(HS_KEY)) || 0; } catch (e) { return 0; } }
+    function maybeUpdateHigh(v) { if (v > getHigh()) { try { localStorage.setItem(HS_KEY, String(v)); } catch (e) { /* ignore */ } } }
+    infoBtn.addEventListener('click', () => { highScoreEl.textContent = getHigh(); infoModal.classList.add('show'); });
+    infoClose.addEventListener('click', () => infoModal.classList.remove('show'));
+    infoModal.addEventListener('click', (e) => { if (e.target === infoModal) infoModal.classList.remove('show'); });
 
     // Draw an idle frame behind the start overlay.
     parseMaze();

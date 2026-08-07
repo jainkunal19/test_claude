@@ -75,6 +75,17 @@ page works standalone on GitHub Pages.
   reachable from `P` by flood fill. Entities move by tweening between tile
   centers (turns commit only at a center); ghosts chase by minimizing Manhattan
   distance to Pac and flee randomly while frightened (after a power pellet).
+- **Info menu (every game).** Each game has an `ⓘ Info` button
+  (`.info-btn`, floated right just after the back link) that opens a `.modal`
+  / `.modal-card` overlay with two things: a static **How to Play** section
+  (`.how-to`) describing the rules and controls, and a **Highest Score** read
+  from `localStorage`. Reuse the shared modal CSS block and the small JS
+  helper (`getHigh()` / `maybeUpdateHigh(v)`) — key storage per game as
+  `<game>-highscore`. Call `maybeUpdateHigh(...)` wherever a run's result is
+  known: the numeric score at game over for action games (Tetris, Mango,
+  Pac-Man), or the best win tally (`Math.max(...)` of the score counters) for
+  turn-based games (Tic Tac Toe, Connect 4). The modal reads the stored value
+  when opened and is dismissed by its Close button or a tap on the backdrop.
 
 ## Adding a new game
 
@@ -99,6 +110,11 @@ page works standalone on GitHub Pages.
    `.webp`), convert it to PNG rather than changing the reference — there's no
    `convert`/`ffmpeg` here, so use Pillow (`pip install Pillow`, then
    `Image.open(src).convert('RGBA').save(dst, 'PNG')`).
+4. Add the **Info menu** (see Conventions): copy the shared `.info-btn` /
+   `.modal` CSS, the button + modal markup, and the `getHigh()` /
+   `maybeUpdateHigh()` helper, then write a game-specific How-to-Play blurb,
+   use the `<game>-highscore` storage key, and call `maybeUpdateHigh(...)` at
+   the game's result point. Every game ships with this.
 
 ## Testing
 
