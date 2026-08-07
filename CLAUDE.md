@@ -18,6 +18,7 @@ games/
   connect-4.html         Connect 4 (1-player vs bot + 2-player)
   mango.html             Mango — pineapple laser-shooter (canvas arcade)
   pac-man.html           Pac-Man (maze, pellets, ghost AI)
+  racing.html            Racing (top-down race vs bot cars, placement scoring)
 images/
   tic-tac-toe.png        Game thumbnails (referenced by index.html)
   tetris.png
@@ -75,6 +76,13 @@ page works standalone on GitHub Pages.
   reachable from `P` by flood fill. Entities move by tweening between tile
   centers (turns commit only at a center); ghosts chase by minimizing Manhattan
   distance to Pac and flee randomly while frightened (after a power pellet).
+  **Racing** is a top-down racer: the player's car steers within the road
+  (drag or ← →, ↑/↓ throttle) while bot cars race alongside; the camera follows
+  the player's `progress` (world units == px), and cars are drawn relative to
+  it. Touching any car crashes (game over). Crossing the finish scores by
+  placement (1st = 10000, 2nd = 7000, 3rd = 3000, else 1000) and advances a
+  level that adds traffic plus `big` (slow, wide) and `aggressive` (swerve into
+  the player) bot types; score accumulates across levels.
 - **Info menu (every game).** Each game has an `ⓘ Info` button
   (`.info-btn`, floated right just after the back link) that opens a `.modal`
   / `.modal-card` overlay with two things: a static **How to Play** section
