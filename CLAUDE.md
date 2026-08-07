@@ -94,6 +94,12 @@ page works standalone on GitHub Pages.
   Pac-Man), or the best win tally (`Math.max(...)` of the score counters) for
   turn-based games (Tic Tac Toe, Connect 4). The modal reads the stored value
   when opened and is dismissed by its Close button or a tap on the backdrop.
+  **High scores are user data.** They live in `localStorage` (separate from the
+  service-worker cache, which never touches them) and persist across app/SW
+  version updates. Never rename a `<game>-highscore` key and never call
+  `localStorage.clear()`/`removeItem` on one — that would orphan a player's
+  best. `maybeUpdateHigh` must stay raise-only (write only when the new value
+  beats the stored one), so an update can never lower or reset a score.
 
 ## Adding a new game
 
