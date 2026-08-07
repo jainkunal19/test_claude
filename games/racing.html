@@ -221,8 +221,9 @@
     </div>
 
     <div class="controls-help">
-      <b>Drag</b> on the track to steer &middot; or <kbd>&larr;</kbd> <kbd>&rarr;</kbd>
-      &middot; <kbd>&uarr;</kbd>/<kbd>&darr;</kbd> throttle
+      <b>Drag</b> to steer &middot; drag <b>below</b> the car to brake, <b>above</b> to speed up
+      <br>
+      or <kbd>&larr;</kbd> <kbd>&rarr;</kbd> steer &middot; <kbd>&uarr;</kbd>/<kbd>&darr;</kbd> throttle
     </div>
 
     <div class="modal" id="infoModal">
@@ -235,8 +236,9 @@
           Each finish advances a level with more traffic, plus
           <b style="color:#f87171">aggressive cars</b> that swerve into you and
           slower <b>big rigs</b> that block the road.<br><br>
-          <b>Controls:</b> drag on the track to steer (or ← →), and ↑/↓ to speed
-          up or brake. Your score adds up across levels.
+          <b>Controls:</b> drag to steer, and drag below the car to brake or
+          above it to speed up (or use ← → and ↑/↓). Your score adds up across
+          levels.
         </p>
         <div class="highscore">Highest Score: <span id="highScore">0</span></div>
         <div class="close-row"><button class="action" id="infoClose" style="padding:10px 20px;">Close</button></div>
@@ -271,7 +273,7 @@
     let player, bots, level, score;
     let running, gameOver, phase; // phase: 'race' | 'done'
     let finishDist;
-    let leftHeld, rightHeld, upHeld, downHeld;
+    let leftHeld, rightHeld, upHeld, downHeld, touchAccel = 0; // touchAccel: -1 brake, 0 cruise, +1 boost
     let rafId, lastTime;
 
     function rand(a, b) { return a + Math.random() * (b - a); }
@@ -346,8 +348,8 @@
     function update(dt) {
       // --- Player throttle ---
       let target = 250 + (level - 1) * 8;
-      if (upHeld) target = 330 + (level - 1) * 8;
-      if (downHeld) target = 150;
+      if (upHeld || touchAccel > 0) target = 330 + (level - 1) * 8;
+      if (downHeld || touchAccel < 0) target = 150;
       player.speed += (target - player.speed) * Math.min(1, dt * 3);
       player.progress += player.speed * dt;
 
@@ -573,10 +575,22 @@
       else if (k === 'ArrowDown') downHeld = false;
     });
 
-    // Touch/drag steering
+    // Touch/drag: horizontal steers, vertical throttles.
+    // Drag below the car to brake/slow down, above it to speed up.
     function canvasX(e) {
       const rect = canvas.getBoundingClientRect();
       return ((e.clientX - rect.left) / rect.width) * W;
+    }
+    function canvasY(e) {
+      const rect = canvas.getBoundingClientRect();
+      return ((e.clientY - rect.top) / rect.height) * H;
+    }
+    function applyDrag(e) {
+      player.targetX = clampX(canvasX(e) - player.w / 2, player.w);
+      const y = canvasY(e);
+      if (y > PLAYER_SCREEN_Y + 30) touchAccel = -1;      // finger below the car -> brake
+      else if (y < PLAYER_SCREEN_Y - 30) touchAccel = 1;  // finger above the car -> accelerate
+      else touchAccel = 0;
     }
     let dragging = false;
     canvas.addEventListener('pointerdown', (e) => {
@@ -584,13 +598,13 @@
       e.preventDefault();
       dragging = true;
       if (canvas.setPointerCapture) canvas.setPointerCapture(e.pointerId);
-      player.targetX = clampX(canvasX(e) - player.w / 2, player.w);
+      applyDrag(e);
     });
     canvas.addEventListener('pointermove', (e) => {
-      if (dragging && running) player.targetX = clampX(canvasX(e) - player.w / 2, player.w);
+      if (dragging && running) applyDrag(e);
     });
-    canvas.addEventListener('pointerup', () => { dragging = false; });
-    canvas.addEventListener('pointercancel', () => { dragging = false; });
+    canvas.addEventListener('pointerup', () => { dragging = false; touchAccel = 0; });
+    canvas.addEventListener('pointercancel', () => { dragging = false; touchAccel = 0; });
 
     // Block double-tap zoom on the play area.
     const boardWrap = document.querySelector('.board-wrap');
