@@ -133,6 +133,24 @@ minimax bot) can be unit-tested in isolation the same way.
 
 Prefer verifying real gameplay in a browser when possible.
 
+## Installable web app (PWA / offline)
+
+The site is an installable web app: `manifest.json` + Apple/PWA meta tags in
+every page's `<head>`, square icons in `images/` (`apple-touch-icon.png`,
+`app-icon-192/512.png`), and a root **`service-worker.js`** that pre-caches the
+whole app for offline play. Each page registers the worker with a small inline
+`<script>` (root path from `index.html`, `../service-worker.js` from games).
+
+**Version strategy (important).** The worker uses "silent update on next
+launch" — it never calls `skipWaiting()`. Each version keeps its own cache
+bucket named by `CACHE_VERSION`; on activate it deletes all other buckets, so a
+new version fully replaces the old one. **Whenever you add or change any cached
+file (a game page, an image, the manifest), you MUST bump `CACHE_VERSION` in
+`service-worker.js` and add any new file to its `ASSETS` precache list** —
+otherwise clients keep serving the stale cached copy. Pages call
+`registration.update()` on load and on `visibilitychange`, so it checks for a
+new version on every launch/foreground.
+
 ## Hosting
 
 GitHub Pages serves the repo root. `index.html` is the entry point; games are
