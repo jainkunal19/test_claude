@@ -18,16 +18,28 @@
   try { swUrl = new URL('service-worker.js', document.currentScript.src).href; }
   catch (e) { swUrl = 'service-worker.js'; }
 
-  var refreshing = false;
-  navigator.serviceWorker.addEventListener('controllerchange', function () {
-    if (refreshing) return;
-    refreshing = true;
+  var reloaded = false;
+  function doReload() {
+    if (reloaded) return;
+    reloaded = true;
     window.location.reload();
-  });
+  }
+
+  // Chrome fires controllerchange when the new worker takes over; iOS
+  // standalone PWAs often don't, so this is only one of several reload paths.
+  navigator.serviceWorker.addEventListener('controllerchange', doReload);
 
   function activate(worker, btn) {
     if (btn) { btn.disabled = true; btn.textContent = 'Updating…'; }
-    worker.postMessage({ type: 'SKIP_WAITING' });
+    if (!worker) { doReload(); return; }
+    // Reload as soon as the new worker becomes active. This is the path that
+    // actually works on iOS home-screen apps (where controllerchange is
+    // unreliable); a timed fallback covers the case where neither fires.
+    worker.addEventListener('statechange', function () {
+      if (worker.state === 'activated') doReload();
+    });
+    try { worker.postMessage({ type: 'SKIP_WAITING' }); } catch (e) { /* ignore */ }
+    setTimeout(doReload, 2500);
   }
 
   // Non-blocking top bar — used when a new version turns up mid-session.
