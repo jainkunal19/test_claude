@@ -11,7 +11,8 @@ manager. Everything is plain HTML/CSS/JS served directly.
 ## Structure
 
 ```
-index.html               Landing page — grid of game cards (the arcade)
+index.html               Landing page — game grid + coin total + Shop link
+shop.html                Shop — spend arcade coins on accessories (scaffold)
 games/
   tic-tac-toe.html       Tic Tac Toe (1-player vs bot + 2-player)
   tetris.html            Tetris
@@ -100,6 +101,17 @@ page works standalone on GitHub Pages.
   `localStorage.clear()`/`removeItem` on one — that would orphan a player's
   best. `maybeUpdateHigh` must stay raise-only (write only when the new value
   beats the stored one), so an update can never lower or reset a score.
+- **Arcade wallet & Shop.** Points earned in every game accumulate into one
+  global coin balance in `localStorage` under `arcade-coins` (separate from the
+  per-game high scores, and — like them — never cleared by updates). Games call
+  the shared `addCoins(n)` helper when points are earned: the final score at
+  game over (Tetris, Mango, Pac-Man), each placement award (Racing), or 1000
+  per **human** win (Tic Tac Toe, Connect 4 — guarded by
+  `gameMode === 2 || winner === HUMAN` so bot wins don't pay). The landing page
+  shows the total top-right and links to `shop.html`, which reads the same
+  balance. Shop items are placeholders for now — accessories come later; a real
+  purchase should spend from `arcade-coins` and never reset it. New games must
+  add the `addCoins` helper and call it wherever they award points.
 
 ## Adding a new game
 

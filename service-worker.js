@@ -9,12 +9,13 @@
  * call skipWaiting(), so the new worker installs in the background and takes
  * over the next time the app is opened (never mid-game).
  */
-const CACHE_VERSION = 'alisha-arcade-v2';
+const CACHE_VERSION = 'alisha-arcade-v3';
 
 // Everything the app needs to run fully offline.
 const ASSETS = [
   './',
   './index.html',
+  './shop.html',
   './manifest.json',
   './games/tic-tac-toe.html',
   './games/tetris.html',

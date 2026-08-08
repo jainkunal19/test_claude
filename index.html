@@ -42,12 +42,12 @@
       background: radial-gradient(circle at top, #1e293b, var(--bg));
       color: var(--text);
       font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-      padding: 48px 20px 64px;
+      padding: 20px 20px 64px;
     }
 
     header {
       text-align: center;
-      margin-bottom: 48px;
+      margin-bottom: 40px;
     }
 
     h1 {
@@ -132,9 +132,57 @@
       font-size: 0.8rem;
       opacity: 0.7;
     }
+
+    /* Top bar: Shop menu (left) and the arcade coin total (right) */
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      max-width: 900px;
+      margin: 0 auto 28px;
+    }
+    .shop-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      text-decoration: none;
+      color: #1a1206;
+      background: linear-gradient(90deg, #fbbf24, #f59e0b);
+      font-weight: 700;
+      font-size: 0.95rem;
+      padding: 9px 16px;
+      border-radius: 12px;
+      box-shadow: 0 6px 18px rgba(245, 158, 11, 0.35);
+      transition: transform 0.12s ease, opacity 0.15s ease;
+    }
+    .shop-link:hover { transform: translateY(-1px); opacity: 0.95; }
+    .coins {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--card);
+      border-radius: 12px;
+      padding: 9px 16px;
+      font-weight: 800;
+      font-size: 1.05rem;
+    }
+    .coins .amount { color: #fbbf24; }
+    .coins .label {
+      font-size: 0.62rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--muted);
+      font-weight: 700;
+    }
   </style>
 </head>
 <body>
+  <div class="top-bar">
+    <a class="shop-link" href="shop.html">🛒 Shop</a>
+    <div class="coins">🪙 <span class="label">Coins</span> <span class="amount" id="coinTotal">0</span></div>
+  </div>
+
   <header>
     <h1>Alisha Arcade</h1>
     <p class="tagline">Pick a game and play!</p>
@@ -208,6 +256,22 @@
   </main>
 
   <footer>More games coming soon 🎮</footer>
+
+  <script>
+    // Show the arcade coin total (earned across all games) and keep it fresh
+    // when returning from a game.
+    (function () {
+      const el = document.getElementById('coinTotal');
+      function render() {
+        let v = 0;
+        try { v = Number(localStorage.getItem('arcade-coins')) || 0; } catch (e) { /* ignore */ }
+        el.textContent = v.toLocaleString();
+      }
+      render();
+      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') render(); });
+      window.addEventListener('pageshow', render);
+    })();
+  </script>
 
   <script>
     // Register the offline service worker (silent update on next launch).
