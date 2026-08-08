@@ -14,6 +14,7 @@
 (function (global) {
   var COINS_KEY = 'arcade-coins';
   var NAME_KEY = 'arcade-player-name';
+  var OWNED_KEY = 'arcade-owned';
 
   function num(v) { var n = Number(v); return isNaN(n) ? 0 : n; }
 
@@ -37,6 +38,28 @@
       n = Math.round(n) || 0;
       if (n <= 0) return;
       try { localStorage.setItem(COINS_KEY, String(Arcade.getCoins() + n)); } catch (e) { /* ignore */ }
+    },
+    // Spend from the wallet (clamped at 0).
+    spendCoins: function (n) {
+      n = Math.round(n) || 0;
+      if (n <= 0) return;
+      try { localStorage.setItem(COINS_KEY, String(Math.max(0, Arcade.getCoins() - n))); } catch (e) { /* ignore */ }
+    },
+    // Owned shop items (accessories), stored as a JSON array of item ids.
+    getOwned: function () {
+      try { var v = JSON.parse(localStorage.getItem(OWNED_KEY)); return Array.isArray(v) ? v : []; }
+      catch (e) { return []; }
+    },
+    owns: function (id) { return Arcade.getOwned().indexOf(id) !== -1; },
+    // Attempt a purchase. Returns 'ok' | 'owned' | 'insufficient'.
+    buy: function (id, cost) {
+      if (Arcade.owns(id)) return 'owned';
+      if (Arcade.getCoins() < cost) return 'insufficient';
+      Arcade.spendCoins(cost);
+      var owned = Arcade.getOwned();
+      owned.push(id);
+      try { localStorage.setItem(OWNED_KEY, JSON.stringify(owned)); } catch (e) { /* ignore */ }
+      return 'ok';
     },
     getHigh: function (key) {
       try { return num(localStorage.getItem(key)); } catch (e) { return 0; }

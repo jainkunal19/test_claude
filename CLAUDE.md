@@ -116,9 +116,17 @@ still works.
   per **human** win (Tic Tac Toe, Connect 4 — guarded by
   `gameMode === 2 || winner === HUMAN` so bot wins don't pay). The landing page
   shows the total top-right and links to `shop.html`, which reads the same
-  balance. Shop items are placeholders for now — accessories come later; a real
-  purchase should spend from `arcade-coins` and never reset it. New games must
-  add the `addCoins` helper and call it wherever they award points.
+  balance. New games must call `Arcade.addCoins(...)` wherever they award points.
+- **Shop purchases & accessories.** Real purchases go through `Arcade.buy(id,
+  cost)` → `'ok'|'owned'|'insufficient'` (spends from `arcade-coins`, records
+  the id in the `arcade-owned` JSON list); check ownership with
+  `Arcade.owns(id)`. Shop cards with `data-id`/`data-price` are wired up
+  automatically in `shop.html`. Games read their accessories at start with
+  `Arcade.owns(id)` and apply the effect. Example: Racing's `racing-front-bumper`
+  / `racing-left-bumper` / `racing-right-bumper` (20000 each, bought separately) —
+  each bumper absorbs a hit on its own side (`impactDir` classifies
+  front/left/right/rear) without crashing, and is drawn on the car. Never clear
+  `arcade-owned` or `arcade-coins` on an update.
 - **Player name.** `Arcade.getName()` / `Arcade.setName()` store an optional
   name (`arcade-player-name`), set via the ⚙️ settings dialog on the landing
   page. Games that address the human as "You"/"Player 1" (Tic Tac Toe, Connect
