@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Shop &middot; Alisha Arcade</title>
+  <meta name="description" content="Spend the coins you earn across Alisha Arcade games on accessories.">
+
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="Alisha Arcade">
+  <link rel="apple-touch-icon" href="images/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="images/app-icon-192.png">
+
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #1e293b;
+      --card: #334155;
+      --card-hover: #3f4d63;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --accent: #a78bfa;
+      --gold: #fbbf24;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      background: radial-gradient(circle at top, #1e293b, var(--bg));
+      color: var(--text);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      padding: 20px 20px 64px;
+    }
+
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      max-width: 900px;
+      margin: 0 auto 28px;
+    }
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.95rem;
+      font-weight: 700;
+      opacity: 0.9;
+    }
+    .back-link:hover { opacity: 1; }
+    .coins {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--card);
+      border-radius: 12px;
+      padding: 9px 16px;
+      font-weight: 800;
+      font-size: 1.05rem;
+    }
+    .coins .amount { color: var(--gold); }
+    .coins .label {
+      font-size: 0.62rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    header { text-align: center; margin-bottom: 36px; }
+    h1 {
+      font-size: clamp(2.2rem, 7vw, 3.2rem);
+      font-weight: 800;
+      letter-spacing: -1px;
+      background: linear-gradient(90deg, var(--gold), #f97316, var(--gold));
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .tagline { margin-top: 10px; color: var(--muted); font-size: 1.05rem; }
+
+    .shop-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 20px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .item {
+      background: var(--panel);
+      border-radius: 18px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      position: relative;
+      overflow: hidden;
+    }
+    .item .icon { font-size: 2.6rem; line-height: 1; }
+    .item .name { font-size: 1.1rem; font-weight: 700; }
+    .item .for { font-size: 0.78rem; color: var(--muted); }
+    .item .price {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 800;
+      color: var(--gold);
+      margin-top: 2px;
+    }
+    .item button {
+      margin-top: 8px;
+      padding: 11px;
+      border: none;
+      border-radius: 12px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: not-allowed;
+      color: var(--muted);
+      background: var(--card);
+    }
+    .item .soon {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      font-size: 0.62rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 700;
+      color: #1a1206;
+      background: var(--gold);
+      padding: 4px 8px;
+      border-radius: 999px;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 48px;
+      color: var(--muted);
+      font-size: 0.85rem;
+      opacity: 0.8;
+    }
+  </style>
+</head>
+<body>
+  <div class="top-bar">
+    <a class="back-link" href="index.html">&larr; Back to Arcade</a>
+    <div class="coins">🪙 <span class="label">Coins</span> <span class="amount" id="coinTotal">0</span></div>
+  </div>
+
+  <header>
+    <h1>🛒 Shop</h1>
+    <p class="tagline">Earn coins by playing — spend them on game accessories.</p>
+  </header>
+
+  <main class="shop-grid" id="shopGrid">
+    <!-- Placeholder catalog. Real items (game accessories) are added later. -->
+    <div class="item">
+      <span class="soon">Coming soon</span>
+      <span class="icon">🏎️</span>
+      <span class="name">Neon Car Skins</span>
+      <span class="for">for Racing</span>
+      <span class="price">🪙 5,000</span>
+      <button disabled>Coming soon</button>
+    </div>
+    <div class="item">
+      <span class="soon">Coming soon</span>
+      <span class="icon">⚡</span>
+      <span class="name">Turbo Boost</span>
+      <span class="for">for Racing</span>
+      <span class="price">🪙 3,000</span>
+      <button disabled>Coming soon</button>
+    </div>
+    <div class="item">
+      <span class="soon">Coming soon</span>
+      <span class="icon">🥭</span>
+      <span class="name">Golden Blaster</span>
+      <span class="for">for Mango</span>
+      <span class="price">🪙 4,000</span>
+      <button disabled>Coming soon</button>
+    </div>
+    <div class="item">
+      <span class="soon">Coming soon</span>
+      <span class="icon">👻</span>
+      <span class="name">Ghost Skin Pack</span>
+      <span class="for">for Pac-Man</span>
+      <span class="price">🪙 3,500</span>
+      <button disabled>Coming soon</button>
+    </div>
+    <div class="item">
+      <span class="soon">Coming soon</span>
+      <span class="icon">🧱</span>
+      <span class="name">Retro Block Theme</span>
+      <span class="for">for Tetris</span>
+      <span class="price">🪙 2,500</span>
+      <button disabled>Coming soon</button>
+    </div>
+    <div class="item">
+      <span class="soon">Coming soon</span>
+      <span class="icon">🎨</span>
+      <span class="name">Board Themes</span>
+      <span class="for">for Tic Tac Toe &amp; Connect 4</span>
+      <span class="price">🪙 2,000</span>
+      <button disabled>Coming soon</button>
+    </div>
+  </main>
+
+  <footer>More accessories are on the way — keep stacking those coins! 🪙</footer>
+
+  <script>
+    // Show the arcade coin total (earned across all games).
+    (function () {
+      const el = document.getElementById('coinTotal');
+      function render() {
+        let v = 0;
+        try { v = Number(localStorage.getItem('arcade-coins')) || 0; } catch (e) { /* ignore */ }
+        el.textContent = v.toLocaleString();
+      }
+      render();
+      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') render(); });
+      window.addEventListener('pageshow', render);
+    })();
+  </script>
+
+  <script>
+    // Register the offline service worker (silent update on next launch).
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('service-worker.js').then((reg) => {
+          reg.update();
+          document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') reg.update();
+          });
+        }).catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>

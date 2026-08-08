@@ -556,6 +556,7 @@
       gameOver = true;
       cancelAnimationFrame(rafId);
       maybeUpdateHigh(score);
+      addCoins(score);
       overlayTitle.textContent = 'Game Over';
       overlayText.textContent = `Score: ${score} · Lines: ${lines}`;
       overlayBtn.textContent = 'Play Again';
@@ -668,6 +669,8 @@
     const highScoreEl = document.getElementById('highScore');
     function getHigh() { try { return Number(localStorage.getItem(HS_KEY)) || 0; } catch (e) { return 0; } }
     function maybeUpdateHigh(v) { if (v > getHigh()) { try { localStorage.setItem(HS_KEY, String(v)); } catch (e) { /* ignore */ } } }
+    // Arcade wallet: earned points accumulate across all games (spendable in the Shop).
+    function addCoins(n) { n = Math.round(n) || 0; if (n <= 0) return; try { localStorage.setItem('arcade-coins', String((Number(localStorage.getItem('arcade-coins')) || 0) + n)); } catch (e) { /* ignore */ } }
     infoBtn.addEventListener('click', () => { highScoreEl.textContent = getHigh(); infoModal.classList.add('show'); });
     infoClose.addEventListener('click', () => infoModal.classList.remove('show'));
     infoModal.addEventListener('click', (e) => { if (e.target === infoModal) infoModal.classList.remove('show'); });

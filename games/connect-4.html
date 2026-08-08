@@ -288,8 +288,9 @@
           of your color in a row (horizontal, vertical, or diagonal) to win. In
           1-player mode you are red and move first against the bot (Easy, Medium,
           or Hard); 2-player mode is Red vs Yellow.<br><br>
-          <b>Highest Score</b> is the most wins reached in a single run (it
-          resets when you Reset Scores or switch mode, but the best is kept).
+          Each win is worth <b>1000 points</b>. <b>Highest Score</b> is your best
+          points total in a run (wins reset when you Reset Scores or switch mode,
+          but the best is kept).
         </p>
         <div class="highscore">Highest Score: <span id="highScore">0</span></div>
         <div class="close-row"><button class="action btn-new" id="infoClose" style="flex:none; padding:10px 20px;">Close</button></div>
@@ -442,12 +443,13 @@
         } else {
           statusEl.textContent = winner === 'R' ? 'Red wins! 🎉' : 'Yellow wins! 🎉';
         }
+        if (gameMode === 2 || winner === HUMAN) addCoins(1000); // your win earns arcade coins
       } else {
         scores.draw++;
         scoreEls.draw.textContent = scores.draw;
         statusEl.textContent = "It's a draw!";
       }
-      maybeUpdateHigh(Math.max(scores.R, scores.Y));
+      maybeUpdateHigh(Math.max(scores.R, scores.Y) * 1000); // 1000 points per win
     }
 
     // --- Bot: alpha-beta minimax with a positional heuristic ---
@@ -613,6 +615,8 @@
     const highScoreEl = document.getElementById('highScore');
     function getHigh() { try { return Number(localStorage.getItem(HS_KEY)) || 0; } catch (e) { return 0; } }
     function maybeUpdateHigh(v) { if (v > getHigh()) { try { localStorage.setItem(HS_KEY, String(v)); } catch (e) { /* ignore */ } } }
+    // Arcade wallet: earned points accumulate across all games (spendable in the Shop).
+    function addCoins(n) { n = Math.round(n) || 0; if (n <= 0) return; try { localStorage.setItem('arcade-coins', String((Number(localStorage.getItem('arcade-coins')) || 0) + n)); } catch (e) { /* ignore */ } }
     infoBtn.addEventListener('click', () => { highScoreEl.textContent = getHigh(); infoModal.classList.add('show'); });
     infoClose.addEventListener('click', () => infoModal.classList.remove('show'));
     infoModal.addEventListener('click', (e) => { if (e.target === infoModal) infoModal.classList.remove('show'); });

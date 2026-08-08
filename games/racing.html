@@ -248,7 +248,7 @@
           finishing outside the top 3) uses up one of your <b>3 retries</b> for
           the level; run out and it's game over. Cross the finish line and you
           score by your placing:
-          <b>1st = 10,000</b>, 2nd = 7,000, 3rd = 3,000, anything lower = 1,000.
+          <b>1st = 1,000</b>, 2nd = 700, 3rd = 500, anything lower = 100.
           Only the <b>top 3</b> finishers advance to the next level (finish 4th
           or lower and the run ends). Each level adds more traffic, plus
           <b style="color:#f87171">aggressive cars</b> that swerve into you and
@@ -711,10 +711,11 @@
     function finishRace() {
       running = false;
       const rank = liveRank();
-      const gained = rank === 1 ? 10000 : rank === 2 ? 7000 : rank === 3 ? 3000 : 1000;
+      const gained = rank === 1 ? 1000 : rank === 2 ? 700 : rank === 3 ? 500 : 100;
       score += gained;
       updateHud();
       maybeUpdateHigh(score);
+      addCoins(gained);
       cancelAnimationFrame(rafId);
       draw();
       if (rank <= 3) {
@@ -814,6 +815,8 @@
     const highScoreEl = document.getElementById('highScore');
     function getHigh() { try { return Number(localStorage.getItem(HS_KEY)) || 0; } catch (e) { return 0; } }
     function maybeUpdateHigh(v) { if (v > getHigh()) { try { localStorage.setItem(HS_KEY, String(v)); } catch (e) { /* ignore */ } } }
+    // Arcade wallet: earned points accumulate across all games (spendable in the Shop).
+    function addCoins(n) { n = Math.round(n) || 0; if (n <= 0) return; try { localStorage.setItem('arcade-coins', String((Number(localStorage.getItem('arcade-coins')) || 0) + n)); } catch (e) { /* ignore */ } }
     infoBtn.addEventListener('click', () => { highScoreEl.textContent = getHigh(); infoModal.classList.add('show'); });
     infoClose.addEventListener('click', () => infoModal.classList.remove('show'));
     infoModal.addEventListener('click', (e) => { if (e.target === infoModal) infoModal.classList.remove('show'); });

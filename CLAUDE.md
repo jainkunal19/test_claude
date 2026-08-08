@@ -11,7 +11,8 @@ manager. Everything is plain HTML/CSS/JS served directly.
 ## Structure
 
 ```
-index.html               Landing page — grid of game cards (the arcade)
+index.html               Landing page — game grid + coin total + Shop link
+shop.html                Shop — spend arcade coins on accessories (scaffold)
 games/
   tic-tac-toe.html       Tic Tac Toe (1-player vs bot + 2-player)
   tetris.html            Tetris
@@ -80,7 +81,7 @@ page works standalone on GitHub Pages.
   (drag or ← →, ↑/↓ throttle) while bot cars race alongside; the camera follows
   the player's `progress` (world units == px), and cars are drawn relative to
   it. Touching any car crashes (game over). Crossing the finish scores by
-  placement (1st = 10000, 2nd = 7000, 3rd = 3000, else 1000) and advances a
+  placement (1st = 1000, 2nd = 700, 3rd = 500, else 100) and advances a
   level that adds traffic plus `big` (slow, wide) and `aggressive` (swerve into
   the player) bot types; score accumulates across levels.
 - **Info menu (every game).** Each game has an `ⓘ Info` button
@@ -91,8 +92,8 @@ page works standalone on GitHub Pages.
   helper (`getHigh()` / `maybeUpdateHigh(v)`) — key storage per game as
   `<game>-highscore`. Call `maybeUpdateHigh(...)` wherever a run's result is
   known: the numeric score at game over for action games (Tetris, Mango,
-  Pac-Man), or the best win tally (`Math.max(...)` of the score counters) for
-  turn-based games (Tic Tac Toe, Connect 4). The modal reads the stored value
+  Pac-Man), or 1000 points per win (`Math.max(...)` of the win counters × 1000)
+  for turn-based games (Tic Tac Toe, Connect 4). The modal reads the stored value
   when opened and is dismissed by its Close button or a tap on the backdrop.
   **High scores are user data.** They live in `localStorage` (separate from the
   service-worker cache, which never touches them) and persist across app/SW
@@ -100,6 +101,17 @@ page works standalone on GitHub Pages.
   `localStorage.clear()`/`removeItem` on one — that would orphan a player's
   best. `maybeUpdateHigh` must stay raise-only (write only when the new value
   beats the stored one), so an update can never lower or reset a score.
+- **Arcade wallet & Shop.** Points earned in every game accumulate into one
+  global coin balance in `localStorage` under `arcade-coins` (separate from the
+  per-game high scores, and — like them — never cleared by updates). Games call
+  the shared `addCoins(n)` helper when points are earned: the final score at
+  game over (Tetris, Mango, Pac-Man), each placement award (Racing), or 1000
+  per **human** win (Tic Tac Toe, Connect 4 — guarded by
+  `gameMode === 2 || winner === HUMAN` so bot wins don't pay). The landing page
+  shows the total top-right and links to `shop.html`, which reads the same
+  balance. Shop items are placeholders for now — accessories come later; a real
+  purchase should spend from `arcade-coins` and never reset it. New games must
+  add the `addCoins` helper and call it wherever they award points.
 
 ## Adding a new game
 
