@@ -159,15 +159,21 @@ every page's `<head>`, square icons in `images/` (`apple-touch-icon.png`,
 whole app for offline play. Each page registers the worker with a small inline
 `<script>` (root path from `index.html`, `../service-worker.js` from games).
 
-**Version strategy (important).** The worker uses "silent update on next
-launch" — it never calls `skipWaiting()`. Each version keeps its own cache
-bucket named by `CACHE_VERSION`; on activate it deletes all other buckets, so a
-new version fully replaces the old one. **Whenever you add or change any cached
-file (a game page, an image, the manifest), you MUST bump `CACHE_VERSION` in
+**Version strategy (important).** Each version keeps its own cache bucket named
+by `CACHE_VERSION`; on activate it deletes all other buckets, so a new version
+fully replaces the old one. **Whenever you add or change any cached file (a
+game/shop page, an image, the manifest), you MUST bump `CACHE_VERSION` in
 `service-worker.js` and add any new file to its `ASSETS` precache list** —
-otherwise clients keep serving the stale cached copy. Pages call
-`registration.update()` on load and on `visibilitychange`, so it checks for a
-new version on every launch/foreground.
+otherwise clients keep serving the stale copy.
+
+Updates are **user-triggered**: each page checks for a new version at startup
+(`registration.update()`), and when a new worker finishes installing and is
+waiting, the page injects a fixed **"Update available"** bar at the top. Tapping
+it posts `{type:'SKIP_WAITING'}` to the waiting worker (which calls
+`self.skipWaiting()`); the resulting `controllerchange` reloads the page onto
+the new version. First install and same-version navigation never show the bar
+(guarded by `navigator.serviceWorker.controller`). The update bar UI is created
+in JS by the registration snippet, so it needs no per-page HTML/CSS.
 
 ## Hosting
 

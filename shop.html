@@ -231,16 +231,48 @@
   </script>
 
   <script>
-    // Register the offline service worker (silent update on next launch).
+    // Offline service worker + "Update available" button.
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('service-worker.js').then((reg) => {
-          reg.update();
-          document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible') reg.update();
+      (function () {
+        let refreshing = false;
+        navigator.serviceWorker.addEventListener('controllerchange', function () {
+          if (refreshing) return;
+          refreshing = true;
+          window.location.reload();
+        });
+
+        function showUpdateBar(worker) {
+          if (document.getElementById('sw-update-bar')) return;
+          var bar = document.createElement('button');
+          bar.id = 'sw-update-bar';
+          bar.type = 'button';
+          bar.textContent = '🔄 Update available — tap to update';
+          bar.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;border:none;cursor:pointer;' +
+            'padding:calc(env(safe-area-inset-top, 0px) + 10px) 16px 10px;' +
+            'font:700 0.9rem system-ui,-apple-system,sans-serif;color:#1a1206;' +
+            'background:linear-gradient(90deg,#fbbf24,#f59e0b);box-shadow:0 2px 14px rgba(0,0,0,0.4);';
+          bar.addEventListener('click', function () {
+            bar.disabled = true;
+            bar.textContent = 'Updating…';
+            worker.postMessage({ type: 'SKIP_WAITING' });
           });
-        }).catch(() => {});
-      });
+          document.body.appendChild(bar);
+        }
+
+        window.addEventListener('load', function () {
+          navigator.serviceWorker.register('service-worker.js').then(function (reg) {
+            if (reg.waiting && navigator.serviceWorker.controller) showUpdateBar(reg.waiting);
+            reg.addEventListener('updatefound', function () {
+              var nw = reg.installing;
+              if (!nw) return;
+              nw.addEventListener('statechange', function () {
+                if (nw.state === 'installed' && navigator.serviceWorker.controller) showUpdateBar(nw);
+              });
+            });
+            reg.update();
+          }).catch(function () {});
+        });
+      })();
     }
   </script>
 </body>

@@ -5,11 +5,12 @@
  * Each version uses its own cache bucket; on activate we delete all other
  * buckets, so a new version fully replaces the old one (no stale files).
  *
- * Update behavior: "silent — apply on next launch". We deliberately do NOT
- * call skipWaiting(), so the new worker installs in the background and takes
- * over the next time the app is opened (never mid-game).
+ * Update behavior: "user-triggered". A new worker installs in the background
+ * and waits; each page checks for it at startup and shows an "Update" button.
+ * When the user taps it, the page posts SKIP_WAITING (below) so the new worker
+ * activates immediately, then the page reloads onto the new version.
  */
-const CACHE_VERSION = 'alisha-arcade-v3';
+const CACHE_VERSION = 'alisha-arcade-v4';
 
 // Everything the app needs to run fully offline.
 const ASSETS = [
@@ -34,6 +35,11 @@ const ASSETS = [
   './images/app-icon-512.png',
   './images/app-banner.jpg'
 ];
+
+// When the page tells us to (user tapped "Update"), activate immediately.
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
+});
 
 // Pre-cache the app shell on install.
 self.addEventListener('install', (event) => {
