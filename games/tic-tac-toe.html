@@ -281,8 +281,9 @@
           in a row — horizontally, vertically, or diagonally — to win. In
           1-player mode you are X and move first against the bot (Easy, Medium,
           or Hard); 2-player mode is hot-seat X vs O.<br><br>
-          <b>Highest Score</b> is the most wins reached in a single run (it
-          resets when you Reset Scores or switch mode, but the best is kept).
+          Each win is worth <b>1000 points</b>. <b>Highest Score</b> is your best
+          points total in a run (wins reset when you Reset Scores or switch mode,
+          but the best is kept).
         </p>
         <div class="highscore">Highest Score: <span id="highScore">0</span></div>
         <div class="close-row"><button class="action btn-new" id="infoClose" style="flex:none; padding:10px 20px;">Close</button></div>
@@ -395,7 +396,7 @@
         scoreEls.draw.textContent = scores.draw;
         statusEl.textContent = "It's a draw!";
       }
-      maybeUpdateHigh(Math.max(scores.X, scores.O));
+      maybeUpdateHigh(Math.max(scores.X, scores.O) * 1000); // 1000 points per win
     }
 
     // --- Bot: unbeatable minimax play ---

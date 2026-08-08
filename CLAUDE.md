@@ -80,7 +80,7 @@ page works standalone on GitHub Pages.
   (drag or ← →, ↑/↓ throttle) while bot cars race alongside; the camera follows
   the player's `progress` (world units == px), and cars are drawn relative to
   it. Touching any car crashes (game over). Crossing the finish scores by
-  placement (1st = 10000, 2nd = 7000, 3rd = 3000, else 1000) and advances a
+  placement (1st = 1000, 2nd = 700, 3rd = 500, else 100) and advances a
   level that adds traffic plus `big` (slow, wide) and `aggressive` (swerve into
   the player) bot types; score accumulates across levels.
 - **Info menu (every game).** Each game has an `ⓘ Info` button
@@ -91,8 +91,8 @@ page works standalone on GitHub Pages.
   helper (`getHigh()` / `maybeUpdateHigh(v)`) — key storage per game as
   `<game>-highscore`. Call `maybeUpdateHigh(...)` wherever a run's result is
   known: the numeric score at game over for action games (Tetris, Mango,
-  Pac-Man), or the best win tally (`Math.max(...)` of the score counters) for
-  turn-based games (Tic Tac Toe, Connect 4). The modal reads the stored value
+  Pac-Man), or 1000 points per win (`Math.max(...)` of the win counters × 1000)
+  for turn-based games (Tic Tac Toe, Connect 4). The modal reads the stored value
   when opened and is dismissed by its Close button or a tap on the backdrop.
   **High scores are user data.** They live in `localStorage` (separate from the
   service-worker cache, which never touches them) and persist across app/SW
