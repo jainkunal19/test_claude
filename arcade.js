@@ -13,10 +13,22 @@
  */
 (function (global) {
   var COINS_KEY = 'arcade-coins';
+  var NAME_KEY = 'arcade-player-name';
 
   function num(v) { var n = Number(v); return isNaN(n) ? 0 : n; }
 
   var Arcade = {
+    // Player's chosen name (set on the arcade landing page). '' if unset.
+    getName: function () {
+      try { return (localStorage.getItem(NAME_KEY) || '').trim(); } catch (e) { return ''; }
+    },
+    setName: function (v) {
+      v = (v || '').trim().slice(0, 20);
+      try {
+        if (v) localStorage.setItem(NAME_KEY, v);
+        else localStorage.removeItem(NAME_KEY);
+      } catch (e) { /* ignore */ }
+    },
     getCoins: function () {
       try { return num(localStorage.getItem(COINS_KEY)); } catch (e) { return 0; }
     },

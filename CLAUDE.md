@@ -119,6 +119,11 @@ still works.
   balance. Shop items are placeholders for now — accessories come later; a real
   purchase should spend from `arcade-coins` and never reset it. New games must
   add the `addCoins` helper and call it wherever they award points.
+- **Player name.** `Arcade.getName()` / `Arcade.setName()` store an optional
+  name (`arcade-player-name`), set via the ⚙️ settings dialog on the landing
+  page. Games that address the human as "You"/"Player 1" (Tic Tac Toe, Connect
+  4) use it in the scoreboard labels, turn status, and win messages, falling
+  back to the defaults ("You" in 1P, "Player X"/"Red" in 2P) when it's unset.
 
 ## Adding a new game
 

@@ -133,6 +133,7 @@
       font-size: 0.8rem;
       opacity: 0.7;
     }
+    footer .version { display: block; margin-top: 6px; font-size: 0.72rem; opacity: 0.8; }
 
     /* Top bar: Shop menu (left) and the arcade coin total (right) */
     .top-bar {
@@ -176,18 +177,92 @@
       color: var(--muted);
       font-weight: 700;
     }
+
+    .right-group { display: inline-flex; align-items: center; gap: 10px; }
+    .icon-btn {
+      background: var(--card);
+      border: none;
+      border-radius: 12px;
+      padding: 8px 12px;
+      font-size: 1.15rem;
+      line-height: 1;
+      cursor: pointer;
+      color: var(--text);
+      transition: transform 0.12s ease, background 0.15s ease;
+    }
+    .icon-btn:hover { transform: translateY(-1px); background: var(--card-hover); }
+
+    /* Settings modal */
+    .modal {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.62);
+      z-index: 100;
+      padding: 20px;
+    }
+    .modal.show { display: flex; }
+    .modal-card {
+      background: var(--panel);
+      border-radius: 16px;
+      padding: 24px;
+      width: 100%;
+      max-width: 340px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    }
+    .modal-card h2 { font-size: 1.25rem; margin-bottom: 6px; }
+    .modal-card .hint { color: var(--muted); font-size: 0.85rem; margin-bottom: 14px; }
+    .modal-card input {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid var(--card);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 1rem;
+      outline: none;
+    }
+    .modal-card input:focus { border-color: var(--accent); }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
+    .modal-actions button {
+      padding: 10px 18px;
+      border: none;
+      border-radius: 12px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .btn-primary { color: #1a1206; background: linear-gradient(90deg, #a78bfa, #7c5cff); }
+    .btn-ghost { color: var(--muted); background: transparent; }
   </style>
 </head>
 <body>
   <div class="top-bar">
     <a class="shop-link" href="shop.html">🛒 Shop</a>
-    <div class="coins">🪙 <span class="label">Coins</span> <span class="amount" id="coinTotal">0</span></div>
+    <div class="right-group">
+      <div class="coins">🪙 <span class="label">Coins</span> <span class="amount" id="coinTotal">0</span></div>
+      <button class="icon-btn" id="settingsBtn" aria-label="Settings" title="Settings">⚙️</button>
+    </div>
   </div>
 
   <header>
     <h1>Alisha Arcade</h1>
-    <p class="tagline">Pick a game and play!</p>
+    <p class="tagline" id="tagline">Pick a game and play!</p>
   </header>
+
+  <div class="modal" id="settingsModal">
+    <div class="modal-card">
+      <h2>Your name</h2>
+      <p class="hint">Used in games in place of "You" / "Player 1".</p>
+      <input id="nameInput" type="text" maxlength="20" placeholder="Enter your name" autocomplete="off">
+      <div class="modal-actions">
+        <button class="btn-ghost" id="nameCancel">Cancel</button>
+        <button class="btn-primary" id="nameSave">Save</button>
+      </div>
+    </div>
+  </div>
 
   <main class="games-grid">
     <a class="game-card" href="games/tic-tac-toe.html">
@@ -256,17 +331,55 @@
     -->
   </main>
 
-  <footer>More games coming soon 🎮</footer>
+  <footer>
+    More games coming soon 🎮
+    <span class="version" id="appVersion"></span>
+  </footer>
 
   <script>
     // Show the arcade coin total (earned across all games) and keep it fresh
     // when returning from a game.
     (function () {
-      const el = document.getElementById('coinTotal');
-      function render() { el.textContent = Arcade.getCoins().toLocaleString(); }
-      render();
-      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') render(); });
-      window.addEventListener('pageshow', render);
+      const coinEl = document.getElementById('coinTotal');
+      const tagline = document.getElementById('tagline');
+      function renderCoins() { coinEl.textContent = Arcade.getCoins().toLocaleString(); }
+      function renderGreeting() {
+        const n = Arcade.getName();
+        tagline.textContent = n ? ('Hi ' + n + '! Pick a game and play!') : 'Pick a game and play!';
+      }
+      renderCoins();
+      renderGreeting();
+      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') renderCoins(); });
+      window.addEventListener('pageshow', renderCoins);
+
+      // Settings: player name
+      const settingsBtn = document.getElementById('settingsBtn');
+      const modal = document.getElementById('settingsModal');
+      const input = document.getElementById('nameInput');
+      const saveBtn = document.getElementById('nameSave');
+      const cancelBtn = document.getElementById('nameCancel');
+      function openSettings() { input.value = Arcade.getName(); modal.classList.add('show'); setTimeout(() => input.focus(), 50); }
+      function closeSettings() { modal.classList.remove('show'); }
+      function save() { Arcade.setName(input.value); renderGreeting(); closeSettings(); }
+      settingsBtn.addEventListener('click', openSettings);
+      cancelBtn.addEventListener('click', closeSettings);
+      saveBtn.addEventListener('click', save);
+      input.addEventListener('keydown', (e) => { if (e.key === 'Enter') save(); });
+      modal.addEventListener('click', (e) => { if (e.target === modal) closeSettings(); });
+
+      // App version in the footer — read from the active service-worker cache
+      // bucket (named "alisha-arcade-vN"), so it always matches CACHE_VERSION.
+      const vEl = document.getElementById('appVersion');
+      if (vEl && 'caches' in window) {
+        caches.keys().then((keys) => {
+          const vers = keys
+            .filter((k) => k.indexOf('alisha-arcade-') === 0)
+            .map((k) => k.replace('alisha-arcade-', ''));
+          if (!vers.length) return;
+          vers.sort((a, b) => (parseInt(b.slice(1), 10) || 0) - (parseInt(a.slice(1), 10) || 0));
+          vEl.textContent = 'Version ' + vers[0];
+        }).catch(() => {});
+      }
     })();
   </script>
 
