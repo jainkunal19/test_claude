@@ -102,9 +102,12 @@
       background: #14532d;
       border-radius: 12px;
       display: block;
-      width: 100%;
-      max-width: 360px;
+      /* Biggest board that fits both the width and the height of the screen. */
+      width: min(96vw, 460px); /* fallback if svh unsupported */
+      width: min(96vw, 460px, calc((100svh - 225px) * (360 / 560)));
       height: auto;
+      aspect-ratio: 360 / 560;
+      margin: 0 auto;
       touch-action: none;
     }
 
