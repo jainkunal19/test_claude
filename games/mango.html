@@ -96,19 +96,23 @@
     }
     .stat .value { font-size: 1.15rem; font-weight: 700; }
 
-    .board-wrap { position: relative; }
+    /* Size the wrapper (bounded by the panel width via 100%, not the viewport)
+       to the biggest board that fits both width and height; the canvas fills it. */
+    .board-wrap {
+      position: relative;
+      width: min(100%, 460px); /* fallback if svh unsupported */
+      width: min(100%, 460px, calc((100svh - 215px) * (360 / 540)));
+      margin: 0 auto;
+    }
     .board-wrap, .overlay { touch-action: manipulation; }
 
     canvas#board {
       background: linear-gradient(#0e1a33, var(--sky));
       border-radius: 12px;
       display: block;
-      /* Biggest board that fits both the width and the height of the screen. */
-      width: min(96vw, 460px); /* fallback if svh unsupported */
-      width: min(96vw, 460px, calc((100svh - 215px) * (360 / 540)));
+      width: 100%;
       height: auto;
       aspect-ratio: 360 / 540;
-      margin: 0 auto;
       touch-action: none;
       cursor: crosshair;
     }
