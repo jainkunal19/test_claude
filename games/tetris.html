@@ -89,7 +89,8 @@
       background: #0b1120;
       border-radius: 10px;
       display: block;
-      height: min(640px, 72vh);
+      height: min(700px, 72vh); /* fallback if svh unsupported */
+      height: min(700px, 76svh);
       width: auto;
       aspect-ratio: 1 / 2;
       touch-action: none;

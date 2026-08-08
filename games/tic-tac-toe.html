@@ -40,10 +40,10 @@
     .game {
       background: var(--panel);
       border-radius: 20px;
-      padding: 32px;
+      padding: 18px 20px;
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
       width: 100%;
-      max-width: 420px;
+      max-width: 470px;
     }
 
     .back-link {
@@ -111,6 +111,10 @@
       grid-template-rows: repeat(3, 1fr);
       gap: 10px;
       aspect-ratio: 1 / 1;
+      /* Don't let the square board push the page taller than the screen. */
+      max-width: 100%; /* fallback if svh unsupported */
+      max-width: min(100%, calc(100svh - 380px));
+      margin-inline: auto;
     }
 
     .cell {

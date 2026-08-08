@@ -40,16 +40,16 @@
       background: radial-gradient(circle at top, #1e293b, var(--bg));
       color: var(--text);
       font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-      padding: 14px;
+      padding: 10px;
     }
 
     .game {
       background: var(--panel);
       border-radius: 20px;
-      padding: 20px 22px;
+      padding: 14px 16px;
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
       width: 100%;
-      max-width: 500px;
+      max-width: 560px;
     }
 
     .back-link {
@@ -104,10 +104,13 @@
       background: #000;
       border-radius: 10px;
       display: block;
-      width: 100%;
-      max-width: 456px;
+      /* Biggest board that fits both the width and the height of the screen. */
+      width: min(96vw, 560px); /* fallback if svh unsupported */
+      width: min(96vw, 560px, calc((100svh - 235px) * (456 / 504)));
       height: auto;
+      aspect-ratio: 456 / 504;
       touch-action: none;
+      margin: 0 auto;
     }
 
     .overlay {

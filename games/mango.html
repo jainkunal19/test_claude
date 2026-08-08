@@ -103,8 +103,12 @@
       background: linear-gradient(#0e1a33, var(--sky));
       border-radius: 12px;
       display: block;
-      width: 100%;
-      height: min(540px, 64vh);
+      /* Biggest board that fits both the width and the height of the screen. */
+      width: min(96vw, 460px); /* fallback if svh unsupported */
+      width: min(96vw, 460px, calc((100svh - 215px) * (360 / 540)));
+      height: auto;
+      aspect-ratio: 360 / 540;
+      margin: 0 auto;
       touch-action: none;
       cursor: crosshair;
     }
