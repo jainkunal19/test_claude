@@ -51,6 +51,15 @@
       margin-bottom: 40px;
     }
 
+    .poster {
+      display: block;
+      width: 100%;
+      max-width: 460px;
+      margin: 0 auto;
+      border-radius: 18px;
+      box-shadow: 0 16px 44px rgba(0, 0, 0, 0.45);
+    }
+
     h1 {
       font-size: clamp(2.4rem, 8vw, 3.6rem);
       font-weight: 800;
@@ -62,7 +71,7 @@
     }
 
     .tagline {
-      margin-top: 10px;
+      margin-top: 12px;
       color: var(--muted);
       font-size: 1.05rem;
     }
@@ -248,7 +257,10 @@
   </div>
 
   <header>
-    <h1>Alisha Arcade</h1>
+    <img class="poster" src="images/poster.png" width="532" height="452"
+         alt="Alisha Arcade — Many games. One place."
+         onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+    <h1 style="display:none;">Alisha Arcade</h1>
     <p class="tagline" id="tagline">Pick a game and play!</p>
   </header>
 
