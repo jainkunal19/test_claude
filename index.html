@@ -15,6 +15,7 @@
   <meta name="apple-mobile-web-app-title" content="Alisha Arcade">
   <link rel="apple-touch-icon" href="images/apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="192x192" href="images/app-icon-192.png">
+  <script src="arcade.js"></script>
 
   <!-- Link previews -->
   <meta property="og:title" content="Alisha Arcade">
@@ -262,63 +263,13 @@
     // when returning from a game.
     (function () {
       const el = document.getElementById('coinTotal');
-      function render() {
-        let v = 0;
-        try { v = Number(localStorage.getItem('arcade-coins')) || 0; } catch (e) { /* ignore */ }
-        el.textContent = v.toLocaleString();
-      }
+      function render() { el.textContent = Arcade.getCoins().toLocaleString(); }
       render();
       document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') render(); });
       window.addEventListener('pageshow', render);
     })();
   </script>
 
-  <script>
-    // Offline service worker + "Update available" button.
-    // At startup we check for a new version; if one is waiting, we show a bar
-    // at the top so the user can update whenever they like.
-    if ('serviceWorker' in navigator) {
-      (function () {
-        let refreshing = false;
-        navigator.serviceWorker.addEventListener('controllerchange', function () {
-          if (refreshing) return;
-          refreshing = true;
-          window.location.reload();
-        });
-
-        function showUpdateBar(worker) {
-          if (document.getElementById('sw-update-bar')) return;
-          var bar = document.createElement('button');
-          bar.id = 'sw-update-bar';
-          bar.type = 'button';
-          bar.textContent = '🔄 Update available — tap to update';
-          bar.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;border:none;cursor:pointer;' +
-            'padding:calc(env(safe-area-inset-top, 0px) + 10px) 16px 10px;' +
-            'font:700 0.9rem system-ui,-apple-system,sans-serif;color:#1a1206;' +
-            'background:linear-gradient(90deg,#fbbf24,#f59e0b);box-shadow:0 2px 14px rgba(0,0,0,0.4);';
-          bar.addEventListener('click', function () {
-            bar.disabled = true;
-            bar.textContent = 'Updating…';
-            worker.postMessage({ type: 'SKIP_WAITING' });
-          });
-          document.body.appendChild(bar);
-        }
-
-        window.addEventListener('load', function () {
-          navigator.serviceWorker.register('service-worker.js').then(function (reg) {
-            if (reg.waiting && navigator.serviceWorker.controller) showUpdateBar(reg.waiting);
-            reg.addEventListener('updatefound', function () {
-              var nw = reg.installing;
-              if (!nw) return;
-              nw.addEventListener('statechange', function () {
-                if (nw.state === 'installed' && navigator.serviceWorker.controller) showUpdateBar(nw);
-              });
-            });
-            reg.update(); // check for a new version at start
-          }).catch(function () {});
-        });
-      })();
-    }
-  </script>
+  <script src="sw-register.js"></script>
 </body>
 </html>

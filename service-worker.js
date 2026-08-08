@@ -10,7 +10,7 @@
  * When the user taps it, the page posts SKIP_WAITING (below) so the new worker
  * activates immediately, then the page reloads onto the new version.
  */
-const CACHE_VERSION = 'alisha-arcade-v4';
+const CACHE_VERSION = 'alisha-arcade-v5';
 
 // Everything the app needs to run fully offline.
 const ASSETS = [
@@ -18,6 +18,8 @@ const ASSETS = [
   './index.html',
   './shop.html',
   './manifest.json',
+  './arcade.js',
+  './sw-register.js',
   './games/tic-tac-toe.html',
   './games/tetris.html',
   './games/connect-4.html',

@@ -11,6 +11,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="Alisha Arcade">
   <link rel="apple-touch-icon" href="../images/apple-touch-icon.png">
+  <script src="../arcade.js"></script>
   <style>
     :root {
       --bg: #0f172a;
@@ -714,8 +715,8 @@
       const gained = rank === 1 ? 1000 : rank === 2 ? 700 : rank === 3 ? 500 : 100;
       score += gained;
       updateHud();
-      maybeUpdateHigh(score);
-      addCoins(gained);
+      Arcade.maybeUpdateHigh(HS_KEY, score);
+      Arcade.addCoins(gained);
       cancelAnimationFrame(rafId);
       draw();
       if (rank <= 3) {
@@ -735,7 +736,7 @@
 
     function crash() {
       running = false; gameOver = true;
-      maybeUpdateHigh(score);
+      Arcade.maybeUpdateHigh(HS_KEY, score);
       cancelAnimationFrame(rafId);
       draw();
       // crash flash
@@ -807,19 +808,9 @@
     }, { passive: false });
     boardWrap.addEventListener('dblclick', (e) => e.preventDefault());
 
-    // --- Info menu & high score ---
+    // --- Info menu & high score (shared arcade.js) ---
     const HS_KEY = 'racing-highscore';
-    const infoBtn = document.getElementById('infoBtn');
-    const infoModal = document.getElementById('infoModal');
-    const infoClose = document.getElementById('infoClose');
-    const highScoreEl = document.getElementById('highScore');
-    function getHigh() { try { return Number(localStorage.getItem(HS_KEY)) || 0; } catch (e) { return 0; } }
-    function maybeUpdateHigh(v) { if (v > getHigh()) { try { localStorage.setItem(HS_KEY, String(v)); } catch (e) { /* ignore */ } } }
-    // Arcade wallet: earned points accumulate across all games (spendable in the Shop).
-    function addCoins(n) { n = Math.round(n) || 0; if (n <= 0) return; try { localStorage.setItem('arcade-coins', String((Number(localStorage.getItem('arcade-coins')) || 0) + n)); } catch (e) { /* ignore */ } }
-    infoBtn.addEventListener('click', () => { highScoreEl.textContent = getHigh(); infoModal.classList.add('show'); });
-    infoClose.addEventListener('click', () => infoModal.classList.remove('show'));
-    infoModal.addEventListener('click', (e) => { if (e.target === infoModal) infoModal.classList.remove('show'); });
+    Arcade.initInfoMenu(HS_KEY);
 
     // Idle frame behind the start overlay.
     level = 1; score = 0;
@@ -829,50 +820,6 @@
     draw();
   </script>
 
-  <script>
-    // Offline service worker + "Update available" button.
-    if ('serviceWorker' in navigator) {
-      (function () {
-        let refreshing = false;
-        navigator.serviceWorker.addEventListener('controllerchange', function () {
-          if (refreshing) return;
-          refreshing = true;
-          window.location.reload();
-        });
-
-        function showUpdateBar(worker) {
-          if (document.getElementById('sw-update-bar')) return;
-          var bar = document.createElement('button');
-          bar.id = 'sw-update-bar';
-          bar.type = 'button';
-          bar.textContent = '🔄 Update available — tap to update';
-          bar.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;border:none;cursor:pointer;' +
-            'padding:calc(env(safe-area-inset-top, 0px) + 10px) 16px 10px;' +
-            'font:700 0.9rem system-ui,-apple-system,sans-serif;color:#1a1206;' +
-            'background:linear-gradient(90deg,#fbbf24,#f59e0b);box-shadow:0 2px 14px rgba(0,0,0,0.4);';
-          bar.addEventListener('click', function () {
-            bar.disabled = true;
-            bar.textContent = 'Updating…';
-            worker.postMessage({ type: 'SKIP_WAITING' });
-          });
-          document.body.appendChild(bar);
-        }
-
-        window.addEventListener('load', function () {
-          navigator.serviceWorker.register('../service-worker.js').then(function (reg) {
-            if (reg.waiting && navigator.serviceWorker.controller) showUpdateBar(reg.waiting);
-            reg.addEventListener('updatefound', function () {
-              var nw = reg.installing;
-              if (!nw) return;
-              nw.addEventListener('statechange', function () {
-                if (nw.state === 'installed' && navigator.serviceWorker.controller) showUpdateBar(nw);
-              });
-            });
-            reg.update();
-          }).catch(function () {});
-        });
-      })();
-    }
-  </script>
+  <script src="../sw-register.js"></script>
 </body>
 </html>
