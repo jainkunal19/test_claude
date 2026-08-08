@@ -258,6 +258,9 @@
           track (one per level) for a few seconds of invincibility — plow
           through cars without crashing. A glowing ring on your car counts down
           the remaining time.<br><br>
+          <b style="color:#cbd5e1">🛡️ Bumpers</b> (from the Shop) guard a side of
+          your car — a <b>Front</b> or <b>Side</b> bumper absorbs any hit on that
+          side without crashing.<br><br>
           <b>Controls:</b> drag to steer, and drag below the car to brake or
           above it to speed up (or use ← → and ↑/↓). Your score adds up across
           levels.
@@ -298,6 +301,7 @@
 
     let player, bots, level, score, retriesLeft;
     let powerUp = null, invincibleTimer = 0;
+    let frontBumper = false, sideBumper = false; // owned Shop accessories
     let running, gameOver, phase; // phase: 'race' | 'done'
     let finishDist;
     let leftHeld, rightHeld, upHeld, downHeld, touchAccel = 0; // touchAccel: -1 brake, 0 cruise, +1 boost
@@ -372,6 +376,21 @@
              a.progress < b.progress + b.h && a.progress + a.h > b.progress;
     }
 
+    // Which side of the player did the hit land on? The axis with the smaller
+    // overlap is the impact side; higher progress = ahead (front).
+    function impactDir(p, b) {
+      const overlapX = Math.min(p.x + p.w, b.x + b.w) - Math.max(p.x, b.x);
+      const overlapProg = Math.min(p.progress + p.h, b.progress + b.h) - Math.max(p.progress, b.progress);
+      if (overlapProg <= overlapX) return b.progress > p.progress ? 'front' : 'rear';
+      return b.x > p.x ? 'right' : 'left';
+    }
+
+    // A bumper absorbed the hit — knock the bot out of overlap, no crash.
+    function bumperBounce(b, dir) {
+      if (dir === 'front') b.progress = player.progress + player.h + 6; // shove ahead
+      else b.progress = player.progress - b.h - 6;                      // knock it behind
+    }
+
     function update(dt) {
       // --- Player throttle ---
       let target = 250 + (level - 1) * 8;
@@ -426,9 +445,14 @@
         if (!collides(player, b)) continue;
         if (invincibleTimer > 0) {
           b.progress = player.progress - b.h - 6; // powered up: plow through, shove it behind
-        } else {
-          crash(); return;
+          continue;
         }
+        const dir = impactDir(player, b);
+        if ((dir === 'front' && frontBumper) || ((dir === 'left' || dir === 'right') && sideBumper)) {
+          bumperBounce(b, dir); // bumper absorbs the hit on its side — no crash
+          continue;
+        }
+        crash(); return;
       }
 
       // --- Finish ---
@@ -606,6 +630,14 @@
       roundRect(5, h - 8, 6, 4, 2); ctx.fill();
       roundRect(w - 11, h - 8, 6, 4, 2); ctx.fill();
 
+      // Purchased bumpers (Shop) — silver guards on the protected side(s).
+      ctx.fillStyle = '#cbd5e1';
+      if (frontBumper) { roundRect(-2, -5, w + 4, 6, 3); ctx.fill(); }
+      if (sideBumper) {
+        roundRect(-6, 10, 5, h - 20, 2); ctx.fill();
+        roundRect(w + 1, 10, 5, h - 20, 2); ctx.fill();
+      }
+
       // Power-up aura + shrinking timer ring (no shadowBlur).
       if (invincibleTimer > 0) {
         const frac = invincibleTimer / POWER_MS;
@@ -687,6 +719,8 @@
 
     function startGame() {
       level = 1; score = 0; retriesLeft = MAX_RETRIES;
+      frontBumper = Arcade.owns('racing-front-bumper');
+      sideBumper = Arcade.owns('racing-side-bumper');
       player = makePlayer();
       startLevel();
     }
@@ -814,6 +848,8 @@
 
     // Idle frame behind the start overlay.
     level = 1; score = 0;
+    frontBumper = Arcade.owns('racing-front-bumper');
+    sideBumper = Arcade.owns('racing-side-bumper');
     player = makePlayer();
     bots = makeBots();
     finishDist = 3400 + level * 1200;
