@@ -258,9 +258,9 @@
           track (one per level) for a few seconds of invincibility — plow
           through cars without crashing. A glowing ring on your car counts down
           the remaining time.<br><br>
-          <b style="color:#cbd5e1">🛡️ Bumpers</b> (from the Shop) guard a side of
-          your car — a <b>Front</b> or <b>Side</b> bumper absorbs any hit on that
-          side without crashing.<br><br>
+          <b style="color:#cbd5e1">🛡️ Bumpers</b> (from the Shop) guard one side
+          of your car each — <b>Front</b>, <b>Left</b>, and <b>Right</b> bumpers
+          absorb any hit on their side without crashing.<br><br>
           <b>Controls:</b> drag to steer, and drag below the car to brake or
           above it to speed up (or use ← → and ↑/↓). Your score adds up across
           levels.
@@ -301,7 +301,7 @@
 
     let player, bots, level, score, retriesLeft;
     let powerUp = null, invincibleTimer = 0;
-    let frontBumper = false, sideBumper = false; // owned Shop accessories
+    let frontBumper = false, leftBumper = false, rightBumper = false; // owned Shop accessories
     let running, gameOver, phase; // phase: 'race' | 'done'
     let finishDist;
     let leftHeld, rightHeld, upHeld, downHeld, touchAccel = 0; // touchAccel: -1 brake, 0 cruise, +1 boost
@@ -448,7 +448,7 @@
           continue;
         }
         const dir = impactDir(player, b);
-        if ((dir === 'front' && frontBumper) || ((dir === 'left' || dir === 'right') && sideBumper)) {
+        if ((dir === 'front' && frontBumper) || (dir === 'left' && leftBumper) || (dir === 'right' && rightBumper)) {
           bumperBounce(b, dir); // bumper absorbs the hit on its side — no crash
           continue;
         }
@@ -633,10 +633,8 @@
       // Purchased bumpers (Shop) — silver guards on the protected side(s).
       ctx.fillStyle = '#cbd5e1';
       if (frontBumper) { roundRect(-2, -5, w + 4, 6, 3); ctx.fill(); }
-      if (sideBumper) {
-        roundRect(-6, 10, 5, h - 20, 2); ctx.fill();
-        roundRect(w + 1, 10, 5, h - 20, 2); ctx.fill();
-      }
+      if (leftBumper) { roundRect(-6, 10, 5, h - 20, 2); ctx.fill(); }
+      if (rightBumper) { roundRect(w + 1, 10, 5, h - 20, 2); ctx.fill(); }
 
       // Power-up aura + shrinking timer ring (no shadowBlur).
       if (invincibleTimer > 0) {
@@ -720,7 +718,8 @@
     function startGame() {
       level = 1; score = 0; retriesLeft = MAX_RETRIES;
       frontBumper = Arcade.owns('racing-front-bumper');
-      sideBumper = Arcade.owns('racing-side-bumper');
+      leftBumper = Arcade.owns('racing-left-bumper');
+      rightBumper = Arcade.owns('racing-right-bumper');
       player = makePlayer();
       startLevel();
     }
@@ -849,7 +848,8 @@
     // Idle frame behind the start overlay.
     level = 1; score = 0;
     frontBumper = Arcade.owns('racing-front-bumper');
-    sideBumper = Arcade.owns('racing-side-bumper');
+    leftBumper = Arcade.owns('racing-left-bumper');
+    rightBumper = Arcade.owns('racing-right-bumper');
     player = makePlayer();
     bots = makeBots();
     finishDist = 3400 + level * 1200;

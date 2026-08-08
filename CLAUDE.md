@@ -123,9 +123,10 @@ still works.
   `Arcade.owns(id)`. Shop cards with `data-id`/`data-price` are wired up
   automatically in `shop.html`. Games read their accessories at start with
   `Arcade.owns(id)` and apply the effect. Example: Racing's `racing-front-bumper`
-  / `racing-side-bumper` (20000 each) — a bumper absorbs a hit on its side
-  (`impactDir` classifies front/side/rear) without crashing, and is drawn on the
-  car. Never clear `arcade-owned` or `arcade-coins` on an update.
+  / `racing-left-bumper` / `racing-right-bumper` (20000 each, bought separately) —
+  each bumper absorbs a hit on its own side (`impactDir` classifies
+  front/left/right/rear) without crashing, and is drawn on the car. Never clear
+  `arcade-owned` or `arcade-coins` on an update.
 - **Player name.** `Arcade.getName()` / `Arcade.setName()` store an optional
   name (`arcade-player-name`), set via the ⚙️ settings dialog on the landing
   page. Games that address the human as "You"/"Player 1" (Tic Tac Toe, Connect
