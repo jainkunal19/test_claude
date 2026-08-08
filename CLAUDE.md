@@ -20,6 +20,8 @@ games/
   mango.html             Mango — pineapple laser-shooter (canvas arcade)
   pac-man.html           Pac-Man (maze, pellets, ghost AI)
   racing.html            Racing (top-down race vs bot cars, placement scoring)
+arcade.js                Shared helpers: coin wallet, high scores, Info menu
+sw-register.js           Shared service-worker registration + update UI
 images/
   tic-tac-toe.png        Game thumbnails (referenced by index.html)
   tetris.png
@@ -30,10 +32,14 @@ images/
 README.md
 ```
 
-Each game is a **single self-contained `.html` file** — its CSS lives in a
-`<style>` block and its JS in a `<script>` block in the same file. There are
-no shared/external assets (no CSS/JS files, no CDNs). Keep it that way so each
-page works standalone on GitHub Pages.
+Each game is a **single `.html` file** — its CSS lives in a `<style>` block and
+its game logic in a `<script>` block in the same file. The only shared code is
+two small root scripts every page includes: **`arcade.js`** (coin wallet, high
+scores, Info-menu wiring — `window.Arcade`) and **`sw-register.js`** (offline
+service-worker registration + update UI). No CDNs; CSS stays per-page. Games
+reference the shared scripts with `../arcade.js` / `../sw-register.js` (root
+pages drop the `../`), and both are precached by the service worker so offline
+still works.
 
 ## Conventions
 
@@ -88,13 +94,14 @@ page works standalone on GitHub Pages.
   (`.info-btn`, floated right just after the back link) that opens a `.modal`
   / `.modal-card` overlay with two things: a static **How to Play** section
   (`.how-to`) describing the rules and controls, and a **Highest Score** read
-  from `localStorage`. Reuse the shared modal CSS block and the small JS
-  helper (`getHigh()` / `maybeUpdateHigh(v)`) — key storage per game as
-  `<game>-highscore`. Call `maybeUpdateHigh(...)` wherever a run's result is
-  known: the numeric score at game over for action games (Tetris, Mango,
-  Pac-Man), or 1000 points per win (`Math.max(...)` of the win counters × 1000)
-  for turn-based games (Tic Tac Toe, Connect 4). The modal reads the stored value
-  when opened and is dismissed by its Close button or a tap on the backdrop.
+  from `localStorage`. Reuse the shared modal CSS block, set a per-game key
+  (`const HS_KEY = '<game>-highscore'`) and wire the modal with one line —
+  `Arcade.initInfoMenu(HS_KEY)` (from `arcade.js`). Record results with
+  `Arcade.maybeUpdateHigh(HS_KEY, v)` wherever a run's result is known: the
+  numeric score at game over for action games (Tetris, Mango, Pac-Man), or 1000
+  points per win (`Math.max(...)` of the win counters × 1000) for turn-based
+  games (Tic Tac Toe, Connect 4). The modal reads the stored value when opened
+  and is dismissed by its Close button or a tap on the backdrop.
   **High scores are user data.** They live in `localStorage` (separate from the
   service-worker cache, which never touches them) and persist across app/SW
   version updates. Never rename a `<game>-highscore` key and never call
@@ -104,8 +111,8 @@ page works standalone on GitHub Pages.
 - **Arcade wallet & Shop.** Points earned in every game accumulate into one
   global coin balance in `localStorage` under `arcade-coins` (separate from the
   per-game high scores, and — like them — never cleared by updates). Games call
-  the shared `addCoins(n)` helper when points are earned: the final score at
-  game over (Tetris, Mango, Pac-Man), each placement award (Racing), or 1000
+  the shared `Arcade.addCoins(n)` helper when points are earned: the final score
+  at game over (Tetris, Mango, Pac-Man), each placement award (Racing), or 1000
   per **human** win (Tic Tac Toe, Connect 4 — guarded by
   `gameMode === 2 || winner === HUMAN` so bot wins don't pay). The landing page
   shows the total top-right and links to `shop.html`, which reads the same
@@ -136,11 +143,14 @@ page works standalone on GitHub Pages.
    `.webp`), convert it to PNG rather than changing the reference — there's no
    `convert`/`ffmpeg` here, so use Pillow (`pip install Pillow`, then
    `Image.open(src).convert('RGBA').save(dst, 'PNG')`).
-4. Add the **Info menu** (see Conventions): copy the shared `.info-btn` /
-   `.modal` CSS, the button + modal markup, and the `getHigh()` /
-   `maybeUpdateHigh()` helper, then write a game-specific How-to-Play blurb,
-   use the `<game>-highscore` storage key, and call `maybeUpdateHigh(...)` at
-   the game's result point. Every game ships with this.
+4. Include the shared scripts: `<script src="../arcade.js"></script>` in
+   `<head>` and `<script src="../sw-register.js"></script>` before `</body>`.
+5. Add the **Info menu** (see Conventions): copy the shared `.info-btn` /
+   `.modal` CSS and the button + modal markup, then write a game-specific
+   How-to-Play blurb, set `const HS_KEY = '<game>-highscore'`, call
+   `Arcade.initInfoMenu(HS_KEY)`, and record results with
+   `Arcade.maybeUpdateHigh(HS_KEY, ...)` / `Arcade.addCoins(...)` at the game's
+   result point. Every game ships with this.
 
 ## Testing
 
@@ -159,15 +169,27 @@ every page's `<head>`, square icons in `images/` (`apple-touch-icon.png`,
 whole app for offline play. Each page registers the worker with a small inline
 `<script>` (root path from `index.html`, `../service-worker.js` from games).
 
-**Version strategy (important).** The worker uses "silent update on next
-launch" — it never calls `skipWaiting()`. Each version keeps its own cache
-bucket named by `CACHE_VERSION`; on activate it deletes all other buckets, so a
-new version fully replaces the old one. **Whenever you add or change any cached
-file (a game page, an image, the manifest), you MUST bump `CACHE_VERSION` in
+**Version strategy (important).** Each version keeps its own cache bucket named
+by `CACHE_VERSION`; on activate it deletes all other buckets, so a new version
+fully replaces the old one. **Whenever you add or change any cached file (a
+game/shop page, an image, the manifest), you MUST bump `CACHE_VERSION` in
 `service-worker.js` and add any new file to its `ASSETS` precache list** —
-otherwise clients keep serving the stale cached copy. Pages call
-`registration.update()` on load and on `visibilitychange`, so it checks for a
-new version on every launch/foreground.
+otherwise clients keep serving the stale copy.
+
+Updates are **user-triggered** (all handled by `sw-register.js`, shared by every
+page). Each page checks for a new version at startup (`registration.update()`),
+with two UX paths:
+- A new version found **during this session** → a non-blocking **"Update
+  available"** bar at the top (update whenever you like).
+- A version already **waiting at startup** (skipped last time) → a **blocking
+  modal** that asks the user to update before doing anything, with a "Not now"
+  escape that drops back to the gentle bar.
+
+Either action posts `{type:'SKIP_WAITING'}` to the waiting worker (which calls
+`self.skipWaiting()`); the resulting `controllerchange` reloads onto the new
+version. First install and same-version navigation never prompt (guarded by
+`navigator.serviceWorker.controller`). All the update UI is built in JS, so it
+needs no per-page HTML/CSS.
 
 ## Hosting
 

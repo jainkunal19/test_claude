@@ -11,6 +11,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="Alisha Arcade">
   <link rel="apple-touch-icon" href="../images/apple-touch-icon.png">
+  <script src="../arcade.js"></script>
   <style>
     :root {
       --bg: #0f172a;
@@ -714,8 +715,8 @@
       const gained = rank === 1 ? 1000 : rank === 2 ? 700 : rank === 3 ? 500 : 100;
       score += gained;
       updateHud();
-      maybeUpdateHigh(score);
-      addCoins(gained);
+      Arcade.maybeUpdateHigh(HS_KEY, score);
+      Arcade.addCoins(gained);
       cancelAnimationFrame(rafId);
       draw();
       if (rank <= 3) {
@@ -735,7 +736,7 @@
 
     function crash() {
       running = false; gameOver = true;
-      maybeUpdateHigh(score);
+      Arcade.maybeUpdateHigh(HS_KEY, score);
       cancelAnimationFrame(rafId);
       draw();
       // crash flash
@@ -807,19 +808,9 @@
     }, { passive: false });
     boardWrap.addEventListener('dblclick', (e) => e.preventDefault());
 
-    // --- Info menu & high score ---
+    // --- Info menu & high score (shared arcade.js) ---
     const HS_KEY = 'racing-highscore';
-    const infoBtn = document.getElementById('infoBtn');
-    const infoModal = document.getElementById('infoModal');
-    const infoClose = document.getElementById('infoClose');
-    const highScoreEl = document.getElementById('highScore');
-    function getHigh() { try { return Number(localStorage.getItem(HS_KEY)) || 0; } catch (e) { return 0; } }
-    function maybeUpdateHigh(v) { if (v > getHigh()) { try { localStorage.setItem(HS_KEY, String(v)); } catch (e) { /* ignore */ } } }
-    // Arcade wallet: earned points accumulate across all games (spendable in the Shop).
-    function addCoins(n) { n = Math.round(n) || 0; if (n <= 0) return; try { localStorage.setItem('arcade-coins', String((Number(localStorage.getItem('arcade-coins')) || 0) + n)); } catch (e) { /* ignore */ } }
-    infoBtn.addEventListener('click', () => { highScoreEl.textContent = getHigh(); infoModal.classList.add('show'); });
-    infoClose.addEventListener('click', () => infoModal.classList.remove('show'));
-    infoModal.addEventListener('click', (e) => { if (e.target === infoModal) infoModal.classList.remove('show'); });
+    Arcade.initInfoMenu(HS_KEY);
 
     // Idle frame behind the start overlay.
     level = 1; score = 0;
@@ -829,18 +820,6 @@
     draw();
   </script>
 
-  <script>
-    // Register the offline service worker (silent update on next launch).
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('../service-worker.js').then((reg) => {
-          reg.update();
-          document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible') reg.update();
-          });
-        }).catch(() => {});
-      });
-    }
-  </script>
+  <script src="../sw-register.js"></script>
 </body>
 </html>

@@ -14,6 +14,7 @@
   <meta name="apple-mobile-web-app-title" content="Alisha Arcade">
   <link rel="apple-touch-icon" href="images/apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="192x192" href="images/app-icon-192.png">
+  <script src="arcade.js"></script>
 
   <style>
     :root {
@@ -219,29 +220,13 @@
     // Show the arcade coin total (earned across all games).
     (function () {
       const el = document.getElementById('coinTotal');
-      function render() {
-        let v = 0;
-        try { v = Number(localStorage.getItem('arcade-coins')) || 0; } catch (e) { /* ignore */ }
-        el.textContent = v.toLocaleString();
-      }
+      function render() { el.textContent = Arcade.getCoins().toLocaleString(); }
       render();
       document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') render(); });
       window.addEventListener('pageshow', render);
     })();
   </script>
 
-  <script>
-    // Register the offline service worker (silent update on next launch).
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('service-worker.js').then((reg) => {
-          reg.update();
-          document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible') reg.update();
-          });
-        }).catch(() => {});
-      });
-    }
-  </script>
+  <script src="sw-register.js"></script>
 </body>
 </html>
