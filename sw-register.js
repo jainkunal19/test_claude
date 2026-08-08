@@ -6,8 +6,8 @@
  *  - New version found DURING this session  -> a non-blocking "Update available"
  *    bar at the top (update whenever you like).
  *  - A version was already waiting AT STARTUP (you skipped it last time)
- *    -> a blocking modal that asks you to update before doing anything, with a
- *    "Not now" escape that drops back to the gentle bar.
+ *    -> a blocking modal that requires updating before doing anything
+ *    (no dismiss). Activating a waiting worker is local, so it works offline.
  */
 (function () {
   if (!('serviceWorker' in navigator)) return;
@@ -45,8 +45,9 @@
     document.body.appendChild(bar);
   }
 
-  // Blocking modal — used when an update was pending from a previous session,
-  // so the user is asked up front before doing anything.
+  // Blocking modal — used when an update was pending from a previous session.
+  // The user skipped it last time, so now it is required before doing anything
+  // (no dismiss button).
   function showUpdateModal(worker) {
     if (document.getElementById('sw-update-modal')) return;
     var existingBar = document.getElementById('sw-update-bar');
@@ -55,7 +56,7 @@
     var overlay = document.createElement('div');
     overlay.id = 'sw-update-modal';
     overlay.style.cssText = 'position:fixed;inset:0;z-index:10000;display:flex;align-items:center;' +
-      'justify-content:center;padding:24px;background:rgba(0,0,0,0.72);' +
+      'justify-content:center;padding:24px;background:rgba(0,0,0,0.82);' +
       'font-family:system-ui,-apple-system,sans-serif;';
 
     var card = document.createElement('div');
@@ -63,9 +64,9 @@
       'width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.5);';
     card.innerHTML =
       '<div style="font-size:2rem;margin-bottom:8px;">🔄</div>' +
-      '<h2 style="font-size:1.25rem;margin-bottom:8px;">Update ready</h2>' +
+      '<h2 style="font-size:1.25rem;margin-bottom:8px;">Update required</h2>' +
       '<p style="color:#94a3b8;font-size:0.92rem;line-height:1.5;margin-bottom:18px;">' +
-      'A new version of Alisha Arcade is ready. Update now to get the latest.</p>';
+      'A new version of Alisha Arcade is ready. Please update to continue.</p>';
 
     var updateBtn = document.createElement('button');
     updateBtn.type = 'button';
@@ -74,18 +75,7 @@
       'font-weight:700;font-size:0.95rem;color:#1a1206;background:linear-gradient(90deg,#fbbf24,#f59e0b);';
     updateBtn.addEventListener('click', function () { activate(worker, updateBtn); });
 
-    var laterBtn = document.createElement('button');
-    laterBtn.type = 'button';
-    laterBtn.textContent = 'Not now';
-    laterBtn.style.cssText = 'width:100%;padding:10px;margin-top:8px;border:none;border-radius:12px;cursor:pointer;' +
-      'font-weight:600;font-size:0.9rem;color:#94a3b8;background:transparent;';
-    laterBtn.addEventListener('click', function () {
-      overlay.remove();
-      showUpdateBar(worker); // keep a gentle bar so they can still update later
-    });
-
     card.appendChild(updateBtn);
-    card.appendChild(laterBtn);
     overlay.appendChild(card);
     document.body.appendChild(overlay);
   }
