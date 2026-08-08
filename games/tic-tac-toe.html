@@ -364,10 +364,13 @@
     }
 
     function updateStatus() {
+      const you = Arcade.getName();
       if (gameMode === 1) {
-        statusEl.textContent = currentPlayer === HUMAN ? 'Your turn' : 'Bot is thinking…';
+        if (currentPlayer === HUMAN) statusEl.textContent = you ? `${you}'s turn` : 'Your turn';
+        else statusEl.textContent = 'Bot is thinking…';
       } else {
-        statusEl.textContent = `Player ${currentPlayer}'s turn`;
+        if (currentPlayer === 'X') statusEl.textContent = you ? `${you}'s turn` : "Player X's turn";
+        else statusEl.textContent = "Player O's turn";
       }
     }
 
@@ -386,10 +389,13 @@
       if (winner) {
         scores[winner]++;
         scoreEls[winner].textContent = scores[winner];
+        const you = Arcade.getName();
         if (gameMode === 1) {
-          statusEl.textContent = winner === HUMAN ? 'You win! 🎉' : 'Bot wins!';
+          statusEl.textContent = winner === HUMAN ? (you ? `${you} wins! 🎉` : 'You win! 🎉') : 'Bot wins!';
+        } else if (winner === 'X') {
+          statusEl.textContent = you ? `${you} wins! 🎉` : 'Player X wins! 🎉';
         } else {
-          statusEl.textContent = `Player ${winner} wins! 🎉`;
+          statusEl.textContent = 'Player O wins! 🎉';
         }
         winningLine.forEach(i => cells[i].classList.add('win'));
         if (gameMode === 2 || winner === HUMAN) Arcade.addCoins(1000); // your win earns arcade coins
@@ -484,11 +490,12 @@
       mode1Btn.classList.toggle('active', mode === 1);
       mode2Btn.classList.toggle('active', mode === 2);
       difficultyEl.style.display = mode === 1 ? 'flex' : 'none';
+      const you = Arcade.getName();
       if (mode === 1) {
-        labelX.textContent = 'You';
+        labelX.textContent = you || 'You';
         labelO.textContent = 'Bot';
       } else {
-        labelX.textContent = 'Player X';
+        labelX.textContent = you || 'Player X';
         labelO.textContent = 'Player O';
       }
       resetScores(); // switching mode starts a fresh game

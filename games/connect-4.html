@@ -426,10 +426,13 @@
     }
 
     function updateStatus() {
+      const you = Arcade.getName();
       if (gameMode === 1) {
-        statusEl.textContent = currentPlayer === HUMAN ? 'Your turn' : 'Bot is thinking…';
+        if (currentPlayer === HUMAN) statusEl.textContent = you ? `${you}'s turn` : 'Your turn';
+        else statusEl.textContent = 'Bot is thinking…';
       } else {
-        statusEl.textContent = currentPlayer === 'R' ? "Red's turn" : "Yellow's turn";
+        if (currentPlayer === 'R') statusEl.textContent = you ? `${you}'s turn` : "Red's turn";
+        else statusEl.textContent = "Yellow's turn";
       }
     }
 
@@ -439,10 +442,13 @@
         scores[winner]++;
         scoreEls[winner].textContent = scores[winner];
         winCells.forEach(([r, c]) => cellEls[r][c].classList.add('win'));
+        const you = Arcade.getName();
         if (gameMode === 1) {
-          statusEl.textContent = winner === HUMAN ? 'You win! 🎉' : 'Bot wins!';
+          statusEl.textContent = winner === HUMAN ? (you ? `${you} wins! 🎉` : 'You win! 🎉') : 'Bot wins!';
+        } else if (winner === 'R') {
+          statusEl.textContent = you ? `${you} wins! 🎉` : 'Red wins! 🎉';
         } else {
-          statusEl.textContent = winner === 'R' ? 'Red wins! 🎉' : 'Yellow wins! 🎉';
+          statusEl.textContent = 'Yellow wins! 🎉';
         }
         if (gameMode === 2 || winner === HUMAN) Arcade.addCoins(1000); // your win earns arcade coins
       } else {
@@ -571,10 +577,10 @@
       mode2Btn.classList.toggle('active', mode === 2);
       difficultyEl.style.display = mode === 1 ? 'flex' : 'none';
       if (mode === 1) {
-        labelR.textContent = 'You';
+        labelR.textContent = Arcade.getName() || 'You';
         labelY.textContent = 'Bot';
       } else {
-        labelR.textContent = 'Red';
+        labelR.textContent = Arcade.getName() || 'Red';
         labelY.textContent = 'Yellow';
       }
       resetScores();
