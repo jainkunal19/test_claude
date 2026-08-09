@@ -137,10 +137,11 @@
     }
     .card .big-suit { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-size: calc(var(--w) * 0.72); }
 
-    /* Court cards: full suit-correct Jack/Queen/King card artwork fills the card. */
+    /* Court cards: full suit-correct J/Q/K artwork, shown whole (never cropped). */
+    .card.court { background: #fff; }
     .card.court .court-img {
       position: absolute; inset: 0; width: 100%; height: 100%;
-      object-fit: cover; object-position: center; display: block;
+      object-fit: contain; object-position: center; display: block;
     }
 
     /* Card back */
