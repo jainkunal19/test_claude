@@ -189,6 +189,14 @@ game/shop page, an image, the manifest), you MUST bump `CACHE_VERSION` in
 `service-worker.js` and add any new file to its `ASSETS` precache list** —
 otherwise clients keep serving the stale copy.
 
+**How much to bump.** Use a minor increment for small fixes and a major
+increment only for substantial changes. The version is `vMAJOR[.MINOR]`
+(e.g. `alisha-arcade-v13`, `alisha-arcade-v13.1`): tweaks like a style nudge,
+copy change, or bug fix bump the minor part (`v13` → `v13.1` → `v13.2`); a new
+game, new feature, or other significant work bumps the major part and drops the
+minor (`v13.x` → `v14`). Any bump still fully replaces the cache — the
+major/minor split is just so the version number reflects the size of the change.
+
 Updates are **user-triggered** (all handled by `sw-register.js`, shared by every
 page). Each page checks for a new version at startup (`registration.update()`),
 with two UX paths:
