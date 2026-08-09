@@ -137,11 +137,10 @@
     }
     .card .big-suit { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-size: calc(var(--w) * 0.72); }
 
-    /* Court cards: a real Jack/Queen/King figure image filling the inner panel. */
-    .card.court .center { inset: calc(var(--w) * 0.18) calc(var(--w) * 0.19); }
+    /* Court cards: full suit-correct Jack/Queen/King card artwork fills the card. */
     .card.court .court-img {
-      width: 100%; height: 100%; object-fit: cover; object-position: center;
-      display: block; border-radius: 4px;
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      object-fit: cover; object-position: center; display: block;
     }
 
     /* Card back */
@@ -289,7 +288,8 @@
       { s: '♦', c: 'red' }, { s: '♣', c: 'black' }
     ];
     const RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
-    const COURT_IMG = { J: '../images/court-jack.png', Q: '../images/court-queen.png', K: '../images/court-king.png' };
+    const RANKNAME = { J: 'jack', Q: 'queen', K: 'king' };
+    const SUITNAME = { '♣': 'clubs', '♦': 'diamonds', '♠': 'spades', '♥': 'hearts' };
 
     // Pip layouts (x%,y%) for number cards; pips in the lower half render rotated.
     const L = 27, C = 50, R = 73;
@@ -393,6 +393,16 @@
         return el;
       }
       el.className = 'card ' + card.color + ' ' + (flip ? 'flip' : 'deal');
+      // Court cards use the full, suit-correct card artwork.
+      if (card.rank === 'J' || card.rank === 'Q' || card.rank === 'K') {
+        el.classList.add('court');
+        const img = document.createElement('img');
+        img.className = 'court-img';
+        img.src = '../images/court-' + RANKNAME[card.rank] + '-' + SUITNAME[card.suit] + '.png';
+        img.alt = card.rank + card.suit;
+        el.appendChild(img);
+        return el;
+      }
       const mk = (cls) => {
         const cor = document.createElement('div');
         cor.className = 'corner ' + cls;
@@ -408,13 +418,6 @@
         big.className = 'big-suit';
         big.textContent = card.suit;
         center.appendChild(big);
-      } else if (card.rank === 'J' || card.rank === 'Q' || card.rank === 'K') {
-        el.classList.add('court');
-        const img = document.createElement('img');
-        img.className = 'court-img';
-        img.src = COURT_IMG[card.rank];
-        img.alt = card.rank;
-        center.appendChild(img);
       } else {
         center.classList.add('pips');
         (PIPS[card.rank] || []).forEach(([xx, yy]) => {
