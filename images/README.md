@@ -11,8 +11,8 @@ Drop game thumbnail images here. The landing page (`index.html`) expects:
 
 ## App / web-app assets
 
-- `poster.png` — hero poster shown at the top of the landing page; also the
-  source art for the icons and banner below
+- `banner.png` — wide 2:1 banner shown at the top of the landing page
+- `poster.png` — near-square poster; source art for the square icons below
 - `apple-touch-icon.png` (180×180) — iPhone home-screen icon
 - `app-icon-192.png`, `app-icon-512.png` — PWA manifest icons
 - `app-banner.jpg` — link-preview (og:image) banner
