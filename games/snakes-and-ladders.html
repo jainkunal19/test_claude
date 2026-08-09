@@ -39,21 +39,21 @@
     body {
       min-height: 100vh;
       display: flex;
-      align-items: center;
+      align-items: flex-start;      /* top-align so the board sits high, not floating mid-screen */
       justify-content: center;
       background: radial-gradient(circle at top, #1e293b, var(--bg));
       color: var(--text);
       font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-      padding: 12px;
+      padding: 8px 6px 18px;        /* minimal side padding → wider board */
     }
 
     .game {
       background: var(--panel);
       border-radius: 20px;
-      padding: 10px 14px 12px;
+      padding: 10px 8px 14px;       /* slim horizontal padding gives the board its width */
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
       width: 100%;
-      max-width: 580px;
+      max-width: 640px;
     }
 
     .back-link {
@@ -144,8 +144,8 @@
 
     .board-wrap {
       position: relative;
-      width: min(100%, 560px);
-      width: min(100%, 560px, calc(100svh - 280px));
+      width: min(100%, 640px);
+      width: min(100%, 640px, calc(100svh - 250px));
       margin: 0 auto;
     }
     canvas#board {
