@@ -21,6 +21,7 @@ games/
   pac-man.html           Pac-Man (maze, pellets, ghost AI)
   racing.html            Racing (top-down race vs bot cars, placement scoring)
   snakes-and-ladders.html  Snakes & Ladders (dice race vs bot + 2-player, animated)
+  blackjack.html         Blackjack (vs House/dealer bot; guided + unguided modes)
 arcade.js                Shared helpers: coin wallet, high scores, Info menu
 sw-register.js           Shared service-worker registration + update UI
 images/
@@ -105,6 +106,18 @@ still works.
   with a time-based sine wiggle (animated). A win pays a flat **1000** (human
   wins only in 1P, either player in 2P), feeding `addCoins` and
   `maybeUpdateHigh` (`best win count × 1000`).
+  **Blackjack** is a single-hand card game vs the **House** (dealer bot): a full
+  52-card deck (`buildDeck`/`shuffle`, reshuffled when low), `handValue` scores
+  Aces as 1 or 11 (soft/hard), the dealer hides a hole card and hits until 17,
+  and closest to 21 without busting wins (two-card 21 = Blackjack, pays 1.5×).
+  Cards are **realistic HTML/CSS**: corner indices, standard pip layouts
+  (`PIPS` table; lower-half pips rotated), court/Ace faces, and a striped card
+  back. The shared `.mode-select` picks **Guided** vs **Unguided** (not 1P/2P):
+  guided shows a basic-strategy hint (`suggest()` → hit/stand + reason,
+  highlighting the recommended button) and pays **10** per win; unguided gives
+  no help and pays **100** (`winValue()`), Blackjack `×1.5`. A win feeds
+  `addCoins` and a per-session score into `maybeUpdateHigh`; switching mode
+  resets the session (score/wins).
 - **Info menu (every game).** Each game has an `ⓘ Info` button
   (`.info-btn`, floated right just after the back link) that opens a `.modal`
   / `.modal-card` overlay with two things: a static **How to Play** section

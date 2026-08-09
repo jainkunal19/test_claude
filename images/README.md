@@ -9,6 +9,7 @@ Drop game thumbnail images here. The landing page (`index.html`) expects:
 - `pac-man.png` — thumbnail for the Pac-Man game
 - `racing.png` — thumbnail for the Racing game
 - `snakes-and-ladders.png` — thumbnail for the Snakes &amp; Ladders game
+- `blackjack.png` — thumbnail for the Blackjack game
 
 ## App / web-app assets
 
