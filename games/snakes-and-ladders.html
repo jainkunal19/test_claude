@@ -330,7 +330,8 @@
 
     <div class="legend">
       🪜 <b>Ladders</b> lift you up &middot; 🐍 <b>Snakes</b> drop you down &middot;
-      roll a <b>6</b> for an extra turn &middot; land <b>exactly</b> on 100 to win
+      a <b>6</b> rolls again &amp; adds up &middot; three <b>6</b>s = turn lost &middot;
+      land <b>exactly</b> on 100 to win
     </div>
 
     <div class="modal" id="infoModal">
@@ -340,9 +341,11 @@
           Take turns rolling the dice; your token runs forward that many
           squares from 1 to 100. Land on the foot of a <b>ladder</b> 🪜 to climb
           up, or on a <b>snake's</b> head 🐍 to slide back down. Roll a <b>6</b>
-          and you get another turn. You must land <b>exactly</b> on 100 to win —
-          overshoot and you stay put. In 1-player mode you race the Bot; in
-          2-player mode it's hot-seat.<br><br>
+          and you <b>don't move</b> — you roll again and add every roll together,
+          moving once you finally roll something other than a 6. But roll
+          <b>three 6s in a row</b> and the whole turn is lost (you move 0). You
+          must land <b>exactly</b> on 100 to win — overshoot and you stay put.
+          In 1-player mode you race the Bot; in 2-player mode it's hot-seat.<br><br>
           Each win is worth <b>1000 points</b>. <b>Highest Score</b> is your best
           points total in a run (wins reset when you switch mode, but the best is
           kept).
@@ -538,6 +541,8 @@
     let started = false;    // game in progress
     let win = false;
     let rolling = false;    // dice is spinning
+    let turnSum = 0;        // points accumulated this turn (6s roll again & add up)
+    let sixStreak = 0;      // consecutive 6s this turn (3 in a row = turn lost)
     let active = null;      // active token movement animation
     let wigglePhase = 0;
     let lastTime = 0;
@@ -610,6 +615,8 @@
     function promptTurn() {
       updateTurnUI();
       if (win) return;
+      turnSum = 0;
+      sixStreak = 0;
       if (isBot(current)) {
         status(players[1].name + ' is thinking…');
         rollBtn.disabled = true;
@@ -634,24 +641,44 @@
           dieEl.classList.remove('rolling');
           renderDie(final);
           rolling = false;
-          status(players[current].name + ' rolled ' + final);
-          moveToken(players[current], final, () => {
-            if (players[current].cell === 100) { handleWin(current); return; }
-            endTurn(final === 6);
-          });
+          resolveRoll(final);
         }
       }, 70);
     }
 
-    function endTurn(extra) {
-      if (win) return;
-      if (extra) {
-        status(players[current].name + ' rolled a 6 — go again!');
-        setTimeout(promptTurn, 600);
-      } else {
-        current = 1 - current;
-        setTimeout(promptTurn, 300);
+    // A 6 doesn't move — you roll again and add up the totals. Three 6s in a
+    // row bust the whole turn (move 0). Any other roll adds on, then you move.
+    function resolveRoll(face) {
+      const p = players[current];
+      if (face === 6) {
+        sixStreak++;
+        turnSum += 6;
+        if (sixStreak === 3) {
+          turnSum = 0;
+          status(p.name + ' rolled three 6s in a row — turn lost! 🚫');
+          setTimeout(() => endTurn(), 900);
+          return;
+        }
+        status(p.name + ' rolled a 6 — roll again! (total ' + turnSum + ')');
+        if (isBot(current)) setTimeout(rollDice, 750);
+        else rollBtn.disabled = false;
+        return;
       }
+      turnSum += face;
+      const total = turnSum;
+      status(total > face
+        ? p.name + ' rolled ' + face + ' — moving ' + total + '!'
+        : p.name + ' rolled ' + face);
+      moveToken(p, total, () => {
+        if (p.cell === 100) { handleWin(current); return; }
+        endTurn();
+      });
+    }
+
+    function endTurn() {
+      if (win) return;
+      current = 1 - current;
+      setTimeout(promptTurn, 300);
     }
 
     function handleWin(i) {
