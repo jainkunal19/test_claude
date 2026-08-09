@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Snake &amp; Ladders &middot; Alisha Arcade</title>
+  <link rel="manifest" href="../manifest.json">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="Alisha Arcade">
+  <link rel="apple-touch-icon" href="../images/apple-touch-icon.png">
+  <script src="../arcade.js"></script>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #1e293b;
+      --cell: #334155;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --accent: #a78bfa;
+      --p1: #ef4444;   /* player 1 / you — red */
+      --p1-dark: #b91c1c;
+      --p2: #3b82f6;   /* player 2 / bot — blue */
+      --p2-dark: #1d4ed8;
+      --gold: #fbbf24;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    button, .back-link, canvas {
+      touch-action: manipulation;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at top, #1e293b, var(--bg));
+      color: var(--text);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      padding: 12px;
+    }
+
+    .game {
+      background: var(--panel);
+      border-radius: 20px;
+      padding: 16px 18px 20px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+      width: 100%;
+      max-width: 540px;
+    }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 600;
+      opacity: 0.85;
+    }
+    .back-link:hover { opacity: 1; }
+
+    .info-btn {
+      float: right;
+      background: var(--cell);
+      color: var(--text);
+      border: none;
+      border-radius: 9px;
+      padding: 6px 12px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .info-btn:hover { opacity: 0.88; }
+
+    h1 {
+      text-align: center;
+      font-size: 1.7rem;
+      margin: 6px 0 12px;
+      background: linear-gradient(90deg, #22c55e, #a78bfa, #ef4444);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .mode-select {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin-bottom: 12px;
+    }
+    .mode-btn {
+      flex: 1;
+      max-width: 150px;
+      background: var(--cell);
+      color: var(--muted);
+      border: none;
+      border-radius: 10px;
+      padding: 9px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .mode-btn.active { background: var(--accent); color: #1a1206; }
+
+    .scoreboard {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .pchip {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--cell);
+      border-radius: 12px;
+      padding: 8px 12px;
+      border: 2px solid transparent;
+      transition: border-color 0.15s ease, transform 0.15s ease;
+    }
+    .pchip.turn { border-color: currentColor; transform: translateY(-2px); }
+    .pchip.p1 { color: var(--p1); }
+    .pchip.p2 { color: var(--p2); }
+    .pchip .dot {
+      width: 16px; height: 16px; border-radius: 50%;
+      background: currentColor; flex: none;
+      box-shadow: 0 0 0 2px rgba(255,255,255,0.25) inset;
+    }
+    .pchip .who { display: flex; flex-direction: column; line-height: 1.15; }
+    .pchip .pname { font-size: 0.9rem; font-weight: 800; color: var(--text); }
+    .pchip .pwins { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); }
+    .pchip .pwins b { color: var(--gold); font-size: 0.82rem; }
+
+    .board-wrap {
+      position: relative;
+      width: min(100%, 500px);
+      width: min(100%, 500px, calc(100svh - 330px));
+      margin: 0 auto;
+    }
+    canvas#board {
+      display: block;
+      width: 100%;
+      height: auto;
+      aspect-ratio: 1 / 1;
+      border-radius: 14px;
+      background: #0b1120;
+      touch-action: none;
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      background: rgba(11, 17, 32, 0.86);
+      border-radius: 14px;
+      text-align: center;
+      padding: 24px;
+    }
+    .overlay.show { display: flex; }
+    .overlay h2 { font-size: 1.5rem; }
+    .overlay p { color: var(--muted); font-size: 0.9rem; line-height: 1.55; max-width: 320px; }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      margin-top: 14px;
+    }
+
+    /* Dice */
+    .die {
+      width: 58px; height: 58px;
+      background: #f8fafc;
+      border-radius: 12px;
+      padding: 8px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      gap: 2px;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.4), inset 0 -3px 0 rgba(0,0,0,0.1);
+      flex: none;
+    }
+    .die.rolling { animation: shake 0.12s linear infinite; }
+    @keyframes shake {
+      0%,100% { transform: translate(0,0) rotate(0); }
+      25% { transform: translate(-2px,1px) rotate(-6deg); }
+      75% { transform: translate(2px,-1px) rotate(6deg); }
+    }
+    .die .pip { border-radius: 50%; background: transparent; }
+    .die .pip.on { background: #0f172a; }
+
+    button.action {
+      padding: 14px 26px;
+      border: none;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 800;
+      cursor: pointer;
+      color: #1a1206;
+      background: linear-gradient(90deg, #fbbf24, #f59e0b);
+      transition: opacity 0.15s ease, transform 0.1s ease;
+      box-shadow: 0 6px 16px rgba(245, 158, 11, 0.35);
+    }
+    button.action:hover { opacity: 0.94; transform: translateY(-1px); }
+    button.action:active { transform: translateY(0); }
+    button.action:disabled { opacity: 0.45; cursor: default; box-shadow: none; transform: none; }
+
+    button.ghost {
+      padding: 12px 18px;
+      border: none;
+      border-radius: 12px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      color: var(--text);
+      background: var(--cell);
+    }
+    button.ghost:hover { opacity: 0.9; }
+
+    #status {
+      text-align: center;
+      margin-top: 12px;
+      font-size: 0.98rem;
+      font-weight: 700;
+      min-height: 1.3em;
+    }
+
+    .legend {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 0.76rem;
+      line-height: 1.6;
+      text-align: center;
+    }
+    .legend b { color: var(--text); }
+
+    /* Info modal */
+    .modal {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.62);
+      z-index: 50;
+      padding: 20px;
+    }
+    .modal.show { display: flex; }
+    .modal-card {
+      background: var(--panel);
+      border-radius: 16px;
+      padding: 24px;
+      width: 100%;
+      max-width: 360px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    }
+    .modal-card h2 { margin-bottom: 10px; font-size: 1.25rem; }
+    .modal-card .how-to { color: #94a3b8; font-size: 0.9rem; line-height: 1.6; margin-bottom: 16px; }
+    .modal-card .highscore {
+      background: var(--cell);
+      border-radius: 10px;
+      padding: 12px;
+      text-align: center;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+    .modal-card .highscore span { color: var(--accent); font-size: 1.2rem; }
+    .modal-card .close-row { text-align: right; }
+  </style>
+</head>
+<body>
+  <main class="game">
+    <a class="back-link" href="../index.html">&larr; Back to Alisha Arcade</a>
+    <button class="info-btn" id="infoBtn">ⓘ Info</button>
+    <h1>Snake &amp; Ladders 🐍🪜</h1>
+
+    <div class="mode-select" id="modeSelect">
+      <button class="mode-btn active" data-mode="1">1 Player</button>
+      <button class="mode-btn" data-mode="2">2 Players</button>
+    </div>
+
+    <div class="scoreboard">
+      <div class="pchip p1" id="chip0">
+        <span class="dot"></span>
+        <span class="who"><span class="pname" id="name0">You</span><span class="pwins">Wins <b id="wins0">0</b></span></span>
+      </div>
+      <div class="pchip p2" id="chip1">
+        <span class="dot"></span>
+        <span class="who"><span class="pname" id="name1">Bot</span><span class="pwins">Wins <b id="wins1">0</b></span></span>
+      </div>
+    </div>
+
+    <div class="board-wrap">
+      <canvas id="board" width="500" height="500"></canvas>
+      <div class="overlay show" id="overlay">
+        <h2 id="overlayTitle">Snake &amp; Ladders 🎲</h2>
+        <p id="overlayText">
+          Roll the dice and race to <b>100</b>. Climb ladders 🪜, dodge snakes 🐍.
+          First to land exactly on 100 wins!
+        </p>
+        <button class="action" id="overlayBtn">Start Game</button>
+      </div>
+    </div>
+
+    <div class="controls">
+      <div class="die" id="die" aria-label="dice"></div>
+      <button class="action" id="rollBtn" disabled>Roll 🎲</button>
+      <button class="ghost" id="newBtn">New Game</button>
+    </div>
+
+    <div id="status">Press Start to play</div>
+
+    <div class="legend">
+      🪜 <b>Ladders</b> lift you up &middot; 🐍 <b>Snakes</b> drop you down &middot;
+      roll a <b>6</b> for an extra turn &middot; land <b>exactly</b> on 100 to win
+    </div>
+
+    <div class="modal" id="infoModal">
+      <div class="modal-card">
+        <h2>How to Play</h2>
+        <p class="how-to">
+          Take turns rolling the dice; your token runs forward that many
+          squares from 1 to 100. Land on the foot of a <b>ladder</b> 🪜 to climb
+          up, or on a <b>snake's</b> head 🐍 to slide back down. Roll a <b>6</b>
+          and you get another turn. You must land <b>exactly</b> on 100 to win —
+          overshoot and you stay put. In 1-player mode you race the Bot; in
+          2-player mode it's hot-seat.<br><br>
+          Each win is worth <b>1000 points</b>. <b>Highest Score</b> is your best
+          points total in a run (wins reset when you switch mode, but the best is
+          kept).
+        </p>
+        <div class="highscore">Highest Score: <span id="highScore">0</span></div>
+        <div class="close-row"><button class="action" id="infoClose" style="padding:10px 20px;">Close</button></div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const canvas = document.getElementById('board');
+    const ctx = canvas.getContext('2d');
+    const BOARD = canvas.width;      // 500 internal px
+    const N = 10;                    // 10x10 grid
+    const cs = BOARD / N;            // cell size = 50
+
+    // Classic Milton-Bradley layout — { from: to }.
+    const LADDERS = { 1: 38, 4: 14, 9: 31, 21: 42, 28: 84, 36: 44, 51: 67, 71: 91, 80: 100 };
+    const SNAKES  = { 16: 6, 47: 26, 49: 11, 56: 53, 62: 19, 64: 60, 87: 24, 93: 73, 95: 75, 98: 78 };
+    const SNAKE_COLORS = ['#22c55e', '#a855f7', '#14b8a6', '#f97316', '#ec4899', '#84cc16', '#06b6d4', '#eab308', '#f43f5e', '#8b5cf6'];
+
+    // Pixel center of a board square (1..100), numbered boustrophedon from
+    // the bottom-left. Cell 0 = the off-board start pocket.
+    function cellCenter(n) {
+      if (n <= 0) return { x: cs * 0.5, y: BOARD - cs * 0.14 };
+      const idx = n - 1;
+      const row = Math.floor(idx / N);
+      let col = idx % N;
+      if (row % 2 === 1) col = N - 1 - col;
+      return { x: col * cs + cs / 2, y: BOARD - (row * cs + cs / 2) };
+    }
+
+    // --- Static board (tiles, numbers, ladders) pre-rendered once ---
+    const boardCanvas = document.createElement('canvas');
+    boardCanvas.width = boardCanvas.height = BOARD;
+    const bx = boardCanvas.getContext('2d');
+
+    function drawStaticBoard() {
+      bx.clearRect(0, 0, BOARD, BOARD);
+      for (let n = 1; n <= 100; n++) {
+        const idx = n - 1;
+        const row = Math.floor(idx / N);
+        let col = idx % N;
+        if (row % 2 === 1) col = N - 1 - col;
+        const x = col * cs;
+        const y = BOARD - (row + 1) * cs;
+        // alternating tile shades, with subtle tints for special squares
+        let fill = (row + col) % 2 === 0 ? '#243b6b' : '#1b2c52';
+        if (LADDERS[n]) fill = '#1c3a2e';        // ladder foot — greenish
+        else if (SNAKES[n]) fill = '#3a1c28';    // snake head — reddish
+        bx.fillStyle = fill;
+        bx.fillRect(x, y, cs, cs);
+        bx.strokeStyle = 'rgba(0,0,0,0.35)';
+        bx.lineWidth = 1;
+        bx.strokeRect(x + 0.5, y + 0.5, cs - 1, cs - 1);
+        // number
+        bx.fillStyle = 'rgba(226,232,240,0.5)';
+        bx.font = 'bold 10px system-ui, sans-serif';
+        bx.textAlign = 'left';
+        bx.textBaseline = 'top';
+        bx.fillText(n, x + 4, y + 3);
+      }
+      // ladders (static)
+      for (const from in LADDERS) drawLadder(cellCenter(+from), cellCenter(LADDERS[from]));
+    }
+
+    function drawLadder(a, b) {
+      const dx = b.x - a.x, dy = b.y - a.y;
+      const L = Math.hypot(dx, dy);
+      const ux = dx / L, uy = dy / L;   // along
+      const nx = -uy, ny = ux;          // normal
+      const half = cs * 0.15;
+      bx.strokeStyle = '#eab308';
+      bx.lineWidth = 4;
+      bx.lineCap = 'round';
+      // two rails
+      for (const s of [-half, half]) {
+        bx.beginPath();
+        bx.moveTo(a.x + nx * s, a.y + ny * s);
+        bx.lineTo(b.x + nx * s, b.y + ny * s);
+        bx.stroke();
+      }
+      // rungs
+      const rungs = Math.max(3, Math.round(L / (cs * 0.55)));
+      bx.strokeStyle = '#ca8a04';
+      bx.lineWidth = 3;
+      for (let i = 1; i < rungs; i++) {
+        const t = i / rungs;
+        const cx = a.x + dx * t, cy = a.y + dy * t;
+        bx.beginPath();
+        bx.moveTo(cx + nx * half, cy + ny * half);
+        bx.lineTo(cx - nx * half, cy - ny * half);
+        bx.stroke();
+      }
+    }
+
+    // --- Animated snakes (drawn live each frame) ---
+    function drawSnake(head, tail, color, seed) {
+      const dx = tail.x - head.x, dy = tail.y - head.y;
+      const L = Math.hypot(dx, dy);
+      const nx = -dy / L, ny = dx / L;
+      const waves = Math.max(2, Math.round(L / 68));
+      const amp = 13;
+      const steps = Math.max(28, Math.round(L / 7));
+      const pts = [];
+      for (let i = 0; i <= steps; i++) {
+        const t = i / steps;
+        // taper the wiggle toward head & tail so ends sit on their squares
+        const env = Math.sin(t * Math.PI);
+        const off = Math.sin(t * Math.PI * waves + wigglePhase * 2.5 + seed) * amp * env;
+        pts.push({ x: head.x + dx * t + nx * off, y: head.y + dy * t + ny * off });
+      }
+      // body — thick colored stroke, tapering by drawing over with thinner near tail
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.strokeStyle = color;
+      ctx.lineWidth = cs * 0.30;
+      stroke(pts);
+      // shaded belly line
+      ctx.strokeStyle = 'rgba(255,255,255,0.28)';
+      ctx.lineWidth = cs * 0.09;
+      stroke(pts);
+      // tail taper
+      ctx.strokeStyle = color;
+      ctx.lineWidth = cs * 0.12;
+      ctx.beginPath();
+      ctx.moveTo(pts[pts.length - 3].x, pts[pts.length - 3].y);
+      ctx.lineTo(pts[pts.length - 1].x, pts[pts.length - 1].y);
+      ctx.stroke();
+      // head
+      drawSnakeHead(pts[0], pts[2], color);
+    }
+
+    function stroke(pts) {
+      ctx.beginPath();
+      ctx.moveTo(pts[0].x, pts[0].y);
+      for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+      ctx.stroke();
+    }
+
+    function drawSnakeHead(h, next, color) {
+      const ang = Math.atan2(h.y - next.y, h.x - next.x); // pointing away from body
+      ctx.save();
+      ctx.translate(h.x, h.y);
+      ctx.rotate(ang);
+      // forked tongue
+      const flick = 4 + Math.sin(wigglePhase * 8) * 2;
+      ctx.strokeStyle = '#f87171';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(cs * 0.24, 0);
+      ctx.lineTo(cs * 0.24 + flick, 0);
+      ctx.moveTo(cs * 0.24 + flick, 0);
+      ctx.lineTo(cs * 0.24 + flick + 4, -3);
+      ctx.moveTo(cs * 0.24 + flick, 0);
+      ctx.lineTo(cs * 0.24 + flick + 4, 3);
+      ctx.stroke();
+      // head shape
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, cs * 0.26, cs * 0.2, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // eyes
+      ctx.fillStyle = '#fff';
+      for (const s of [-1, 1]) {
+        ctx.beginPath();
+        ctx.arc(cs * 0.08, s * cs * 0.09, cs * 0.055, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.fillStyle = '#0f172a';
+      for (const s of [-1, 1]) {
+        ctx.beginPath();
+        ctx.arc(cs * 0.1, s * cs * 0.09, cs * 0.028, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    // --- Players & state ---
+    const players = [
+      { name: 'You', color: 'var(--p1)', fill: '#ef4444', dark: '#b91c1c', cell: 0, px: 0, py: 0, wins: 0 },
+      { name: 'Bot', color: 'var(--p2)', fill: '#3b82f6', dark: '#1d4ed8', cell: 0, px: 0, py: 0, wins: 0 }
+    ];
+    let gameMode = 1;       // 1 = vs bot, 2 = two players
+    let current = 0;        // whose turn
+    let started = false;    // game in progress
+    let win = false;
+    let rolling = false;    // dice is spinning
+    let active = null;      // active token movement animation
+    let wigglePhase = 0;
+    let lastTime = 0;
+    const WIN_VALUE = 1000;
+
+    const rollBtn = document.getElementById('rollBtn');
+    const newBtn = document.getElementById('newBtn');
+    const dieEl = document.getElementById('die');
+    const statusEl = document.getElementById('status');
+    const overlay = document.getElementById('overlay');
+    const overlayTitle = document.getElementById('overlayTitle');
+    const overlayText = document.getElementById('overlayText');
+    const overlayBtn = document.getElementById('overlayBtn');
+    const chips = [document.getElementById('chip0'), document.getElementById('chip1')];
+
+    function isBot(i) { return gameMode === 1 && i === 1; }
+    function homePos(i) { const c = cellCenter(0); return { x: c.x + (i ? 10 : -6), y: c.y }; }
+    function tokenOffset(i) { return i ? { x: 8, y: 7 } : { x: -8, y: -7 }; }
+
+    // --- Dice face rendering (3x3 pip grid) ---
+    const PIPS = {
+      1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8],
+      5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8]
+    };
+    function buildDie() {
+      dieEl.innerHTML = '';
+      for (let i = 0; i < 9; i++) {
+        const s = document.createElement('span');
+        s.className = 'pip';
+        dieEl.appendChild(s);
+      }
+    }
+    function renderDie(face) {
+      const on = new Set(PIPS[face]);
+      Array.from(dieEl.children).forEach((p, i) => p.classList.toggle('on', on.has(i)));
+    }
+
+    function status(msg) { statusEl.textContent = msg; }
+
+    function updateScoreUI() {
+      document.getElementById('wins0').textContent = players[0].wins;
+      document.getElementById('wins1').textContent = players[1].wins;
+    }
+
+    function updateTurnUI() {
+      chips.forEach((c, i) => c.classList.toggle('turn', started && !win && i === current));
+    }
+
+    function refreshNames() {
+      const you = Arcade.getName();
+      players[0].name = you || 'You';
+      players[1].name = gameMode === 1 ? 'Bot' : 'Player 2';
+      document.getElementById('name0').textContent = players[0].name;
+      document.getElementById('name1').textContent = players[1].name;
+    }
+
+    // --- Turn flow ---
+    function startGame() {
+      started = true;
+      win = false;
+      current = 0;
+      players.forEach((p, i) => { p.cell = 0; const h = homePos(i); p.px = h.x; p.py = h.y; });
+      active = null;
+      overlay.classList.remove('show');
+      renderDie(1);
+      updateTurnUI();
+      promptTurn();
+    }
+
+    function promptTurn() {
+      updateTurnUI();
+      if (win) return;
+      if (isBot(current)) {
+        status(players[1].name + ' is thinking…');
+        rollBtn.disabled = true;
+        setTimeout(rollDice, 750);
+      } else {
+        status((players[current].name) + "'s turn — roll!");
+        rollBtn.disabled = false;
+      }
+    }
+
+    function rollDice() {
+      if (!started || win || rolling || active) return;
+      rolling = true;
+      rollBtn.disabled = true;
+      dieEl.classList.add('rolling');
+      const final = 1 + Math.floor(Math.random() * 6);
+      let ticks = 0;
+      const iv = setInterval(() => {
+        renderDie(1 + Math.floor(Math.random() * 6));
+        if (++ticks >= 9) {
+          clearInterval(iv);
+          dieEl.classList.remove('rolling');
+          renderDie(final);
+          rolling = false;
+          status(players[current].name + ' rolled ' + final);
+          moveToken(players[current], final, () => {
+            if (players[current].cell === 100) { handleWin(current); return; }
+            endTurn(final === 6);
+          });
+        }
+      }, 70);
+    }
+
+    function endTurn(extra) {
+      if (win) return;
+      if (extra) {
+        status(players[current].name + ' rolled a 6 — go again!');
+        setTimeout(promptTurn, 600);
+      } else {
+        current = 1 - current;
+        setTimeout(promptTurn, 300);
+      }
+    }
+
+    function handleWin(i) {
+      win = true;
+      active = null;
+      players[i].wins++;
+      const humanWon = (gameMode === 2) || (i === 0);
+      if (humanWon) Arcade.addCoins(WIN_VALUE);
+      const best = gameMode === 1 ? players[0].wins : Math.max(players[0].wins, players[1].wins);
+      Arcade.maybeUpdateHigh(HS_KEY, best * WIN_VALUE);
+      updateScoreUI();
+      updateTurnUI();
+      rollBtn.disabled = true;
+      overlayTitle.textContent = players[i].name + ' wins! 🎉';
+      overlayText.innerHTML = humanWon
+        ? 'Reached 100 first — <b>+1000 coins</b>! 🪙'
+        : 'The Bot reached 100 first. Try again!';
+      overlayBtn.textContent = 'Play Again';
+      overlay.classList.add('show');
+      status(players[i].name + ' reached 100! 🏁');
+    }
+
+    // Build the hop-by-hop animation path, then resolve any snake/ladder.
+    function moveToken(player, roll, done) {
+      const start = player.cell;
+      const target = start + roll;
+      if (target > 100) {
+        status(player.name + ' needs ' + (100 - start) + ' to finish — no move.');
+        setTimeout(() => done(false), 500);
+        return;
+      }
+      const wps = [];
+      for (let n = start + 1; n <= target; n++) wps.push(makeWP(n, 'step'));
+      let special = null, kind = null;
+      if (LADDERS[target]) { special = LADDERS[target]; kind = 'ladder'; wps.push(makeWP(special, 'ladder')); }
+      else if (SNAKES[target]) { special = SNAKES[target]; kind = 'snake'; wps.push(makeWP(special, 'snake')); }
+      startMove(player, wps, () => {
+        if (kind === 'ladder') status(player.name + ' climbed a ladder to ' + special + '! 🪜');
+        else if (kind === 'snake') status('🐍 ' + player.name + ' got bitten — slid down to ' + special + '!');
+        done(true);
+      });
+    }
+
+    function makeWP(cell, kind) { const c = cellCenter(cell); return { x: c.x, y: c.y, cell, kind }; }
+
+    function startMove(player, wps, done) {
+      active = { player, wps, idx: 0, done, hop: 0, len: 1 };
+      beginSeg();
+    }
+    function beginSeg() {
+      const wp = active.wps[active.idx];
+      active.len = Math.max(1, Math.hypot(wp.x - active.player.px, wp.y - active.player.py));
+    }
+
+    function updateActive(dt) {
+      if (!active) return;
+      const p = active.player;
+      const wp = active.wps[active.idx];
+      const dx = wp.x - p.px, dy = wp.y - p.py;
+      const dist = Math.hypot(dx, dy);
+      const speed = wp.kind === 'ladder' ? 300 : wp.kind === 'snake' ? 360 : 620;
+      const step = speed * dt;
+      if (dist <= step || dist < 0.5) {
+        p.px = wp.x; p.py = wp.y; p.cell = wp.cell; active.hop = 0;
+        active.idx++;
+        if (active.idx >= active.wps.length) {
+          const cb = active.done; active = null; cb && cb();
+        } else beginSeg();
+      } else {
+        p.px += dx / dist * step; p.py += dy / dist * step;
+        const prog = 1 - dist / active.len;
+        if (wp.kind === 'step') active.hop = -Math.sin(prog * Math.PI) * 11;
+        else if (wp.kind === 'snake') active.hop = Math.sin(prog * Math.PI * 7) * 3;
+        else active.hop = -Math.sin(prog * Math.PI) * 5;
+      }
+    }
+
+    // --- Token drawing ---
+    function drawToken(p, i) {
+      const off = tokenOffset(i);
+      const x = p.px + off.x;
+      let y = p.py + off.y;
+      if (active && active.player === p) y += active.hop;
+      // shadow
+      ctx.fillStyle = 'rgba(0,0,0,0.35)';
+      ctx.beginPath();
+      ctx.ellipse(x, p.py + off.y + 9, 11, 4, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // pawn body
+      const r = cs * 0.24;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fillStyle = p.fill;
+      ctx.fill();
+      ctx.lineWidth = 2.5;
+      ctx.strokeStyle = '#fff';
+      ctx.stroke();
+      // face — two eyes so the runner has character
+      ctx.fillStyle = '#fff';
+      for (const s of [-1, 1]) {
+        ctx.beginPath();
+        ctx.arc(x + s * r * 0.36, y - r * 0.1, r * 0.24, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.fillStyle = '#0f172a';
+      for (const s of [-1, 1]) {
+        ctx.beginPath();
+        ctx.arc(x + s * r * 0.36, y - r * 0.1, r * 0.11, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, BOARD, BOARD);
+      ctx.drawImage(boardCanvas, 0, 0);
+      // animated snakes on top of the board, below tokens
+      let si = 0;
+      for (const from in SNAKES) {
+        drawSnake(cellCenter(+from), cellCenter(SNAKES[from]), SNAKE_COLORS[si % SNAKE_COLORS.length], si * 1.7);
+        si++;
+      }
+      // draw the non-active token first, active one last (on top)
+      const order = [0, 1].sort((a, b) => (active && active.player === players[a] ? 1 : -1));
+      for (const i of order) drawToken(players[i], i);
+    }
+
+    function frame(t) {
+      if (!lastTime) lastTime = t;
+      const dt = Math.min(0.05, (t - lastTime) / 1000);
+      lastTime = t;
+      wigglePhase = t / 1000;
+      updateActive(dt);
+      draw();
+      requestAnimationFrame(frame);
+    }
+
+    // --- Mode / controls ---
+    function setMode(mode) {
+      gameMode = mode;
+      document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', +b.dataset.mode === mode));
+      players.forEach(p => p.wins = 0);
+      updateScoreUI();
+      refreshNames();
+      // reset to a fresh, unstarted round
+      started = false;
+      win = false;
+      players.forEach((p, i) => { p.cell = 0; const h = homePos(i); p.px = h.x; p.py = h.y; });
+      active = null;
+      rollBtn.disabled = true;
+      renderDie(1);
+      overlayTitle.textContent = 'Snake & Ladders 🎲';
+      overlayText.innerHTML = 'Roll the dice and race to <b>100</b>. Climb ladders 🪜, dodge snakes 🐍. First to land exactly on 100 wins!';
+      overlayBtn.textContent = 'Start Game';
+      overlay.classList.add('show');
+      updateTurnUI();
+      status('Press Start to play');
+    }
+
+    document.querySelectorAll('.mode-btn').forEach(b =>
+      b.addEventListener('click', () => setMode(+b.dataset.mode)));
+    overlayBtn.addEventListener('click', startGame);
+    rollBtn.addEventListener('click', rollDice);
+    newBtn.addEventListener('click', startGame);
+
+    // --- Info menu & high score (shared arcade.js) ---
+    const HS_KEY = 'snakes-ladders-highscore';
+    Arcade.initInfoMenu(HS_KEY);
+
+    // --- Init ---
+    buildDie();
+    renderDie(1);
+    drawStaticBoard();
+    refreshNames();
+    players.forEach((p, i) => { const h = homePos(i); p.px = h.x; p.py = h.y; });
+    requestAnimationFrame(frame);
+  </script>
+
+  <script src="../sw-register.js"></script>
+</body>
+</html>

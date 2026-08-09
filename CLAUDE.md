@@ -20,6 +20,7 @@ games/
   mango.html             Mango — pineapple laser-shooter (canvas arcade)
   pac-man.html           Pac-Man (maze, pellets, ghost AI)
   racing.html            Racing (top-down race vs bot cars, placement scoring)
+  snakes-and-ladders.html  Snake & Ladders (dice race vs bot + 2-player, animated)
 arcade.js                Shared helpers: coin wallet, high scores, Info menu
 sw-register.js           Shared service-worker registration + update UI
 images/
@@ -93,6 +94,17 @@ still works.
   placement (1st = 1000, 2nd = 700, 3rd = 500, else 100) and advances a
   level that adds traffic plus `big` (slow, wide) and `aggressive` (swerve into
   the player) bot types; score accumulates across levels.
+  **Snake & Ladders** is a dice race on a 10×10 boustrophedon board (cell 1
+  bottom-left) with the classic Milton-Bradley `LADDERS`/`SNAKES` maps. It has
+  **no difficulty levels** — just `1 Player` (vs bot) / `2 Players` via the
+  shared `.mode-select`. Each roll animates the token hopping square-by-square
+  (a `sin` hop arc), then resolves a ladder climb or snake slide as an extra
+  animation waypoint; you must land **exactly** on 100 (overshoot = no move) and
+  a **6** grants another turn. The static board + numbers + ladders are
+  pre-rendered to an offscreen canvas once; snakes are drawn live every frame
+  with a time-based sine wiggle (animated). A win pays a flat **1000** (human
+  wins only in 1P, either player in 2P), feeding `addCoins` and
+  `maybeUpdateHigh` (`best win count × 1000`).
 - **Info menu (every game).** Each game has an `ⓘ Info` button
   (`.info-btn`, floated right just after the back link) that opens a `.modal`
   / `.modal-card` overlay with two things: a static **How to Play** section
