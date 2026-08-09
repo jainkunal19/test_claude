@@ -89,10 +89,14 @@
       border-radius: 16px;
       border: 3px solid #052e1a;
       box-shadow: inset 0 2px 20px rgba(0,0,0,0.45);
-      padding: 12px 10px;
+      padding: 14px 12px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-around;
+      gap: 12px;
+      min-height: min(50svh, 500px);   /* grow to fill the space below the header */
     }
-    .hand-area { margin: 4px 0; }
-    .hand-area + .hand-area { margin-top: 10px; }
+    .hand-area { margin: 0; }
     .hand-head {
       display: flex; align-items: center; justify-content: space-between;
       color: #dcfce7; font-weight: 700; font-size: 0.85rem; margin-bottom: 6px; padding: 0 4px;
@@ -103,11 +107,11 @@
     }
     .hand-head .val.bust { background: var(--red); color: #fff; }
     .hand-head .val.bj { background: var(--gold); color: #3a2a06; }
-    .cards { display: flex; gap: 6px; flex-wrap: wrap; min-height: 86px; align-items: center; }
+    .cards { display: flex; gap: 7px; flex-wrap: wrap; align-items: center; min-height: calc(clamp(60px, 17.5vw, 92px) * 1.42 + 8px); }
 
     /* Realistic card faces */
     .card {
-      --w: 58px;
+      --w: clamp(60px, 17.5vw, 92px);
       position: relative;
       width: var(--w);
       height: calc(var(--w) * 1.42);
@@ -125,20 +129,32 @@
     }
     .card .corner.tl { top: 4px; left: 5px; }
     .card .corner.br { bottom: 4px; right: 5px; transform: rotate(180deg); }
-    .card .corner .r { font-weight: 800; font-size: 0.82rem; }
-    .card .corner .s { font-size: 0.72rem; margin-top: 1px; }
-    .card .center { position: absolute; inset: 15px 5px; }
+    .card .corner .r { font-weight: 800; font-size: calc(var(--w) * 0.24); }
+    .card .corner .s { font-size: calc(var(--w) * 0.2); margin-top: 1px; }
+    .card .center { position: absolute; inset: calc(var(--w) * 0.26) calc(var(--w) * 0.09); }
     .card .center.pips .pip {
-      position: absolute; font-size: 0.98rem; line-height: 1;
+      position: absolute; font-size: calc(var(--w) * 0.27); line-height: 1;
     }
-    .card .big-suit { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-size: 2.4rem; }
+    .card .big-suit { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-size: calc(var(--w) * 0.72); }
+
+    /* Court cards: a mirrored Jack/Queen/King figure inside a framed panel,
+       like a real playing card (upright on top, rotated on the bottom). */
+    .card.court .center { inset: calc(var(--w) * 0.24) calc(var(--w) * 0.08); }
     .card.court .court-face {
-      position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
-      border: 2px solid currentColor; border-radius: 5px; margin: 2px;
-      background: repeating-linear-gradient(45deg, rgba(0,0,0,0.03) 0 6px, transparent 6px 12px);
+      position: absolute; inset: 0; overflow: hidden;
+      border: 1.5px solid currentColor; border-radius: 5px;
+      background: repeating-linear-gradient(45deg, rgba(0,0,0,0.045) 0 7px, transparent 7px 14px);
     }
-    .card.court .court-letter { font-size: 1.9rem; font-weight: 800; }
-    .card.court .court-suit { font-size: 1.2rem; margin-top: -2px; }
+    .card.court .court-face::after {
+      content: ''; position: absolute; left: 8%; right: 8%; top: 50%; height: 1px;
+      background: currentColor; opacity: 0.35;
+    }
+    .card.court .court-fig {
+      position: absolute; left: 50%; transform: translateX(-50%);
+      font-size: calc(var(--w) * 0.46); line-height: 1;
+    }
+    .card.court .court-fig.top { top: 1px; }
+    .card.court .court-fig.bot { bottom: 1px; transform: translateX(-50%) rotate(180deg); }
 
     /* Card back */
     .card.back {
@@ -157,7 +173,6 @@
     @keyframes flipIn { from { transform: rotateY(90deg); } to { transform: rotateY(0); } }
     .card.flip { animation: flipIn 0.34s ease both; }
 
-    @media (max-width: 380px) { .card { --w: 50px; } .card .center { inset: 13px 4px; } }
 
     .hint {
       display: none;
@@ -280,6 +295,7 @@
       { s: '♦', c: 'red' }, { s: '♣', c: 'black' }
     ];
     const RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+    const COURT = { J: '🤵', Q: '👸', K: '🤴' };   // Jack / Queen / King figures
 
     // Pip layouts (x%,y%) for number cards; pips in the lower half render rotated.
     const L = 27, C = 50, R = 73;
@@ -401,9 +417,10 @@
         center.appendChild(big);
       } else if (card.rank === 'J' || card.rank === 'Q' || card.rank === 'K') {
         el.classList.add('court');
+        const fig = COURT[card.rank];
         const face = document.createElement('div');
         face.className = 'court-face';
-        face.innerHTML = '<span class="court-letter">' + card.rank + '</span><span class="court-suit">' + card.suit + '</span>';
+        face.innerHTML = '<span class="court-fig top">' + fig + '</span><span class="court-fig bot">' + fig + '</span>';
         center.appendChild(face);
       } else {
         center.classList.add('pips');
