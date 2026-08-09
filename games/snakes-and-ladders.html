@@ -555,7 +555,7 @@
 
     function isBot(i) { return gameMode === 1 && i === 1; }
     function homePos(i) { const c = cellCenter(0); return { x: c.x + (i ? 10 : -6), y: c.y }; }
-    function tokenOffset(i) { return i ? { x: 8, y: 7 } : { x: -8, y: -7 }; }
+    function tokenOffset(i) { return i ? { x: cw * 0.16, y: 0 } : { x: -cw * 0.16, y: 0 }; }
 
     // --- Dice face rendering (3x3 pip grid) ---
     const PIPS = {
@@ -737,7 +737,7 @@
       const baseY = p.py + off.y;
       const moving = !!(active && active.player === p);
       const cy = baseY + (moving ? active.hop : 0);
-      const s = cs / 50;                 // scale to cell size
+      const s = cs / 27;                 // scale so the figure is ~one box tall
       const face = p.facing || 1;
       // legs/arms swing while running; a gentle idle sway when standing
       const swing = moving ? Math.sin(wigglePhase * 16) : Math.sin(wigglePhase * 2) * 0.12;
@@ -745,12 +745,12 @@
       // ground shadow (stays put while the body hops)
       ctx.fillStyle = 'rgba(0,0,0,0.33)';
       ctx.beginPath();
-      ctx.ellipse(x, baseY + 13 * s, 10 * s, 3.4 * s, 0, 0, Math.PI * 2);
+      ctx.ellipse(x, baseY + 15 * s, 10 * s, 3.2 * s, 0, 0, Math.PI * 2);
       ctx.fill();
 
-      const hipY = cy + 3 * s;
-      const shoulderY = cy - 4 * s;
-      const headY = cy - 11 * s;
+      const hipY = cy + 5 * s;
+      const shoulderY = cy - 2 * s;
+      const headY = cy - 9 * s;
       const legLen = 8 * s, armLen = 7 * s;
       ctx.lineCap = 'round';
 
