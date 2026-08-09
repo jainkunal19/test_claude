@@ -20,7 +20,7 @@ games/
   mango.html             Mango — pineapple laser-shooter (canvas arcade)
   pac-man.html           Pac-Man (maze, pellets, ghost AI)
   racing.html            Racing (top-down race vs bot cars, placement scoring)
-  snakes-and-ladders.html  Snake & Ladders (dice race vs bot + 2-player, animated)
+  snakes-and-ladders.html  Snakes & Ladders (dice race vs bot + 2-player, animated)
 arcade.js                Shared helpers: coin wallet, high scores, Info menu
 sw-register.js           Shared service-worker registration + update UI
 images/
@@ -94,7 +94,7 @@ still works.
   placement (1st = 1000, 2nd = 700, 3rd = 500, else 100) and advances a
   level that adds traffic plus `big` (slow, wide) and `aggressive` (swerve into
   the player) bot types; score accumulates across levels.
-  **Snake & Ladders** is a dice race on a 10×10 boustrophedon board (cell 1
+  **Snakes & Ladders** is a dice race on a 10×10 boustrophedon board (cell 1
   bottom-left) with the classic Milton-Bradley `LADDERS`/`SNAKES` maps. It has
   **no difficulty levels** — just `1 Player` (vs bot) / `2 Players` via the
   shared `.mode-select`. Each roll animates the token hopping square-by-square
