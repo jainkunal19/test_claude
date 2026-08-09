@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Snake &amp; Ladders &middot; Alisha Arcade</title>
+  <title>Snakes &amp; Ladders &middot; Alisha Arcade</title>
   <link rel="manifest" href="../manifest.json">
   <meta name="theme-color" content="#0f172a">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -290,7 +290,7 @@
   <main class="game">
     <a class="back-link" href="../index.html">&larr; Back to Alisha Arcade</a>
     <button class="info-btn" id="infoBtn">ⓘ Info</button>
-    <h1>Snake &amp; Ladders 🐍🪜</h1>
+    <h1>Snakes &amp; Ladders 🐍🪜</h1>
 
     <div class="mode-select" id="modeSelect">
       <button class="mode-btn active" data-mode="1">1 Player</button>
@@ -311,7 +311,7 @@
     <div class="board-wrap">
       <canvas id="board" width="500" height="600"></canvas>
       <div class="overlay show" id="overlay">
-        <h2 id="overlayTitle">Snake &amp; Ladders 🎲</h2>
+        <h2 id="overlayTitle">Snakes &amp; Ladders 🎲</h2>
         <p id="overlayText">
           Roll the dice and race to <b>100</b>. Climb ladders 🪜, dodge snakes 🐍.
           First to land exactly on 100 wins!
@@ -839,7 +839,7 @@
       active = null;
       rollBtn.disabled = true;
       renderDie(1);
-      overlayTitle.textContent = 'Snake & Ladders 🎲';
+      overlayTitle.textContent = 'Snakes & Ladders 🎲';
       overlayText.innerHTML = 'Roll the dice and race to <b>100</b>. Climb ladders 🪜, dodge snakes 🐍. First to land exactly on 100 wins!';
       overlayBtn.textContent = 'Start Game';
       overlay.classList.add('show');
