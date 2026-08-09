@@ -54,10 +54,8 @@
     .poster {
       display: block;
       width: 100%;
-      max-width: 680px;
-      aspect-ratio: 2 / 1;       /* short banner — crops to the logo up top */
-      object-fit: cover;
-      object-position: center top;
+      max-width: 720px;
+      height: auto;              /* dedicated 2:1 banner art — shown in full */
       margin: 0 auto;
       border-radius: 16px;
       box-shadow: 0 16px 44px rgba(0, 0, 0, 0.45);
@@ -260,7 +258,7 @@
   </div>
 
   <header>
-    <img class="poster" src="images/poster.png"
+    <img class="poster" src="images/banner.png"
          alt="Alisha Arcade — Many games. One place."
          onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
     <h1 style="display:none;">Alisha Arcade</h1>
