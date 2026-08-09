@@ -110,9 +110,11 @@ still works.
   52-card deck (`buildDeck`/`shuffle`, reshuffled when low), `handValue` scores
   Aces as 1 or 11 (soft/hard), the dealer hides a hole card and hits until 17,
   and closest to 21 without busting wins (two-card 21 = Blackjack, pays 1.5×).
-  Cards are **realistic HTML/CSS**: corner indices, standard pip layouts
-  (`PIPS` table; lower-half pips rotated), court/Ace faces, and a striped card
-  back. The shared `.mode-select` picks **Guided** vs **Unguided** (not 1P/2P):
+  Cards are **realistic**: number cards are HTML/CSS (corner indices + standard
+  pip layouts from the `PIPS` table, lower-half pips rotated), the Ace shows a
+  big center pip, and each **court card (J/Q/K) is a real per-suit image**
+  (`images/court-<rank>-<suit>.png`, all 12) filling the card; a striped card
+  back hides the dealer hole card. The shared `.mode-select` picks **Guided** vs **Unguided** (not 1P/2P):
   guided shows a basic-strategy hint (`suggest()` → hit/stand + reason,
   highlighting the recommended button) and pays **10** per win; unguided gives
   no help and pays **100** (`winValue()`), Blackjack `×1.5`. A win feeds
