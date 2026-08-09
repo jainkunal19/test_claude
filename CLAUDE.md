@@ -76,7 +76,10 @@ still works.
   taps/clicks to fire a laser (pointer input works for mouse and touch alike);
   10 hearts, −½ heart per pineapple that reaches the ground, game over at 0;
   types are regular pineapple (100), golden pineapple (1000), and a mango
-  (🥭, heals one heart, capped at 10), chosen by weighted random.
+  (🥭, heals one heart, capped at 10), chosen by weighted random. Spread guns
+  bought from the Shop (`mango-ak47`, `mango-fire-blaster`) replace the single
+  shot with a 60° cone that clears every pineapple in the arc; a weapon picker
+  above the board appears when more than one gun is owned.
   **Pac-Man** stores its maze as an array of equal-length strings (`#` wall,
   `.` dot, `o` power pellet, `P` pac start, `H` ghost home); before changing
   the maze, re-validate that all rows are the same length and every pellet is
@@ -129,8 +132,11 @@ still works.
   `Arcade.owns(id)` and apply the effect. Example: Racing's `racing-front-bumper`
   / `racing-left-bumper` / `racing-right-bumper` (20000 each, bought separately) —
   each bumper absorbs a hit on its own side (`impactDir` classifies
-  front/left/right/rear) without crashing, and is drawn on the car. Never clear
-  `arcade-owned` or `arcade-coins` on an update.
+  front/left/right/rear) without crashing, and is drawn on the car. Mango's
+  `mango-ak47` / `mango-fire-blaster` (20000 each) are spread guns — each turns
+  the tap-to-shoot into a 60° cone that clears the whole arc. Shop cards carry a
+  one-line `.desc` blurb describing the item. Never clear `arcade-owned` or
+  `arcade-coins` on an update.
 - **Player name.** `Arcade.getName()` / `Arcade.setName()` store an optional
   name (`arcade-player-name`), set via the ⚙️ settings dialog on the landing
   page. Games that address the human as "You"/"Player 1" (Tic Tac Toe, Connect

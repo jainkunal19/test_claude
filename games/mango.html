@@ -158,6 +158,27 @@
     }
     .legend b { color: var(--text); }
 
+    /* Weapon picker — only shown when a spread gun from the Shop is owned. */
+    .weapon-row {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+    .weapon-btn {
+      background: var(--cell);
+      color: var(--muted);
+      border: none;
+      border-radius: 9px;
+      padding: 7px 12px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .weapon-btn.active { background: var(--accent); color: #1a1206; }
+
     /* Info menu */
     .info-btn {
       float: right;
@@ -217,6 +238,8 @@
       <div class="stat"><div class="label">Level</div><div class="value" id="level">1</div></div>
     </div>
 
+    <div class="weapon-row" id="weaponRow" style="display:none;"></div>
+
     <div class="board-wrap">
       <canvas id="board" width="360" height="540"></canvas>
       <div class="overlay show" id="overlay">
@@ -246,7 +269,10 @@
           laser. <b>🍍 Regular</b> = 10, <b style="color:#fbbf24">✦ Golden</b> =
           100. Shoot a <b style="color:#4ade80">🥭 Mango</b> to heal a heart
           (max 10). You start with 10 hearts; every pineapple that reaches the
-          ground costs half a heart — it's game over at 0.
+          ground costs half a heart — it's game over at 0.<br><br>
+          Own the <b>AK-47</b> or <b>Fire Blaster</b> from the Shop to blast a
+          60° spread — every pineapple in the arc pops at once. Pick your gun
+          above the board.
         </p>
         <div class="highscore">Highest Score: <span id="highScore">0</span></div>
         <div class="close-row"><button class="action" id="infoClose" style="padding:10px 20px;">Close</button></div>
@@ -280,15 +306,22 @@
     };
     const WEIGHT_TOTAL = Object.values(TYPES).reduce((s, t) => s + t.weight, 0);
 
-    let pineapples, lasers, particles;
+    let pineapples, lasers, particles, volleys;
     let score, hearts, level, spawnedCount;
     let aimAngle, running, gameOver;
     let rafId, lastTime, spawnTimer, spawnInterval;
+
+    // Spread guns bought from the Shop. Each clears everything inside a 60°
+    // cone aimed at the tap. 'ak47' = 10 lasers fanned across the arc;
+    // 'fire' = a cone of fire. 'laser' is the default single-target shot.
+    const SPREAD = Math.PI / 6; // 30° each side → 60° cone
+    let weapon = 'laser';
 
     function reset() {
       pineapples = [];
       lasers = [];
       particles = [];
+      volleys = [];
       score = 0;
       hearts = MAX_HEARTS;
       level = 1;
@@ -346,10 +379,24 @@
       }
     }
 
+    // Apply a pineapple's effect (score or heal) and spark a burst.
+    function popPineapple(m, fireColor) {
+      const cfg = TYPES[m.type];
+      if (cfg.heal) {
+        hearts = Math.min(MAX_HEARTS, hearts + cfg.heal);
+        burst(m.x, m.y, '#4ade80');
+      } else {
+        score += cfg.points;
+        burst(m.x, m.y, fireColor || (m.type === 'golden' ? '#fbbf24' : '#fde047'));
+      }
+    }
+
     function shootAt(px, py) {
       if (!running) return;
       aimAngle = Math.atan2(py - GUN_Y, px - GUN_X);
-      // Find the front-most pineapple under the point.
+      if (weapon === 'ak47' || weapon === 'fire') { coneShot(); return; }
+
+      // Default laser: find the front-most pineapple under the point.
       let hitIndex = -1;
       for (let i = pineapples.length - 1; i >= 0; i--) {
         const m = pineapples[i];
@@ -358,21 +405,33 @@
 
       if (hitIndex >= 0) {
         const m = pineapples[hitIndex];
-        const cfg = TYPES[m.type];
         lasers.push({ tx: m.x, ty: m.y, life: 0.12 });
-        if (cfg.heal) {
-          hearts = Math.min(MAX_HEARTS, hearts + cfg.heal);
-          burst(m.x, m.y, '#4ade80');
-        } else {
-          score += cfg.points;
-          burst(m.x, m.y, m.type === 'golden' ? '#fbbf24' : '#fde047');
-        }
+        popPineapple(m);
         pineapples.splice(hitIndex, 1);
         updateHud();
       } else {
         // Missed shot — just a laser flash to the tapped point.
         lasers.push({ tx: px, ty: py, life: 0.1 });
       }
+    }
+
+    // Spread guns: clear every pineapple inside a 60° cone aimed at the tap.
+    function coneShot() {
+      volleys.push({ angle: aimAngle, life: 0.2, type: weapon });
+      let hitAny = false;
+      const fireColor = weapon === 'fire' ? '#fb923c' : null;
+      for (let i = pineapples.length - 1; i >= 0; i--) {
+        const m = pineapples[i];
+        let d = Math.atan2(m.y - GUN_Y, m.x - GUN_X) - aimAngle;
+        while (d > Math.PI) d -= Math.PI * 2;
+        while (d < -Math.PI) d += Math.PI * 2;
+        if (Math.abs(d) <= SPREAD) {
+          popPineapple(m, fireColor);
+          pineapples.splice(i, 1);
+          hitAny = true;
+        }
+      }
+      if (hitAny) updateHud();
     }
 
     function loseHeart() {
@@ -399,6 +458,11 @@
       for (let i = lasers.length - 1; i >= 0; i--) {
         lasers[i].life -= dt;
         if (lasers[i].life <= 0) lasers.splice(i, 1);
+      }
+
+      for (let i = volleys.length - 1; i >= 0; i--) {
+        volleys[i].life -= dt;
+        if (volleys[i].life <= 0) volleys.splice(i, 1);
       }
 
       for (let i = particles.length - 1; i >= 0; i--) {
@@ -485,6 +549,44 @@
         ctx.restore();
       }
 
+      // spread-gun volleys (AK-47 fan of lasers / Fire Blaster cone)
+      for (const v of volleys) {
+        const alpha = Math.max(0, v.life / 0.2);
+        if (v.type === 'fire') {
+          const R = 660;
+          const grad = ctx.createRadialGradient(GUN_X, GUN_Y, 12, GUN_X, GUN_Y, R);
+          grad.addColorStop(0, 'rgba(254,240,138,0.95)');
+          grad.addColorStop(0.45, 'rgba(251,146,60,0.75)');
+          grad.addColorStop(1, 'rgba(239,68,68,0)');
+          ctx.save();
+          ctx.globalAlpha = alpha;
+          ctx.fillStyle = grad;
+          ctx.beginPath();
+          ctx.moveTo(GUN_X, GUN_Y);
+          ctx.arc(GUN_X, GUN_Y, R, v.angle - SPREAD, v.angle + SPREAD);
+          ctx.closePath();
+          ctx.fill();
+          ctx.restore();
+        } else {
+          ctx.save();
+          ctx.globalAlpha = alpha;
+          ctx.strokeStyle = '#f87171';
+          ctx.shadowColor = '#ef4444';
+          ctx.shadowBlur = 10;
+          ctx.lineWidth = 3;
+          ctx.lineCap = 'round';
+          const n = 10;
+          for (let k = 0; k < n; k++) {
+            const a = v.angle - SPREAD + (2 * SPREAD) * (k / (n - 1));
+            ctx.beginPath();
+            ctx.moveTo(GUN_X + Math.cos(a) * 30, GUN_Y + Math.sin(a) * 30);
+            ctx.lineTo(GUN_X + Math.cos(a) * 720, GUN_Y + Math.sin(a) * 720);
+            ctx.stroke();
+          }
+          ctx.restore();
+        }
+      }
+
       // particles
       for (const p of particles) {
         ctx.save();
@@ -559,6 +661,31 @@
     boardWrap.addEventListener('dblclick', (e) => e.preventDefault());
 
     overlayBtn.addEventListener('click', startGame);
+
+    // --- Weapons owned from the Shop ---
+    // Build the list of available guns (default laser + any spread guns owned)
+    // and, when there's more than one, show a picker. Default to the strongest.
+    (function setupWeapons() {
+      const weaponRow = document.getElementById('weaponRow');
+      const available = [{ id: 'laser', name: '🔫 Laser' }];
+      if (Arcade.owns('mango-ak47')) available.push({ id: 'ak47', name: '🔫 AK-47' });
+      if (Arcade.owns('mango-fire-blaster')) available.push({ id: 'fire', name: '🔥 Fire Blaster' });
+      weapon = available[available.length - 1].id; // strongest owned by default
+      if (available.length === 1) return; // only the default laser — no picker
+
+      weaponRow.style.display = 'flex';
+      available.forEach((w) => {
+        const btn = document.createElement('button');
+        btn.className = 'weapon-btn' + (w.id === weapon ? ' active' : '');
+        btn.textContent = w.name;
+        btn.addEventListener('click', () => {
+          weapon = w.id;
+          weaponRow.querySelectorAll('.weapon-btn').forEach((b) => b.classList.remove('active'));
+          btn.classList.add('active');
+        });
+        weaponRow.appendChild(btn);
+      });
+    })();
 
     // --- Info menu & high score (shared arcade.js) ---
     const HS_KEY = 'mango-highscore';
