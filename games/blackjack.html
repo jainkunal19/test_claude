@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Blackjack &middot; Alisha Arcade</title>
+  <link rel="manifest" href="../manifest.json">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="Alisha Arcade">
+  <link rel="apple-touch-icon" href="../images/apple-touch-icon.png">
+  <script src="../arcade.js"></script>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #1e293b;
+      --cell: #334155;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --accent: #22c55e;
+      --gold: #fbbf24;
+      --felt: #15803d;
+      --felt-dark: #064e3b;
+      --red: #dc2626;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    button, .back-link { touch-action: manipulation; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      background: radial-gradient(circle at top, #1e293b, var(--bg));
+      color: var(--text);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      padding: 10px 8px 20px;
+    }
+
+    .game {
+      background: var(--panel);
+      border-radius: 20px;
+      padding: 12px 14px 18px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+      width: 100%;
+      max-width: 520px;
+    }
+
+    .back-link {
+      display: inline-flex; align-items: center; gap: 6px;
+      color: #a78bfa; text-decoration: none; font-size: 0.9rem; font-weight: 600; opacity: 0.85;
+    }
+    .back-link:hover { opacity: 1; }
+
+    .info-btn {
+      float: right; background: var(--cell); color: var(--text); border: none;
+      border-radius: 9px; padding: 6px 12px; font-size: 0.85rem; font-weight: 600; cursor: pointer;
+      touch-action: manipulation;
+    }
+    .info-btn:hover { opacity: 0.88; }
+
+    h1 {
+      text-align: center; font-size: 1.7rem; margin: 6px 0 12px;
+      background: linear-gradient(90deg, #22c55e, #fbbf24, #22c55e);
+      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    }
+
+    .mode-select { display: flex; gap: 8px; justify-content: center; margin-bottom: 10px; }
+    .mode-btn {
+      flex: 1; max-width: 170px; background: var(--cell); color: var(--muted); border: none;
+      border-radius: 10px; padding: 9px; font-size: 0.9rem; font-weight: 700; cursor: pointer; touch-action: manipulation;
+    }
+    .mode-btn.active { background: var(--accent); color: #06210f; }
+    .mode-btn .pay { display: block; font-size: 0.64rem; font-weight: 700; opacity: 0.8; margin-top: 2px; }
+
+    .hud { display: flex; gap: 10px; margin-bottom: 12px; }
+    .stat { flex: 1; background: var(--cell); border-radius: 10px; padding: 7px 10px; text-align: center; }
+    .stat .label { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 2px; }
+    .stat .value { font-size: 1.1rem; font-weight: 800; }
+    .stat .value.gold { color: var(--gold); }
+
+    /* Felt table */
+    .table {
+      background: radial-gradient(circle at 50% 30%, var(--felt), var(--felt-dark));
+      border-radius: 16px;
+      border: 3px solid #052e1a;
+      box-shadow: inset 0 2px 20px rgba(0,0,0,0.45);
+      padding: 12px 10px;
+    }
+    .hand-area { margin: 4px 0; }
+    .hand-area + .hand-area { margin-top: 10px; }
+    .hand-head {
+      display: flex; align-items: center; justify-content: space-between;
+      color: #dcfce7; font-weight: 700; font-size: 0.85rem; margin-bottom: 6px; padding: 0 4px;
+    }
+    .hand-head .val {
+      background: rgba(0,0,0,0.35); border-radius: 999px; padding: 2px 10px;
+      font-size: 0.82rem; min-width: 34px; text-align: center;
+    }
+    .hand-head .val.bust { background: var(--red); color: #fff; }
+    .hand-head .val.bj { background: var(--gold); color: #3a2a06; }
+    .cards { display: flex; gap: 6px; flex-wrap: wrap; min-height: 86px; align-items: center; }
+
+    /* Realistic card faces */
+    .card {
+      --w: 58px;
+      position: relative;
+      width: var(--w);
+      height: calc(var(--w) * 1.42);
+      background: #fafafa;
+      border-radius: 8px;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.35);
+      color: #111827;
+      flex: none;
+      overflow: hidden;
+    }
+    .card.red { color: var(--red); }
+    .card.black { color: #111827; }
+    .card .corner {
+      position: absolute; display: flex; flex-direction: column; align-items: center; line-height: 0.95;
+    }
+    .card .corner.tl { top: 4px; left: 5px; }
+    .card .corner.br { bottom: 4px; right: 5px; transform: rotate(180deg); }
+    .card .corner .r { font-weight: 800; font-size: 0.82rem; }
+    .card .corner .s { font-size: 0.72rem; margin-top: 1px; }
+    .card .center { position: absolute; inset: 15px 5px; }
+    .card .center.pips .pip {
+      position: absolute; font-size: 0.98rem; line-height: 1;
+    }
+    .card .big-suit { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-size: 2.4rem; }
+    .card.court .court-face {
+      position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      border: 2px solid currentColor; border-radius: 5px; margin: 2px;
+      background: repeating-linear-gradient(45deg, rgba(0,0,0,0.03) 0 6px, transparent 6px 12px);
+    }
+    .card.court .court-letter { font-size: 1.9rem; font-weight: 800; }
+    .card.court .court-suit { font-size: 1.2rem; margin-top: -2px; }
+
+    /* Card back */
+    .card.back {
+      background:
+        repeating-linear-gradient(45deg, #1d4ed8 0 7px, #1e3a8a 7px 14px);
+      border: 3px solid #fafafa;
+    }
+    .card.back .back-emblem {
+      position: absolute; inset: 6px; border: 2px solid rgba(255,255,255,0.6); border-radius: 6px;
+      display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.9);
+      font-weight: 800; font-size: 1.4rem;
+    }
+
+    @keyframes dealIn { from { opacity: 0; transform: translateY(-18px) scale(0.9); } to { opacity: 1; transform: none; } }
+    .card.deal { animation: dealIn 0.28s ease both; }
+    @keyframes flipIn { from { transform: rotateY(90deg); } to { transform: rotateY(0); } }
+    .card.flip { animation: flipIn 0.34s ease both; }
+
+    @media (max-width: 380px) { .card { --w: 50px; } .card .center { inset: 13px 4px; } }
+
+    .hint {
+      display: none;
+      margin-top: 12px;
+      background: rgba(34, 197, 94, 0.12);
+      border: 1px solid rgba(34, 197, 94, 0.4);
+      color: #bbf7d0;
+      border-radius: 10px;
+      padding: 9px 12px;
+      font-size: 0.85rem;
+      line-height: 1.4;
+    }
+    .hint.show { display: block; }
+    .hint b { color: #fff; }
+
+    #status { text-align: center; margin-top: 12px; font-size: 1rem; font-weight: 800; min-height: 1.4em; }
+    #status.win { color: #4ade80; }
+    #status.lose { color: #f87171; }
+    #status.push { color: var(--gold); }
+
+    .controls { display: flex; gap: 10px; justify-content: center; margin-top: 12px; }
+    button.action {
+      padding: 13px 22px; border: none; border-radius: 12px; font-size: 0.98rem; font-weight: 800; cursor: pointer;
+      color: #06210f; background: linear-gradient(90deg, #22c55e, #16a34a);
+      transition: opacity 0.15s ease, transform 0.1s ease; box-shadow: 0 6px 16px rgba(34, 197, 94, 0.3);
+    }
+    button.action.amber { color: #3a2a06; background: linear-gradient(90deg, #fbbf24, #f59e0b); box-shadow: 0 6px 16px rgba(245,158,11,0.3); }
+    button.action.slate { color: var(--text); background: var(--cell); box-shadow: none; }
+    button.action:hover { opacity: 0.93; transform: translateY(-1px); }
+    button.action:active { transform: translateY(0); }
+    button.action:disabled { opacity: 0.4; cursor: default; transform: none; box-shadow: none; }
+    button.action.suggest { outline: 3px solid #fde047; outline-offset: 2px; }
+
+    .legend { margin-top: 12px; color: var(--muted); font-size: 0.76rem; line-height: 1.6; text-align: center; }
+    .legend b { color: var(--text); }
+
+    /* Info modal */
+    .modal { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.62); z-index: 50; padding: 20px; }
+    .modal.show { display: flex; }
+    .modal-card { background: var(--panel); border-radius: 16px; padding: 24px; width: 100%; max-width: 380px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); max-height: 86vh; overflow-y: auto; }
+    .modal-card h2 { margin-bottom: 10px; font-size: 1.25rem; }
+    .modal-card .how-to { color: #94a3b8; font-size: 0.9rem; line-height: 1.6; margin-bottom: 16px; }
+    .modal-card .highscore { background: var(--cell); border-radius: 10px; padding: 12px; text-align: center; font-weight: 700; margin-bottom: 16px; }
+    .modal-card .highscore span { color: var(--accent); font-size: 1.2rem; }
+    .modal-card .close-row { text-align: right; }
+  </style>
+</head>
+<body>
+  <main class="game">
+    <a class="back-link" href="../index.html">&larr; Back to Alisha Arcade</a>
+    <button class="info-btn" id="infoBtn">ⓘ Info</button>
+    <h1>Blackjack ♠️♥️</h1>
+
+    <div class="mode-select" id="modeSelect">
+      <button class="mode-btn active" data-mode="guided">Guided<span class="pay">learn · 10 / win</span></button>
+      <button class="mode-btn" data-mode="unguided">Unguided<span class="pay">pro · 100 / win</span></button>
+    </div>
+
+    <div class="hud">
+      <div class="stat"><div class="label">Score</div><div class="value gold" id="score">0</div></div>
+      <div class="stat"><div class="label">Wins</div><div class="value" id="wins">0</div></div>
+      <div class="stat"><div class="label">Mode</div><div class="value" id="modeName" style="font-size:0.95rem;">Guided</div></div>
+    </div>
+
+    <div class="table">
+      <div class="hand-area">
+        <div class="hand-head"><span>🏠 House</span><span class="val" id="dealerVal">—</span></div>
+        <div class="cards" id="dealerCards"></div>
+      </div>
+      <div class="hand-area">
+        <div class="hand-head"><span id="playerLabel">🧑 You</span><span class="val" id="playerVal">—</span></div>
+        <div class="cards" id="playerCards"></div>
+      </div>
+    </div>
+
+    <div class="hint" id="hint"></div>
+
+    <div id="status">Press Deal to start</div>
+
+    <div class="controls" id="controls">
+      <button class="action amber" id="dealBtn">Deal</button>
+      <button class="action" id="hitBtn" disabled>Hit</button>
+      <button class="action slate" id="standBtn" disabled>Stand</button>
+    </div>
+
+    <div class="legend">
+      Get closer to <b>21</b> than the House without going over &middot;
+      face cards = 10, Ace = 1 or 11 &middot; House stands on 17
+    </div>
+
+    <div class="modal" id="infoModal">
+      <div class="modal-card">
+        <h2>How to Play</h2>
+        <p class="how-to">
+          Beat the <b>House</b> (the dealer bot) by getting closer to <b>21</b>
+          than it — without going over. Number cards are worth their face value,
+          face cards (J/Q/K) are 10, and an <b>Ace</b> is 1 or 11, whichever helps.
+          <br><br>
+          You get two cards; the House shows one and hides the other. <b>Hit</b>
+          to draw another card or <b>Stand</b> to hold. Go over 21 and you
+          <b>bust</b> (instant loss). When you stand, the House reveals its card
+          and draws until it reaches 17. Closest to 21 wins; equal totals
+          <b>push</b> (tie). A two-card 21 is a <b>Blackjack</b> and pays extra.
+          <br><br>
+          <b>Guided mode</b> shows you basic-strategy advice on every turn so you
+          can learn how the pros play — it pays <b>10</b> per win. <b>Unguided
+          mode</b> gives no help and pays <b>100</b> per win. <b>Highest Score</b>
+          is your best running total in a session.
+        </p>
+        <div class="highscore">Highest Score: <span id="highScore">0</span></div>
+        <div class="close-row"><button class="action" id="infoClose" style="padding:10px 20px;">Close</button></div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // ---- Deck & card model ----
+    const SUITS = [
+      { s: '♠', c: 'black' }, { s: '♥', c: 'red' },
+      { s: '♦', c: 'red' }, { s: '♣', c: 'black' }
+    ];
+    const RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+
+    // Pip layouts (x%,y%) for number cards; pips in the lower half render rotated.
+    const L = 27, C = 50, R = 73;
+    const PIPS = {
+      '2': [[C, 14], [C, 86]],
+      '3': [[C, 14], [C, 50], [C, 86]],
+      '4': [[L, 14], [R, 14], [L, 86], [R, 86]],
+      '5': [[L, 14], [R, 14], [C, 50], [L, 86], [R, 86]],
+      '6': [[L, 14], [R, 14], [L, 50], [R, 50], [L, 86], [R, 86]],
+      '7': [[L, 14], [R, 14], [C, 32], [L, 50], [R, 50], [L, 86], [R, 86]],
+      '8': [[L, 14], [R, 14], [C, 32], [L, 50], [R, 50], [C, 68], [L, 86], [R, 86]],
+      '9': [[L, 14], [R, 14], [L, 38], [R, 38], [C, 50], [L, 62], [R, 62], [L, 86], [R, 86]],
+      '10': [[L, 14], [R, 14], [C, 28], [L, 38], [R, 38], [L, 62], [R, 62], [C, 72], [L, 86], [R, 86]]
+    };
+
+    function cardValue(card) {
+      if (card.rank === 'A') return 11;
+      if (card.rank === 'K' || card.rank === 'Q' || card.rank === 'J' || card.rank === '10') return 10;
+      return Number(card.rank);
+    }
+
+    function handValue(cards) {
+      let total = 0, aces = 0;
+      for (const c of cards) { total += cardValue(c); if (c.rank === 'A') aces++; }
+      while (total > 21 && aces > 0) { total -= 10; aces--; }
+      return { total, soft: aces > 0 };   // soft = an Ace is still counted as 11
+    }
+
+    function isBlackjack(cards) { return cards.length === 2 && handValue(cards).total === 21; }
+
+    // Basic-strategy suggestion (hit/stand only). Returns { move, why }.
+    function suggest(playerCards, dealerUp) {
+      const { total, soft } = handValue(playerCards);
+      const up = cardValue(dealerUp);              // Ace shows as 11
+      const u = dealerUp.rank === 'A' ? 'A' : up;
+      if (total >= 21) return { move: 'stand', why: `You have ${total} — stand.` };
+      if (soft) {
+        if (total >= 19) return { move: 'stand', why: `Soft ${total} is strong — stand.` };
+        if (total === 18) return (up >= 2 && up <= 8)
+          ? { move: 'stand', why: `Soft 18 vs ${u}: stand.` }
+          : { move: 'hit', why: `Soft 18 vs ${u}: hit to improve.` };
+        return { move: 'hit', why: `Soft ${total} can't bust — hit.` };
+      }
+      if (total >= 17) return { move: 'stand', why: `Hard ${total} — stand.` };
+      if (total >= 13) return (up >= 2 && up <= 6)
+        ? { move: 'stand', why: `${total} vs a weak ${u}: stand and let the House risk busting.` }
+        : { move: 'hit', why: `${total} vs a strong ${u}: hit.` };
+      if (total === 12) return (up >= 4 && up <= 6)
+        ? { move: 'stand', why: `12 vs ${u}: stand.` }
+        : { move: 'hit', why: `12 vs ${u}: hit.` };
+      return { move: 'hit', why: `${total} — always hit; you can't bust.` };
+    }
+
+    // ---- DOM ----
+    const dealerCardsEl = document.getElementById('dealerCards');
+    const playerCardsEl = document.getElementById('playerCards');
+    const dealerValEl = document.getElementById('dealerVal');
+    const playerValEl = document.getElementById('playerVal');
+    const scoreEl = document.getElementById('score');
+    const winsEl = document.getElementById('wins');
+    const modeNameEl = document.getElementById('modeName');
+    const statusEl = document.getElementById('status');
+    const hintEl = document.getElementById('hint');
+    const dealBtn = document.getElementById('dealBtn');
+    const hitBtn = document.getElementById('hitBtn');
+    const standBtn = document.getElementById('standBtn');
+
+    // ---- State ----
+    let deck = [];
+    let player = [], dealer = [];
+    let phase = 'idle';        // idle | player | dealer | done
+    let mode = 'guided';       // guided | unguided
+    let sessionScore = 0, wins = 0;
+    let holeHidden = true;
+
+    function buildDeck() {
+      const d = [];
+      for (const su of SUITS) for (const r of RANKS) d.push({ rank: r, suit: su.s, color: su.c });
+      return d;
+    }
+    function shuffle(d) {
+      for (let i = d.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [d[i], d[j]] = [d[j], d[i]];
+      }
+      return d;
+    }
+    function draw() {
+      if (deck.length < 12) deck = shuffle(buildDeck());   // reshuffle when low
+      return deck.pop();
+    }
+
+    // ---- Card rendering ----
+    function makeCardEl(card, faceDown, flip) {
+      const el = document.createElement('div');
+      if (faceDown) {
+        el.className = 'card back deal';
+        const em = document.createElement('span');
+        em.className = 'back-emblem';
+        em.textContent = 'A';
+        el.appendChild(em);
+        return el;
+      }
+      el.className = 'card ' + card.color + ' ' + (flip ? 'flip' : 'deal');
+      const mk = (cls) => {
+        const cor = document.createElement('div');
+        cor.className = 'corner ' + cls;
+        cor.innerHTML = '<span class="r">' + card.rank + '</span><span class="s">' + card.suit + '</span>';
+        return cor;
+      };
+      el.appendChild(mk('tl'));
+      el.appendChild(mk('br'));
+      const center = document.createElement('div');
+      center.className = 'center';
+      if (card.rank === 'A') {
+        const big = document.createElement('span');
+        big.className = 'big-suit';
+        big.textContent = card.suit;
+        center.appendChild(big);
+      } else if (card.rank === 'J' || card.rank === 'Q' || card.rank === 'K') {
+        el.classList.add('court');
+        const face = document.createElement('div');
+        face.className = 'court-face';
+        face.innerHTML = '<span class="court-letter">' + card.rank + '</span><span class="court-suit">' + card.suit + '</span>';
+        center.appendChild(face);
+      } else {
+        center.classList.add('pips');
+        (PIPS[card.rank] || []).forEach(([xx, yy]) => {
+          const pip = document.createElement('span');
+          pip.className = 'pip';
+          pip.textContent = card.suit;
+          pip.style.left = xx + '%';
+          pip.style.top = yy + '%';
+          pip.style.transform = 'translate(-50%,-50%)' + (yy > 50 ? ' rotate(180deg)' : '');
+          center.appendChild(pip);
+        });
+      }
+      el.appendChild(center);
+      return el;
+    }
+
+    function renderHands(revealHole) {
+      playerCardsEl.innerHTML = '';
+      player.forEach(c => playerCardsEl.appendChild(makeCardEl(c, false)));
+      dealerCardsEl.innerHTML = '';
+      dealer.forEach((c, i) => {
+        const hidden = (i === 1 && holeHidden && !revealHole);
+        dealerCardsEl.appendChild(makeCardEl(c, hidden, revealHole && i === 1));
+      });
+      updateValues();
+    }
+
+    function updateValues() {
+      const pv = handValue(player);
+      playerValEl.textContent = player.length ? pv.total : '—';
+      playerValEl.className = 'val' + (pv.total > 21 ? ' bust' : (isBlackjack(player) ? ' bj' : ''));
+      if (holeHidden && dealer.length) {
+        // show only the up-card's value while the hole is hidden
+        dealerValEl.textContent = cardValue(dealer[0]);
+        dealerValEl.className = 'val';
+      } else if (dealer.length) {
+        const dv = handValue(dealer);
+        dealerValEl.textContent = dv.total;
+        dealerValEl.className = 'val' + (dv.total > 21 ? ' bust' : (isBlackjack(dealer) ? ' bj' : ''));
+      } else {
+        dealerValEl.textContent = '—';
+        dealerValEl.className = 'val';
+      }
+    }
+
+    // ---- Guidance ----
+    function updateHint() {
+      if (mode !== 'guided' || phase !== 'player') { hintEl.classList.remove('show'); clearSuggest(); return; }
+      const { move, why } = suggest(player, dealer[0]);
+      hintEl.innerHTML = '💡 <b>Suggested: ' + (move === 'hit' ? 'Hit' : 'Stand') + '</b> — ' + why;
+      hintEl.classList.add('show');
+      clearSuggest();
+      (move === 'hit' ? hitBtn : standBtn).classList.add('suggest');
+    }
+    function clearSuggest() { hitBtn.classList.remove('suggest'); standBtn.classList.remove('suggest'); }
+
+    // ---- Flow ----
+    function setControls(inHand) {
+      dealBtn.disabled = inHand;
+      hitBtn.disabled = !inHand;
+      standBtn.disabled = !inHand;
+    }
+
+    function setStatus(msg, cls) {
+      statusEl.textContent = msg;
+      statusEl.className = cls || '';
+    }
+
+    function newHand() {
+      player = [draw(), draw()];
+      dealer = [draw(), draw()];
+      holeHidden = true;
+      phase = 'player';
+      renderHands(false);
+      setControls(true);
+      setStatus('Your move — Hit or Stand?');
+
+      // Naturals: end immediately if anyone has blackjack.
+      if (isBlackjack(player) || isBlackjack(dealer)) {
+        phase = 'done';
+        revealAndResolve(true);
+        return;
+      }
+      updateHint();
+    }
+
+    function playerHit() {
+      if (phase !== 'player') return;
+      player.push(draw());
+      renderHands(false);
+      const pv = handValue(player);
+      if (pv.total > 21) {
+        phase = 'done';
+        clearSuggest();
+        hintEl.classList.remove('show');
+        revealAndResolve(false);
+      } else if (pv.total === 21) {
+        playerStand();
+      } else {
+        updateHint();
+      }
+    }
+
+    function playerStand() {
+      if (phase !== 'player') return;
+      phase = 'dealer';
+      clearSuggest();
+      hintEl.classList.remove('show');
+      setControls(false);
+      holeHidden = false;
+      renderHands(true);
+      setStatus('House plays…');
+      setTimeout(dealerStep, 650);
+    }
+
+    function dealerStep() {
+      const dv = handValue(dealer);
+      if (dv.total < 17) {
+        dealer.push(draw());
+        renderHands(false);
+        setTimeout(dealerStep, 650);
+      } else {
+        phase = 'done';
+        resolve();
+      }
+    }
+
+    // Reveal the hole card, then resolve (used for busts and naturals).
+    function revealAndResolve(natural) {
+      holeHidden = false;
+      renderHands(true);
+      setTimeout(() => resolve(), natural ? 350 : 250);
+    }
+
+    function winValue() { return mode === 'guided' ? 10 : 100; }
+
+    function resolve() {
+      setControls(false);
+      const pv = handValue(player).total;
+      const dv = handValue(dealer).total;
+      const pBJ = isBlackjack(player);
+      const dBJ = isBlackjack(dealer);
+      let outcome; // 'win' | 'lose' | 'push'
+      let payout = 0;
+      let msg = '';
+
+      if (pBJ || dBJ) {
+        if (pBJ && dBJ) { outcome = 'push'; msg = 'Both Blackjack — push.'; }
+        else if (pBJ) { outcome = 'win'; payout = Math.round(winValue() * 1.5); msg = 'Blackjack! 🎉 +' + payout; }
+        else { outcome = 'lose'; msg = 'House has Blackjack. 😬'; }
+      } else if (pv > 21) {
+        outcome = 'lose'; msg = 'Bust! You went over 21. 💥';
+      } else if (dv > 21) {
+        outcome = 'win'; payout = winValue(); msg = 'House busts — you win! +' + payout;
+      } else if (pv > dv) {
+        outcome = 'win'; payout = winValue(); msg = 'You win! ' + pv + ' beats ' + dv + '. +' + payout;
+      } else if (pv < dv) {
+        outcome = 'lose'; msg = 'House wins, ' + dv + ' to ' + pv + '.';
+      } else {
+        outcome = 'push'; msg = 'Push — ' + pv + ' each.';
+      }
+
+      if (outcome === 'win') {
+        wins++;
+        sessionScore += payout;
+        Arcade.addCoins(payout);
+      }
+      Arcade.maybeUpdateHigh(HS_KEY, sessionScore);
+      updateStats();
+      setStatus(msg, outcome);
+      dealBtn.textContent = 'Deal Again';
+      dealBtn.disabled = false;
+    }
+
+    function updateStats() {
+      scoreEl.textContent = sessionScore;
+      winsEl.textContent = wins;
+    }
+
+    // ---- Mode ----
+    function setMode(m) {
+      mode = m;
+      document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === m));
+      modeNameEl.textContent = m === 'guided' ? 'Guided' : 'Unguided';
+      // switching mode starts a fresh session
+      sessionScore = 0; wins = 0;
+      player = []; dealer = [];
+      phase = 'idle';
+      updateStats();
+      renderHands(false);
+      hintEl.classList.remove('show');
+      clearSuggest();
+      setControls(false);
+      dealBtn.disabled = false;
+      dealBtn.textContent = 'Deal';
+      setStatus('Press Deal to start');
+    }
+
+    // ---- Wiring ----
+    dealBtn.addEventListener('click', newHand);
+    hitBtn.addEventListener('click', playerHit);
+    standBtn.addEventListener('click', playerStand);
+    document.querySelectorAll('.mode-btn').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
+
+    // Info menu & high score (shared arcade.js)
+    const HS_KEY = 'blackjack-highscore';
+    Arcade.initInfoMenu(HS_KEY);
+
+    // Init
+    deck = shuffle(buildDeck());
+    setMode('guided');
+  </script>
+
+  <script src="../sw-register.js"></script>
+</body>
+</html>
