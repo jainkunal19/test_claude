@@ -145,15 +145,17 @@
     .board-wrap {
       position: relative;
       width: min(100%, 640px);
-      width: min(100%, 640px, calc(100svh - 250px));
+      /* board is now taller than wide (5:6) — divide the height budget by the
+         aspect ratio so the taller board still fits without vertical scroll */
+      width: min(100%, 640px, calc((100svh - 250px) / 1.2));
       margin: 0 auto;
     }
     canvas#board {
       display: block;
       width: 100%;
       height: auto;
-      aspect-ratio: 1 / 1;
-      border-radius: 14px;
+      aspect-ratio: 5 / 6;      /* rectangular board — taller cells fill the space */
+      border-radius: 8px;       /* gentle corners that don't clip corner tiles/tokens */
       background: #0b1120;
       touch-action: none;
     }
@@ -307,7 +309,7 @@
     </div>
 
     <div class="board-wrap">
-      <canvas id="board" width="500" height="500"></canvas>
+      <canvas id="board" width="500" height="600"></canvas>
       <div class="overlay show" id="overlay">
         <h2 id="overlayTitle">Snake &amp; Ladders 🎲</h2>
         <p id="overlayText">
@@ -354,9 +356,12 @@
   <script>
     const canvas = document.getElementById('board');
     const ctx = canvas.getContext('2d');
-    const BOARD = canvas.width;      // 500 internal px
+    const BOARD_W = canvas.width;    // 500 internal px wide
+    const BOARD_H = canvas.height;   // 600 internal px tall (rectangular board)
     const N = 10;                    // 10x10 grid
-    const cs = BOARD / N;            // cell size = 50
+    const cw = BOARD_W / N;          // cell width  = 50
+    const ch = BOARD_H / N;          // cell height = 60 (taller cells → rectangular)
+    const cs = Math.min(cw, ch);     // base unit for round art (tokens, snakes, ladders)
 
     // Classic Milton-Bradley layout — { from: to }.
     const LADDERS = { 1: 38, 4: 14, 9: 31, 21: 42, 28: 84, 36: 44, 51: 67, 71: 91, 80: 100 };
@@ -366,37 +371,40 @@
     // Pixel center of a board square (1..100), numbered boustrophedon from
     // the bottom-left. Cell 0 = the off-board start pocket.
     function cellCenter(n) {
-      if (n <= 0) return { x: cs * 0.5, y: BOARD - cs * 0.14 };
+      // Cell 0 = off-board start pocket, kept fully inside the bottom-left so
+      // the start tokens aren't clipped by the board's rounded corner.
+      if (n <= 0) return { x: cw, y: BOARD_H - ch * 0.5 };
       const idx = n - 1;
       const row = Math.floor(idx / N);
       let col = idx % N;
       if (row % 2 === 1) col = N - 1 - col;
-      return { x: col * cs + cs / 2, y: BOARD - (row * cs + cs / 2) };
+      return { x: col * cw + cw / 2, y: BOARD_H - (row * ch + ch / 2) };
     }
 
     // --- Static board (tiles, numbers, ladders) pre-rendered once ---
     const boardCanvas = document.createElement('canvas');
-    boardCanvas.width = boardCanvas.height = BOARD;
+    boardCanvas.width = BOARD_W;
+    boardCanvas.height = BOARD_H;
     const bx = boardCanvas.getContext('2d');
 
     function drawStaticBoard() {
-      bx.clearRect(0, 0, BOARD, BOARD);
+      bx.clearRect(0, 0, BOARD_W, BOARD_H);
       for (let n = 1; n <= 100; n++) {
         const idx = n - 1;
         const row = Math.floor(idx / N);
         let col = idx % N;
         if (row % 2 === 1) col = N - 1 - col;
-        const x = col * cs;
-        const y = BOARD - (row + 1) * cs;
+        const x = col * cw;
+        const y = BOARD_H - (row + 1) * ch;
         // alternating tile shades, with subtle tints for special squares
         let fill = (row + col) % 2 === 0 ? '#243b6b' : '#1b2c52';
         if (LADDERS[n]) fill = '#1c3a2e';        // ladder foot — greenish
         else if (SNAKES[n]) fill = '#3a1c28';    // snake head — reddish
         bx.fillStyle = fill;
-        bx.fillRect(x, y, cs, cs);
+        bx.fillRect(x, y, cw, ch);
         bx.strokeStyle = 'rgba(0,0,0,0.35)';
         bx.lineWidth = 1;
-        bx.strokeRect(x + 0.5, y + 0.5, cs - 1, cs - 1);
+        bx.strokeRect(x + 0.5, y + 0.5, cw - 1, ch - 1);
         // number
         bx.fillStyle = 'rgba(226,232,240,0.5)';
         bx.font = 'bold 10px system-ui, sans-serif';
@@ -757,7 +765,7 @@
     }
 
     function draw() {
-      ctx.clearRect(0, 0, BOARD, BOARD);
+      ctx.clearRect(0, 0, BOARD_W, BOARD_H);
       ctx.drawImage(boardCanvas, 0, 0);
       // animated snakes on top of the board, below tokens
       let si = 0;
