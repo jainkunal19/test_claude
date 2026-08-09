@@ -98,9 +98,12 @@ still works.
   (`const HS_KEY = '<game>-highscore'`) and wire the modal with one line —
   `Arcade.initInfoMenu(HS_KEY)` (from `arcade.js`). Record results with
   `Arcade.maybeUpdateHigh(HS_KEY, v)` wherever a run's result is known: the
-  numeric score at game over for action games (Tetris, Mango, Pac-Man), or 1000
-  points per win (`Math.max(...)` of the win counters × 1000) for turn-based
-  games (Tic Tac Toe, Connect 4). The modal reads the stored value when opened
+  numeric score at game over for action games (Tetris, Mango, Pac-Man), or the
+  per-win value × the win count (`Math.max(...)` of the win counters ×
+  `winValue()`) for turn-based games (Tic Tac Toe, Connect 4). A win's value is
+  **difficulty-scaled** in 1-player mode — Easy **100**, Medium **1000**, Hard
+  **2000** — and a flat **1000** in 2-player mode; a shared `winValue()` helper
+  returns it and feeds both `addCoins` and `maybeUpdateHigh`. The modal reads the stored value when opened
   and is dismissed by its Close button or a tap on the backdrop.
   **High scores are user data.** They live in `localStorage` (separate from the
   service-worker cache, which never touches them) and persist across app/SW
@@ -112,8 +115,9 @@ still works.
   global coin balance in `localStorage` under `arcade-coins` (separate from the
   per-game high scores, and — like them — never cleared by updates). Games call
   the shared `Arcade.addCoins(n)` helper when points are earned: the final score
-  at game over (Tetris, Mango, Pac-Man), each placement award (Racing), or 1000
-  per **human** win (Tic Tac Toe, Connect 4 — guarded by
+  at game over (Tetris, Mango, Pac-Man), each placement award (Racing), or the
+  difficulty-scaled `winValue()` per **human** win (Tic Tac Toe, Connect 4 —
+  Easy 100 / Medium 1000 / Hard 2000 vs bot, 1000 in 2-player; guarded by
   `gameMode === 2 || winner === HUMAN` so bot wins don't pay). The landing page
   shows the total top-right and links to `shop.html`, which reads the same
   balance. New games must call `Arcade.addCoins(...)` wherever they award points.
