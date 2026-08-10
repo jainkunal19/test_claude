@@ -137,11 +137,12 @@
     }
     .card .big-suit { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-size: calc(var(--w) * 0.72); }
 
-    /* Court cards: full suit-correct J/Q/K artwork, shown whole (never cropped). */
+    /* Court cards: suit-correct J/Q/K artwork, padded to the card's aspect
+       ratio so it fills edge-to-edge with an even white border, never cropped. */
     .card.court { background: #fff; }
     .card.court .court-img {
       position: absolute; inset: 0; width: 100%; height: 100%;
-      object-fit: contain; object-position: center; display: block;
+      object-fit: fill; display: block;
     }
 
     /* Card back */
@@ -357,6 +358,13 @@
     const dealBtn = document.getElementById('dealBtn');
     const hitBtn = document.getElementById('hitBtn');
     const standBtn = document.getElementById('standBtn');
+    const playerLabelEl = document.getElementById('playerLabel');
+
+    // The human's display name (from arcade settings), falling back to "You".
+    function playerName() { return Arcade.getName() || 'You'; }
+    function refreshPlayerLabel() { playerLabelEl.textContent = '🧑 ' + playerName(); }
+    // "You win" vs "Kunal wins" — keep subject/verb agreement for either.
+    function winsPhrase() { const n = Arcade.getName(); return n ? n + ' wins' : 'You win'; }
 
     // ---- State ----
     let deck = [];
@@ -570,11 +578,11 @@
         else if (pBJ) { outcome = 'win'; payout = Math.round(winValue() * 1.5); msg = 'Blackjack! 🎉 +' + payout; }
         else { outcome = 'lose'; msg = 'House has Blackjack. 😬'; }
       } else if (pv > 21) {
-        outcome = 'lose'; msg = 'Bust! You went over 21. 💥';
+        outcome = 'lose'; msg = 'Bust! ' + playerName() + ' went over 21. 💥';
       } else if (dv > 21) {
-        outcome = 'win'; payout = winValue(); msg = 'House busts — you win! +' + payout;
+        outcome = 'win'; payout = winValue(); msg = 'House busts — ' + winsPhrase() + '! +' + payout;
       } else if (pv > dv) {
-        outcome = 'win'; payout = winValue(); msg = 'You win! ' + pv + ' beats ' + dv + '. +' + payout;
+        outcome = 'win'; payout = winValue(); msg = winsPhrase() + '! ' + pv + ' beats ' + dv + '. +' + payout;
       } else if (pv < dv) {
         outcome = 'lose'; msg = 'House wins, ' + dv + ' to ' + pv + '.';
       } else {
@@ -603,6 +611,7 @@
       mode = m;
       document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === m));
       modeNameEl.textContent = m === 'guided' ? 'Guided' : 'Unguided';
+      refreshPlayerLabel();
       // switching mode starts a fresh session
       sessionScore = 0; wins = 0;
       player = []; dealer = [];
