@@ -154,12 +154,42 @@
       font-size: 0.85rem;
       opacity: 0.8;
     }
+    /* Shared minted gold-coin icon */
+    .coin-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+    .coin-ico {
+      width: 1.2em;
+      height: 1.2em;
+      vertical-align: -0.24em;
+      flex: none;
+      filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
+    }
   </style>
 </head>
 <body>
+  <!-- Shared gold-coin icon: gold rim, radial-gradient face, embossed star + shine -->
+  <svg class="coin-defs" aria-hidden="true" focusable="false">
+    <defs>
+      <radialGradient id="coinFace" cx="36%" cy="30%" r="78%">
+        <stop offset="0%" stop-color="#fff7d4"/>
+        <stop offset="34%" stop-color="#ffe483"/>
+        <stop offset="68%" stop-color="#f3bd3e"/>
+        <stop offset="100%" stop-color="#cf8f1b"/>
+      </radialGradient>
+      <linearGradient id="coinRim" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#f6cd58"/>
+        <stop offset="100%" stop-color="#b6771a"/>
+      </linearGradient>
+      <symbol id="gold-coin" viewBox="0 0 32 32">
+        <circle cx="16" cy="16" r="15" fill="url(#coinRim)"/>
+        <circle cx="16" cy="16" r="12.4" fill="url(#coinFace)" stroke="#c88d1e" stroke-width="0.7"/>
+        <path d="M16 9 L17.71 13.65 L22.66 13.84 L18.76 16.9 L20.12 21.66 L16 18.9 L11.89 21.66 L13.24 16.9 L9.34 13.84 L14.3 13.65 Z" fill="#b26f13" opacity="0.9"/>
+        <path d="M9.4 10.8a8.7 8.7 0 0 1 5.5-3.9" fill="none" stroke="#fff8e0" stroke-width="1.5" stroke-linecap="round" opacity="0.75"/>
+      </symbol>
+    </defs>
+  </svg>
   <div class="top-bar">
     <a class="back-link" href="index.html">&larr; Back to Arcade</a>
-    <div class="coins">🪙 <span class="label">Coins</span> <span class="amount" id="coinTotal">0</span></div>
+    <div class="coins"><svg class="coin-ico" aria-hidden="true"><use href="#gold-coin"/></svg> <span class="label">Coins</span> <span class="amount" id="coinTotal">0</span></div>
   </div>
 
   <header>
@@ -174,7 +204,7 @@
       <span class="name">Front Bumper</span>
       <span class="for">for Racing</span>
       <span class="desc">Shrugs off head-on hits — a front collision bounces off instead of crashing.</span>
-      <span class="price">🪙 20,000</span>
+      <span class="price"><svg class="coin-ico" aria-hidden="true"><use href="#gold-coin"/></svg>20,000</span>
       <button class="buy-btn">Buy</button>
     </div>
     <div class="item" data-id="racing-left-bumper" data-price="20000">
@@ -182,7 +212,7 @@
       <span class="name">Left Bumper</span>
       <span class="for">for Racing</span>
       <span class="desc">Absorbs hits on your left side so a side-swipe won't end the race.</span>
-      <span class="price">🪙 20,000</span>
+      <span class="price"><svg class="coin-ico" aria-hidden="true"><use href="#gold-coin"/></svg>20,000</span>
       <button class="buy-btn">Buy</button>
     </div>
     <div class="item" data-id="racing-right-bumper" data-price="20000">
@@ -190,7 +220,7 @@
       <span class="name">Right Bumper</span>
       <span class="for">for Racing</span>
       <span class="desc">Absorbs hits on your right side so a side-swipe won't end the race.</span>
-      <span class="price">🪙 20,000</span>
+      <span class="price"><svg class="coin-ico" aria-hidden="true"><use href="#gold-coin"/></svg>20,000</span>
       <button class="buy-btn">Buy</button>
     </div>
     <div class="item" data-id="mango-ak47" data-price="20000">
@@ -198,7 +228,7 @@
       <span class="name">AK-47</span>
       <span class="for">for Mango</span>
       <span class="desc">Fires 10 lasers at once across a 60° spread — clear a whole arc of pineapples in one tap.</span>
-      <span class="price">🪙 20,000</span>
+      <span class="price"><svg class="coin-ico" aria-hidden="true"><use href="#gold-coin"/></svg>20,000</span>
       <button class="buy-btn">Buy</button>
     </div>
     <div class="item" data-id="mango-fire-blaster" data-price="20000">
@@ -206,7 +236,7 @@
       <span class="name">Fire Blaster</span>
       <span class="for">for Mango</span>
       <span class="desc">Blasts a 60° cone of fire that torches every pineapple caught in the flames.</span>
-      <span class="price">🪙 20,000</span>
+      <span class="price"><svg class="coin-ico" aria-hidden="true"><use href="#gold-coin"/></svg>20,000</span>
       <button class="buy-btn">Buy</button>
     </div>
 
@@ -217,7 +247,7 @@
       <span class="name">Neon Car Skins</span>
       <span class="for">for Racing</span>
       <span class="desc">Light up the track with a set of glowing neon paint jobs for your car.</span>
-      <span class="price">🪙 5,000</span>
+      <span class="price"><svg class="coin-ico" aria-hidden="true"><use href="#gold-coin"/></svg>5,000</span>
       <button disabled>Coming soon</button>
     </div>
     <div class="item">
@@ -226,7 +256,7 @@
       <span class="name">Turbo Boost</span>
       <span class="for">for Racing</span>
       <span class="desc">A burst of extra speed on tap to blow past the bot cars.</span>
-      <span class="price">🪙 3,000</span>
+      <span class="price"><svg class="coin-ico" aria-hidden="true"><use href="#gold-coin"/></svg>3,000</span>
       <button disabled>Coming soon</button>
     </div>
     <div class="item">
@@ -235,7 +265,7 @@
       <span class="name">Golden Blaster</span>
       <span class="for">for Mango</span>
       <span class="desc">A golden laser upgrade that makes every pineapple worth extra points.</span>
-      <span class="price">🪙 4,000</span>
+      <span class="price"><svg class="coin-ico" aria-hidden="true"><use href="#gold-coin"/></svg>4,000</span>
       <button disabled>Coming soon</button>
     </div>
     <div class="item">
@@ -244,7 +274,7 @@
       <span class="name">Ghost Skin Pack</span>
       <span class="for">for Pac-Man</span>
       <span class="desc">Fresh looks for the maze ghosts to spice up every chase.</span>
-      <span class="price">🪙 3,500</span>
+      <span class="price"><svg class="coin-ico" aria-hidden="true"><use href="#gold-coin"/></svg>3,500</span>
       <button disabled>Coming soon</button>
     </div>
     <div class="item">
@@ -253,7 +283,7 @@
       <span class="name">Retro Block Theme</span>
       <span class="for">for Tetris</span>
       <span class="desc">Classic arcade block colors for a nostalgic look in the well.</span>
-      <span class="price">🪙 2,500</span>
+      <span class="price"><svg class="coin-ico" aria-hidden="true"><use href="#gold-coin"/></svg>2,500</span>
       <button disabled>Coming soon</button>
     </div>
     <div class="item">
@@ -262,12 +292,12 @@
       <span class="name">Board Themes</span>
       <span class="for">for Tic Tac Toe &amp; Connect 4</span>
       <span class="desc">New board palettes to restyle your Tic Tac Toe and Connect 4 games.</span>
-      <span class="price">🪙 2,000</span>
+      <span class="price"><svg class="coin-ico" aria-hidden="true"><use href="#gold-coin"/></svg>2,000</span>
       <button disabled>Coming soon</button>
     </div>
   </main>
 
-  <footer>More accessories are on the way — keep stacking those coins! 🪙</footer>
+  <footer>More accessories are on the way — keep stacking those coins! <svg class="coin-ico" aria-hidden="true"><use href="#gold-coin"/></svg></footer>
 
   <script>
     (function () {
