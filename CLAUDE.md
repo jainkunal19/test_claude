@@ -105,7 +105,12 @@ still works.
   pre-rendered to an offscreen canvas once; snakes are drawn live every frame
   with a time-based sine wiggle (animated). A win pays a flat **1000** (human
   wins only in 1P, either player in 2P), feeding `addCoins` and
-  `maybeUpdateHigh` (`best win count × 1000`).
+  `maybeUpdateHigh` (`best win count × 1000`). It also has **procedural sound
+  effects** via a small Web Audio `SFX` module (no audio files): dice rattle,
+  footsteps, a rising ladder arpeggio, a descending snake slide, six/bust
+  chimes, and a win fanfare. The `AudioContext` is created/resumed on the first
+  user gesture (Start/roll); a 🔊/🔇 header toggle mutes it, persisted in
+  `localStorage` under `snakes-ladders-muted`.
   **Blackjack** is a single-hand card game vs the **House** (dealer bot): a full
   52-card deck (`buildDeck`/`shuffle`, reshuffled when low), `handValue` scores
   Aces as 1 or 11 (soft/hard), the dealer hides a hole card and hits until 17,
