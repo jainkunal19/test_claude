@@ -216,29 +216,32 @@
       var c = _live();
       if (!c) return { setSpeed: function () {}, stop: function () {} };
       var t = c.currentTime;
-      var o1 = c.createOscillator(); o1.type = 'sawtooth'; o1.frequency.value = 70;
-      var o2 = c.createOscillator(); o2.type = 'sawtooth'; o2.frequency.value = 72;
-      var lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 700;
+      // Smooth hum: a sine fundamental plus a soft triangle octave, rounded off
+      // by a gentle low-pass. No sawtooth, so it hums instead of buzzing.
+      var o1 = c.createOscillator(); o1.type = 'sine'; o1.frequency.value = 80;
+      var o2 = c.createOscillator(); o2.type = 'triangle'; o2.frequency.value = 160;
+      var h = c.createGain(); h.gain.value = 0.3;            // octave quieter than fundamental
+      var lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 900; lp.Q.value = 0.2;
       var g = c.createGain(); g.gain.value = 0.0001;
-      o1.connect(lp); o2.connect(lp); lp.connect(g); g.connect(_out());
+      o1.connect(lp); o2.connect(h); h.connect(lp); lp.connect(g); g.connect(_out());
       o1.start(t); o2.start(t);
-      g.gain.exponentialRampToValueAtTime(0.05, t + 0.3);   // fade in
+      g.gain.exponentialRampToValueAtTime(0.045, t + 0.4); // gentle fade in
       var stopped = false;
       return {
         setSpeed: function (frac) {
           if (stopped) return;
           frac = frac < 0 ? 0 : frac > 1 ? 1 : frac;
-          var now = c.currentTime, f = 55 + frac * 130;
-          o1.frequency.setTargetAtTime(f, now, 0.06);
-          o2.frequency.setTargetAtTime(f * 1.03, now, 0.06);
-          lp.frequency.setTargetAtTime(500 + frac * 1600, now, 0.06);
-          g.gain.setTargetAtTime(0.035 + frac * 0.05, now, 0.06);
+          var now = c.currentTime, f = 70 + frac * 90;       // 70..160 Hz, mellow range
+          o1.frequency.setTargetAtTime(f, now, 0.12);        // slow, smooth glide
+          o2.frequency.setTargetAtTime(f * 2, now, 0.12);
+          lp.frequency.setTargetAtTime(650 + frac * 900, now, 0.12);
+          g.gain.setTargetAtTime(0.03 + frac * 0.04, now, 0.12);
         },
         stop: function () {
           if (stopped) return; stopped = true;
           var now = c.currentTime;
-          g.gain.setTargetAtTime(0.0001, now, 0.06);
-          try { o1.stop(now + 0.4); o2.stop(now + 0.4); } catch (e) {}
+          g.gain.setTargetAtTime(0.0001, now, 0.08);
+          try { o1.stop(now + 0.5); o2.stop(now + 0.5); } catch (e) {}
         }
       };
     }
