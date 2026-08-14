@@ -303,6 +303,8 @@
     let powerUp = null, invincibleTimer = 0;
     let frontBumper = false, leftBumper = false, rightBumper = false; // owned Shop accessories
     let running, gameOver, phase; // phase: 'race' | 'done'
+    let engine = null;            // running engine-sound controller
+    function stopEngine() { if (engine) { engine.stop(); engine = null; } }
     let finishDist;
     let leftHeld, rightHeld, upHeld, downHeld, touchAccel = 0; // touchAccel: -1 brake, 0 cruise, +1 boost
     let rafId, lastTime;
@@ -398,6 +400,7 @@
       if (downHeld || touchAccel < 0) target = 150;
       player.speed += (target - player.speed) * Math.min(1, dt * 3);
       player.progress += player.speed * dt;
+      if (engine) engine.setSpeed((player.speed - 140) / 220);  // rev with speed
 
       // --- Player steering ---
       const steer = 320;
@@ -693,6 +696,7 @@
     }
 
     function startLevel() {
+      stopEngine();
       player.progress = 0;
       player.speed = 250;
       player.x = player.targetX = (W - P_W) / 2;
@@ -710,6 +714,7 @@
       updateHud();
       overlay.classList.remove('show');
       running = true; gameOver = false; phase = 'race'; lastTime = 0;
+      engine = Arcade.sound.engine();   // start the engine hum
       cancelAnimationFrame(rafId);
       rafId = requestAnimationFrame(loop);
     }
@@ -745,6 +750,7 @@
 
     function finishRace() {
       running = false;
+      stopEngine();
       const rank = liveRank();
       const gained = rank === 1 ? 1000 : rank === 2 ? 700 : rank === 3 ? 500 : 100;
       score += gained;
@@ -772,7 +778,8 @@
 
     function crash() {
       running = false; gameOver = true;
-      Arcade.sound.down();         // crash!
+      stopEngine();
+      Arcade.sound.crash();        // crash!
       Arcade.maybeUpdateHigh(HS_KEY, score);
       cancelAnimationFrame(rafId);
       draw();

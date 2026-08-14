@@ -177,10 +177,13 @@ still works.
   engine (all tones/noise generated at runtime, no audio files, so it works
   offline). Reusable presets any game calls: `roll`, `step`, `up`, `down`
   (a scary snake-bite/damage growl), `chime`, `buzz`, `coin`, `click`, `pop`,
-  `zap`, `drop`, `win` (an exciting rising run into a chord + sparkle), `lose`;
-  plus primitives `tone(opts)` / `burst(opts)` / `seq(freqs, opts)` for custom
-  sounds. Every effect is a safe no-op when muted or when Web Audio is
-  unavailable. **Call `Arcade.sound.ensure()` from a user gesture** (Start
+  `zap`, `drop`, `crash` (a car-collision impact), `win` (an exciting rising run
+  into a chord + sparkle), `lose`; plus primitives `tone(opts)` / `burst(opts)`
+  / `seq(freqs, opts)` for custom sounds, and **`engine()`** which returns a
+  looping engine-hum controller (`setSpeed(0..1)` revs it, `stop()` fades it
+  out — Racing uses it). Everything routes through a master gain, so muting
+  silences even ongoing sounds like the engine. Every effect is a safe no-op
+  when muted or when Web Audio is unavailable. **Call `Arcade.sound.ensure()` from a user gesture** (Start
   button / first tap) so mobile browsers allow playback, then call the presets
   at event points (move/drop, hit, win, lose, game over). Mute is **arcade-wide**
   (`Arcade.sound.setMuted/isMuted/toggle`, persisted under `arcade-muted`):
