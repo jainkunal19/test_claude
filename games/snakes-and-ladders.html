@@ -372,74 +372,22 @@
     const SNAKES  = { 16: 6, 47: 26, 49: 11, 56: 53, 62: 19, 64: 60, 87: 24, 93: 73, 95: 75, 98: 78 };
     const SNAKE_COLORS = ['#22c55e', '#a855f7', '#14b8a6', '#f97316', '#ec4899', '#84cc16', '#06b6d4', '#eab308', '#f43f5e', '#8b5cf6'];
 
-    // --- Sound effects (Web Audio, generated on the fly — no audio files) ---
-    const SFX = (function () {
-      const KEY = 'snakes-ladders-muted';
-      let actx = null;
-      let muted = false;
-      try { muted = localStorage.getItem(KEY) === '1'; } catch (e) {}
-
-      // Create/resume the audio context — must be called from a user gesture.
-      function ensure() {
-        if (!actx) {
-          const AC = window.AudioContext || window.webkitAudioContext;
-          if (!AC) return null;
-          try { actx = new AC(); } catch (e) { return null; }
-        }
-        if (actx.state === 'suspended') actx.resume();
-        return actx;
-      }
-      function setMuted(v) { muted = v; try { localStorage.setItem(KEY, v ? '1' : '0'); } catch (e) {} }
-      function isMuted() { return muted; }
-
-      // One oscillator note with an attack/decay envelope.
-      function note(freq, t0, dur, type, vol, glideTo) {
-        const o = actx.createOscillator();
-        const g = actx.createGain();
-        o.type = type || 'sine';
-        o.frequency.setValueAtTime(freq, t0);
-        if (glideTo) o.frequency.exponentialRampToValueAtTime(glideTo, t0 + dur);
-        g.gain.setValueAtTime(0.0001, t0);
-        g.gain.exponentialRampToValueAtTime(vol, t0 + 0.012);
-        g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-        o.connect(g); g.connect(actx.destination);
-        o.start(t0); o.stop(t0 + dur + 0.02);
-      }
-      // A short filtered-noise burst (dice rattle / snake hiss).
-      function noise(t0, dur, vol, freq, q) {
-        const n = Math.floor(actx.sampleRate * dur);
-        const buf = actx.createBuffer(1, n, actx.sampleRate);
-        const d = buf.getChannelData(0);
-        for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
-        const src = actx.createBufferSource(); src.buffer = buf;
-        const bp = actx.createBiquadFilter(); bp.type = 'bandpass';
-        bp.frequency.value = freq || 1200; bp.Q.value = q || 0.8;
-        const g = actx.createGain(); g.gain.value = vol;
-        src.connect(bp); bp.connect(g); g.connect(actx.destination);
-        src.start(t0); src.stop(t0 + dur);
-      }
-      function guard() { if (muted) return null; return ensure(); }
-
-      return {
-        ensure, setMuted, isMuted,
-        dice() { const c = guard(); if (!c) return; const t = c.currentTime;
-          for (let i = 0; i < 5; i++) noise(t + i * 0.075, 0.06, 0.14, 500 + Math.random() * 900, 1.2); },
-        land() { const c = guard(); if (!c) return; const t = c.currentTime; note(320, t, 0.09, 'triangle', 0.18); },
-        hop() { const c = guard(); if (!c) return; const t = c.currentTime; note(680, t, 0.07, 'sine', 0.10); },
-        climb() { const c = guard(); if (!c) return; const t = c.currentTime;   // rising arpeggio
-          [523, 659, 784, 1047].forEach((f, i) => note(f, t + i * 0.09, 0.16, 'triangle', 0.16)); },
-        snake() { const c = guard(); if (!c) return; const t = c.currentTime;   // downward slide + hiss
-          note(700, t, 0.5, 'sawtooth', 0.16, 150); noise(t, 0.5, 0.06, 2600, 0.6); },
-        six() { const c = guard(); if (!c) return; const t = c.currentTime;      // cheerful two-note
-          note(784, t, 0.12, 'square', 0.14); note(1175, t + 0.1, 0.16, 'square', 0.14); },
-        bust() { const c = guard(); if (!c) return; const t = c.currentTime;     // sad low buzz
-          note(200, t, 0.45, 'sawtooth', 0.16, 90); },
-        win() { const c = guard(); if (!c) return; const t = c.currentTime;      // fanfare
-          [523, 659, 784, 1047, 1319].forEach((f, i) => note(f, t + i * 0.11, 0.32, 'triangle', 0.2)); },
-        lose() { const c = guard(); if (!c) return; const t = c.currentTime;
-          [392, 330, 262].forEach((f, i) => note(f, t + i * 0.16, 0.3, 'triangle', 0.18)); }
-      };
-    })();
+    // Sound effects live in the shared library now (Arcade.sound), with an
+    // arcade-wide mute. Map the game's names onto the shared presets so the
+    // rest of the code reads naturally.
+    const SFX = {
+      ensure: Arcade.sound.ensure,
+      isMuted: Arcade.sound.isMuted,
+      setMuted: Arcade.sound.setMuted,
+      dice: Arcade.sound.roll,   // dice rattle
+      hop: Arcade.sound.step,    // footstep on landing a square
+      climb: Arcade.sound.up,    // rising arpeggio up a ladder
+      snake: Arcade.sound.down,  // descending slide + hiss
+      six: Arcade.sound.chime,   // cheerful chime on a 6
+      bust: Arcade.sound.buzz,   // low buzz on three-6s bust
+      win: Arcade.sound.win,
+      lose: Arcade.sound.lose
+    };
 
     // Pixel center of a board square (1..100), numbered boustrophedon from
     // the bottom-left. Cell 0 = the off-board start pocket.

@@ -22,7 +22,7 @@ games/
   racing.html            Racing (top-down race vs bot cars, placement scoring)
   snakes-and-ladders.html  Snakes & Ladders (dice race vs bot + 2-player, animated)
   blackjack.html         Blackjack (vs House/dealer bot; guided + unguided modes)
-arcade.js                Shared helpers: coin wallet, high scores, Info menu
+arcade.js                Shared helpers: coin wallet, high scores, Info menu, sound FX
 sw-register.js           Shared service-worker registration + update UI
 images/
   tic-tac-toe.png        Game thumbnails (referenced by index.html)
@@ -37,7 +37,8 @@ README.md
 Each game is a **single `.html` file** — its CSS lives in a `<style>` block and
 its game logic in a `<script>` block in the same file. The only shared code is
 two small root scripts every page includes: **`arcade.js`** (coin wallet, high
-scores, Info-menu wiring — `window.Arcade`) and **`sw-register.js`** (offline
+scores, Info-menu wiring, and shared Web Audio sound effects `Arcade.sound`
+with an arcade-wide mute — `window.Arcade`) and **`sw-register.js`** (offline
 service-worker registration + update UI). No CDNs; CSS stays per-page. Games
 reference the shared scripts with `../arcade.js` / `../sw-register.js` (root
 pages drop the `../`), and both are precached by the service worker so offline
@@ -105,12 +106,10 @@ still works.
   pre-rendered to an offscreen canvas once; snakes are drawn live every frame
   with a time-based sine wiggle (animated). A win pays a flat **1000** (human
   wins only in 1P, either player in 2P), feeding `addCoins` and
-  `maybeUpdateHigh` (`best win count × 1000`). It also has **procedural sound
-  effects** via a small Web Audio `SFX` module (no audio files): dice rattle,
-  footsteps, a rising ladder arpeggio, a descending snake slide, six/bust
-  chimes, and a win fanfare. The `AudioContext` is created/resumed on the first
-  user gesture (Start/roll); a 🔊/🔇 header toggle mutes it, persisted in
-  `localStorage` under `snakes-ladders-muted`.
+  `maybeUpdateHigh` (`best win count × 1000`). It uses the shared
+  **`Arcade.sound`** effects (dice `roll`, `step`, ladder `up`, snake `down`,
+  `chime`/`buzz`, `win`/`lose`) with a 🔊/🔇 header toggle; audio is unlocked on
+  the first user gesture (Start/roll).
   **Blackjack** is a single-hand card game vs the **House** (dealer bot): a full
   52-card deck (`buildDeck`/`shuffle`, reshuffled when low), `handValue` scores
   Aces as 1 or 11 (soft/hard), the dealer hides a hole card and hits until 17,
