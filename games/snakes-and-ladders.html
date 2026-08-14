@@ -290,6 +290,7 @@
   <main class="game">
     <a class="back-link" href="../index.html">&larr; Back to Alisha Arcade</a>
     <button class="info-btn" id="infoBtn">ⓘ Info</button>
+    <button class="info-btn" id="soundBtn" style="margin-right:8px;" aria-label="Toggle sound">🔊</button>
     <h1>Snakes &amp; Ladders 🐍🪜</h1>
 
     <div class="mode-select" id="modeSelect">
@@ -370,6 +371,23 @@
     const LADDERS = { 1: 38, 4: 14, 9: 31, 21: 42, 28: 84, 36: 44, 51: 67, 71: 91, 80: 100 };
     const SNAKES  = { 16: 6, 47: 26, 49: 11, 56: 53, 62: 19, 64: 60, 87: 24, 93: 73, 95: 75, 98: 78 };
     const SNAKE_COLORS = ['#22c55e', '#a855f7', '#14b8a6', '#f97316', '#ec4899', '#84cc16', '#06b6d4', '#eab308', '#f43f5e', '#8b5cf6'];
+
+    // Sound effects live in the shared library now (Arcade.sound), with an
+    // arcade-wide mute. Map the game's names onto the shared presets so the
+    // rest of the code reads naturally.
+    const SFX = {
+      ensure: Arcade.sound.ensure,
+      isMuted: Arcade.sound.isMuted,
+      setMuted: Arcade.sound.setMuted,
+      dice: Arcade.sound.roll,   // dice rattle
+      hop: Arcade.sound.step,    // footstep on landing a square
+      climb: Arcade.sound.up,    // rising arpeggio up a ladder
+      snake: Arcade.sound.down,  // descending slide + hiss
+      six: Arcade.sound.chime,   // cheerful chime on a 6
+      bust: Arcade.sound.buzz,   // low buzz on three-6s bust
+      win: Arcade.sound.win,
+      lose: Arcade.sound.lose
+    };
 
     // Pixel center of a board square (1..100), numbered boustrophedon from
     // the bottom-left. Cell 0 = the off-board start pocket.
@@ -601,6 +619,7 @@
 
     // --- Turn flow ---
     function startGame() {
+      SFX.ensure();          // unlock audio on this user gesture
       started = true;
       win = false;
       current = 0;
@@ -632,6 +651,7 @@
       rolling = true;
       rollBtn.disabled = true;
       dieEl.classList.add('rolling');
+      SFX.dice();
       const final = 1 + Math.floor(Math.random() * 6);
       let ticks = 0;
       const iv = setInterval(() => {
@@ -655,10 +675,12 @@
         turnSum += 6;
         if (sixStreak === 3) {
           turnSum = 0;
+          SFX.bust();
           status(p.name + ' rolled three 6s in a row — turn lost! 🚫');
           setTimeout(() => endTurn(), 900);
           return;
         }
+        SFX.six();
         status(p.name + ' rolled a 6 — roll again! (total ' + turnSum + ')');
         if (isBot(current)) setTimeout(rollDice, 750);
         else rollBtn.disabled = false;
@@ -692,6 +714,7 @@
       updateScoreUI();
       updateTurnUI();
       rollBtn.disabled = true;
+      if (humanWon) SFX.win(); else SFX.lose();
       overlayTitle.textContent = players[i].name + ' wins! 🎉';
       overlayText.innerHTML = humanWon
         ? 'Reached 100 first — <b>+1000 coins</b>! 🪙'
@@ -743,10 +766,16 @@
       const step = speed * dt;
       if (dist <= step || dist < 0.5) {
         p.px = wp.x; p.py = wp.y; p.cell = wp.cell; active.hop = 0;
+        if (wp.kind === 'step') SFX.hop();     // footstep as we land each square
         active.idx++;
         if (active.idx >= active.wps.length) {
           const cb = active.done; active = null; cb && cb();
-        } else beginSeg();
+        } else {
+          beginSeg();
+          const nx = active.wps[active.idx];   // sound for the next leg
+          if (nx.kind === 'ladder') SFX.climb();
+          else if (nx.kind === 'snake') SFX.snake();
+        }
       } else {
         p.px += dx / dist * step; p.py += dy / dist * step;
         if (Math.abs(dx) > 0.5) p.facing = dx > 0 ? 1 : -1; // face the way we run
@@ -879,6 +908,17 @@
     overlayBtn.addEventListener('click', startGame);
     rollBtn.addEventListener('click', rollDice);
     newBtn.addEventListener('click', startGame);
+
+    // --- Sound toggle ---
+    const soundBtn = document.getElementById('soundBtn');
+    function renderSound() { soundBtn.textContent = SFX.isMuted() ? '🔇' : '🔊'; }
+    renderSound();
+    soundBtn.addEventListener('click', () => {
+      const nowMuted = !SFX.isMuted();
+      SFX.setMuted(nowMuted);
+      renderSound();
+      if (!nowMuted) { SFX.ensure(); SFX.six(); }  // confirmation blip when turning on
+    });
 
     // --- Info menu & high score (shared arcade.js) ---
     const HS_KEY = 'snakes-ladders-highscore';
