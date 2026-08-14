@@ -99,20 +99,26 @@
   // no audio files, so it works offline). Every game can reuse these. Sounds
   // are safe no-ops when muted or when Web Audio is unavailable. ---
   var _actx = null;
+  var _master = null;
   var _muted = false;
   try { _muted = localStorage.getItem(MUTED_KEY) === '1'; } catch (e) {}
 
   // Create/resume the AudioContext. Call from a user gesture (tap/click) so
-  // mobile browsers allow playback.
+  // mobile browsers allow playback. Everything routes through a master gain so
+  // mute can silence even ongoing sounds (e.g. the racing engine).
   function _ctx() {
     if (!_actx) {
       var AC = global.AudioContext || global.webkitAudioContext;
       if (!AC) return null;
       try { _actx = new AC(); } catch (e) { return null; }
+      _master = _actx.createGain();
+      _master.gain.value = _muted ? 0 : 1;
+      _master.connect(_actx.destination);
     }
     if (_actx.state === 'suspended') { try { _actx.resume(); } catch (e) {} }
     return _actx;
   }
+  function _out() { return _master || (_actx && _actx.destination); }
   function _live() { return _muted ? null : _ctx(); }
 
   // One oscillator note with an attack/decay envelope (optional pitch glide).
@@ -124,7 +130,7 @@
     g.gain.setValueAtTime(0.0001, t0);
     g.gain.exponentialRampToValueAtTime(vol, t0 + 0.012);
     g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-    o.connect(g); g.connect(c.destination);
+    o.connect(g); g.connect(_out());
     o.start(t0); o.stop(t0 + dur + 0.02);
   }
   // A short filtered-noise burst (rattles, hisses, impacts).
@@ -136,7 +142,7 @@
     var bp = c.createBiquadFilter(); bp.type = 'bandpass';
     bp.frequency.value = freq || 1200; bp.Q.value = q || 0.8;
     var g = c.createGain(); g.gain.value = vol;
-    src.connect(bp); bp.connect(g); g.connect(c.destination);
+    src.connect(bp); bp.connect(g); g.connect(_out());
     src.start(t0); src.stop(t0 + dur);
   }
 
@@ -144,7 +150,11 @@
     // Mute control (shared across the whole arcade).
     ensure: function () { return _ctx(); },
     isMuted: function () { return _muted; },
-    setMuted: function (v) { _muted = !!v; try { localStorage.setItem(MUTED_KEY, _muted ? '1' : '0'); } catch (e) {} },
+    setMuted: function (v) {
+      _muted = !!v;
+      try { localStorage.setItem(MUTED_KEY, _muted ? '1' : '0'); } catch (e) {}
+      if (_master && _actx) { try { _master.gain.setTargetAtTime(_muted ? 0 : 1, _actx.currentTime, 0.02); } catch (e) { _master.gain.value = _muted ? 0 : 1; } }
+    },
     toggle: function () { sound.setMuted(!_muted); return _muted; },
 
     // Primitives — build any custom sound. opts.delay offsets from "now".
@@ -189,7 +199,49 @@
       [523, 659, 784, 1047].forEach(function (f) { _note(c, f, ct, 0.75, 'triangle', 0.14); });   // chord
       [1568, 2093, 1568, 2637].forEach(function (f, i) { _note(c, f, ct + 0.18 + i * 0.1, 0.16, 'sine', 0.1); }); // sparkle
     },
-    lose: function () { sound.seq([392, 330, 262], { gap: 0.16, dur: 0.3, type: 'triangle', vol: 0.18 }); }
+    lose: function () { sound.seq([392, 330, 262], { gap: 0.16, dur: 0.3, type: 'triangle', vol: 0.18 }); },
+
+    // Car crash: low crunch + glass/debris + a downward metallic clang + thud.
+    crash: function () {
+      var c = _live(); if (!c) return; var t = c.currentTime;
+      _noise(c, t, 0.4, 0.22, 500, 0.4);
+      _noise(c, t, 0.22, 0.14, 3000, 0.7);
+      _note(c, 300, t, 0.35, 'square', 0.18, 60);
+      _note(c, 90, t + 0.02, 0.4, 'sine', 0.2);
+    },
+
+    // A continuous engine hum. Returns a controller: setSpeed(0..1) revs it,
+    // stop() fades it out. No-op controller when muted / unsupported.
+    engine: function () {
+      var c = _live();
+      if (!c) return { setSpeed: function () {}, stop: function () {} };
+      var t = c.currentTime;
+      var o1 = c.createOscillator(); o1.type = 'sawtooth'; o1.frequency.value = 70;
+      var o2 = c.createOscillator(); o2.type = 'sawtooth'; o2.frequency.value = 72;
+      var lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 700;
+      var g = c.createGain(); g.gain.value = 0.0001;
+      o1.connect(lp); o2.connect(lp); lp.connect(g); g.connect(_out());
+      o1.start(t); o2.start(t);
+      g.gain.exponentialRampToValueAtTime(0.05, t + 0.3);   // fade in
+      var stopped = false;
+      return {
+        setSpeed: function (frac) {
+          if (stopped) return;
+          frac = frac < 0 ? 0 : frac > 1 ? 1 : frac;
+          var now = c.currentTime, f = 55 + frac * 130;
+          o1.frequency.setTargetAtTime(f, now, 0.06);
+          o2.frequency.setTargetAtTime(f * 1.03, now, 0.06);
+          lp.frequency.setTargetAtTime(500 + frac * 1600, now, 0.06);
+          g.gain.setTargetAtTime(0.035 + frac * 0.05, now, 0.06);
+        },
+        stop: function () {
+          if (stopped) return; stopped = true;
+          var now = c.currentTime;
+          g.gain.setTargetAtTime(0.0001, now, 0.06);
+          try { o1.stop(now + 0.4); o2.stop(now + 0.4); } catch (e) {}
+        }
+      };
+    }
   };
   Arcade.sound = sound;
 
