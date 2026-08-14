@@ -173,6 +173,19 @@ still works.
   page. Games that address the human as "You"/"Player 1" (Tic Tac Toe, Connect
   4) use it in the scoreboard labels, turn status, and win messages, falling
   back to the defaults ("You" in 1P, "Player X"/"Red" in 2P) when it's unset.
+- **Sound effects.** `arcade.js` exposes **`Arcade.sound`** — a small Web Audio
+  engine (all tones/noise generated at runtime, no audio files, so it works
+  offline). Reusable presets any game calls: `roll`, `step`, `up`, `down`
+  (a scary snake-bite/damage growl), `chime`, `buzz`, `coin`, `click`, `pop`,
+  `zap`, `drop`, `win` (an exciting rising run into a chord + sparkle), `lose`;
+  plus primitives `tone(opts)` / `burst(opts)` / `seq(freqs, opts)` for custom
+  sounds. Every effect is a safe no-op when muted or when Web Audio is
+  unavailable. **Call `Arcade.sound.ensure()` from a user gesture** (Start
+  button / first tap) so mobile browsers allow playback, then call the presets
+  at event points (move/drop, hit, win, lose, game over). Mute is **arcade-wide**
+  (`Arcade.sound.setMuted/isMuted/toggle`, persisted under `arcade-muted`):
+  toggled from the landing page's ⚙️ settings dialog, and Snake & Ladders also
+  has an in-game 🔊/🔇 header button. New games should wire these in.
 
 ## Adding a new game
 

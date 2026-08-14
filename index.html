@@ -244,6 +244,12 @@
       outline: none;
     }
     .modal-card input:focus { border-color: var(--accent); }
+    .modal-card .sound-row {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 10px; margin: 14px 0 4px; font-size: 0.95rem; font-weight: 600;
+      cursor: pointer;
+    }
+    .modal-card .sound-row input { width: auto; margin: 0; transform: scale(1.4); cursor: pointer; accent-color: var(--accent); }
     .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
     .modal-actions button {
       padding: 10px 18px;
@@ -300,6 +306,10 @@
       <h2>Your name</h2>
       <p class="hint">Used in games in place of "You" / "Player 1".</p>
       <input id="nameInput" type="text" maxlength="20" placeholder="Enter your name" autocomplete="off">
+      <label class="sound-row" for="soundToggle">
+        <span>🔊 Sound effects</span>
+        <input type="checkbox" id="soundToggle">
+      </label>
       <div class="modal-actions">
         <button class="btn-ghost" id="nameCancel">Cancel</button>
         <button class="btn-primary" id="nameSave">Save</button>
@@ -419,9 +429,19 @@
       const input = document.getElementById('nameInput');
       const saveBtn = document.getElementById('nameSave');
       const cancelBtn = document.getElementById('nameCancel');
-      function openSettings() { input.value = Arcade.getName(); modal.classList.add('show'); setTimeout(() => input.focus(), 50); }
+      const soundToggle = document.getElementById('soundToggle');
+      function openSettings() {
+        input.value = Arcade.getName();
+        soundToggle.checked = !Arcade.sound.isMuted();
+        modal.classList.add('show');
+        setTimeout(() => input.focus(), 50);
+      }
       function closeSettings() { modal.classList.remove('show'); }
       function save() { Arcade.setName(input.value); renderGreeting(); closeSettings(); }
+      soundToggle.addEventListener('change', () => {
+        Arcade.sound.setMuted(!soundToggle.checked);
+        if (soundToggle.checked) { Arcade.sound.ensure(); Arcade.sound.chime(); } // confirmation blip
+      });
       settingsBtn.addEventListener('click', openSettings);
       cancelBtn.addEventListener('click', closeSettings);
       saveBtn.addEventListener('click', save);

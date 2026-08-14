@@ -496,6 +496,8 @@
     }
 
     function newHand() {
+      Arcade.sound.ensure();       // unlock audio on this gesture
+      Arcade.sound.step();         // deal
       player = [draw(), draw()];
       dealer = [draw(), draw()];
       holeHidden = true;
@@ -516,6 +518,7 @@
     function playerHit() {
       if (phase !== 'player') return;
       player.push(draw());
+      Arcade.sound.step();         // card dealt
       renderHands(false);
       const pv = handValue(player);
       if (pv.total > 21) {
@@ -546,6 +549,7 @@
       const dv = handValue(dealer);
       if (dv.total < 17) {
         dealer.push(draw());
+        Arcade.sound.step();       // House draws
         renderHands(false);
         setTimeout(dealerStep, 650);
       } else {
@@ -593,6 +597,11 @@
         wins++;
         sessionScore += payout;
         Arcade.addCoins(payout);
+        Arcade.sound.win();
+      } else if (outcome === 'lose') {
+        Arcade.sound.lose();
+      } else {
+        Arcade.sound.chime();       // push — neutral
       }
       Arcade.maybeUpdateHigh(HS_KEY, sessionScore);
       updateStats();

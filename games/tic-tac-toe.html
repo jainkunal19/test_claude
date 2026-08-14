@@ -339,6 +339,8 @@
       cell.textContent = player;
       cell.classList.add(player.toLowerCase());
       cell.disabled = true;
+      Arcade.sound.ensure();
+      Arcade.sound.click();        // mark placed
 
       const winningLine = getWinningLine();
       if (winningLine) {
@@ -408,11 +410,13 @@
           statusEl.textContent = 'Player O wins! 🎉';
         }
         winningLine.forEach(i => cells[i].classList.add('win'));
-        if (gameMode === 2 || winner === HUMAN) Arcade.addCoins(winValue()); // your win earns arcade coins
+        if (gameMode === 2 || winner === HUMAN) { Arcade.addCoins(winValue()); Arcade.sound.win(); } // your win earns arcade coins
+        else Arcade.sound.lose();  // bot won
       } else {
         scores.draw++;
         scoreEls.draw.textContent = scores.draw;
         statusEl.textContent = "It's a draw!";
+        Arcade.sound.chime();      // draw
       }
       Arcade.maybeUpdateHigh(HS_KEY, Math.max(scores.X, scores.O) * winValue()); // points per win scale with difficulty
     }

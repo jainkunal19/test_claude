@@ -393,6 +393,7 @@
         level = Math.floor(lines / 10) + 1;
         dropInterval = Math.max(80, 1000 - (level - 1) * 90);
         updateStats();
+        Arcade.sound[cleared === 4 ? 'coin' : 'chime']();  // Tetris! vs line clear
       }
     }
 
@@ -403,6 +404,7 @@
     }
 
     function lockPiece() {
+      Arcade.sound.drop();         // piece lands
       merge(current);
       clearLines();
       current = nextPiece;
@@ -534,6 +536,7 @@
     }
 
     function startGame() {
+      Arcade.sound.ensure();
       grid = emptyGrid();
       score = 0;
       lines = 0;
@@ -556,6 +559,7 @@
     function endGame() {
       gameOver = true;
       cancelAnimationFrame(rafId);
+      Arcade.sound.lose();
       Arcade.maybeUpdateHigh(HS_KEY, score);
       Arcade.addCoins(score);
       overlayTitle.textContent = 'Game Over';

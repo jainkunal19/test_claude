@@ -404,6 +404,8 @@
       board[r][col] = player;
       const cell = cellEls[r][col];
       cell.classList.add(player.toLowerCase(), 'drop');
+      Arcade.sound.ensure();
+      Arcade.sound.drop();         // disc drops
 
       const win = getWin(board);
       if (win) {
@@ -460,11 +462,13 @@
         } else {
           statusEl.textContent = 'Yellow wins! 🎉';
         }
-        if (gameMode === 2 || winner === HUMAN) Arcade.addCoins(winValue()); // your win earns arcade coins
+        if (gameMode === 2 || winner === HUMAN) { Arcade.addCoins(winValue()); Arcade.sound.win(); } // your win earns arcade coins
+        else Arcade.sound.lose();  // bot won
       } else {
         scores.draw++;
         scoreEls.draw.textContent = scores.draw;
         statusEl.textContent = "It's a draw!";
+        Arcade.sound.chime();      // draw
       }
       Arcade.maybeUpdateHigh(HS_KEY, Math.max(scores.R, scores.Y) * winValue()); // points per win scale with difficulty
     }

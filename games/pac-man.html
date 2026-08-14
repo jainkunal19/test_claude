@@ -399,10 +399,11 @@
 
     function eatAt(r, c) {
       const p = pellets[r][c];
-      if (p === 1) { score += 10; pellets[r][c] = 0; pelletsRemaining--; }
+      if (p === 1) { score += 10; pellets[r][c] = 0; pelletsRemaining--; Arcade.sound.pop(); }        // chomp a dot
       else if (p === 2) {
         score += 50; pellets[r][c] = 0; pelletsRemaining--;
         frightenedTimer = FRIGHT_MS; eatenChain = 0;
+        Arcade.sound.up();          // power pellet — turn the tables
       }
       if (p) updateHud();
       if (pelletsRemaining === 0) nextLevel();
@@ -439,11 +440,13 @@
       const ghostTiles = parseMaze(); // refill pellets
       resetPositions();
       updateHud();
+      Arcade.sound.win();            // maze cleared
     }
 
     function pacDie() {
       lives--;
       updateHud();
+      Arcade.sound.down();           // caught!
       if (lives <= 0) { endGame(); return; }
       resetPositions();
     }
@@ -451,6 +454,7 @@
     function eatGhost(g) {
       score += 200 * Math.pow(2, eatenChain);
       eatenChain++;
+      Arcade.sound.coin();           // ate a ghost
       const t = { r: ghostHome.r, c: ghostHome.c };
       g.r = t.r; g.c = t.c; g.x = centerX(t.c); g.y = centerY(t.r);
       g.dir = null; g.moving = false;
@@ -580,6 +584,7 @@
     }
 
     function startGame() {
+      Arcade.sound.ensure();
       const ghostTiles = parseMaze();
       score = 0; lives = 3; level = 1;
       frightenedTimer = 0; eatenChain = 0;
@@ -599,6 +604,7 @@
     function endGame() {
       running = false; gameOver = true;
       cancelAnimationFrame(rafId);
+      Arcade.sound.lose();
       Arcade.maybeUpdateHigh(HS_KEY, score);
       Arcade.addCoins(score);
       overlayTitle.textContent = 'Game Over';
