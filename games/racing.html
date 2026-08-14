@@ -414,6 +414,7 @@
           player.progress < powerUp.progC + powerUp.r && player.progress + player.h > powerUp.progC - powerUp.r) {
         powerUp.taken = true;
         invincibleTimer = POWER_MS;
+        Arcade.sound.up();          // grabbed the star
       }
 
       // --- Bots ---
@@ -754,6 +755,7 @@
       draw();
       if (rank <= 3) {
         // Top 3 advance to the next level.
+        Arcade.sound.win();
         overlayTitle.textContent = `Finished ${ordinal(rank)}! 🏁`;
         overlayText.innerHTML =
           `+${gained} points &nbsp;·&nbsp; Total: <strong>${score}</strong><br>Top 3 advance — on to Level ${level + 1}!`;
@@ -762,6 +764,7 @@
         overlay.classList.add('show');
       } else {
         // Outside the top 3 — counts as a failed attempt (showFailure shows the overlay).
+        Arcade.sound.lose();
         showFailure(`Finished ${ordinal(rank)} 🏁`,
           `+${gained} points &nbsp;·&nbsp; Total: <strong>${score}</strong> &middot; only top 3 advance`);
       }
@@ -769,6 +772,7 @@
 
     function crash() {
       running = false; gameOver = true;
+      Arcade.sound.down();         // crash!
       Arcade.maybeUpdateHigh(HS_KEY, score);
       cancelAnimationFrame(rafId);
       draw();
@@ -779,6 +783,7 @@
     }
 
     overlayBtn.addEventListener('click', () => {
+      Arcade.sound.ensure();       // unlock audio on this gesture
       if (phase === 'done') { level++; retriesLeft = MAX_RETRIES; startLevel(); } // next level, retries reset
       else if (phase === 'retry') { retriesLeft--; startLevel(); }                // use a retry, same level
       else { startGame(); }                                                       // game over / first start -> fresh

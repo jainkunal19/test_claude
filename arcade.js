@@ -168,9 +168,27 @@
     coin: function () { var c = _live(); if (!c) return; var t = c.currentTime; _note(c, 988, t, 0.09, 'square', 0.14); _note(c, 1319, t + 0.08, 0.14, 'square', 0.14); },
     chime: function () { var c = _live(); if (!c) return; var t = c.currentTime; _note(c, 784, t, 0.12, 'square', 0.14); _note(c, 1175, t + 0.1, 0.16, 'square', 0.14); },
     buzz: function () { sound.tone({ freq: 200, dur: 0.45, type: 'sawtooth', vol: 0.16, glideTo: 90 }); },
+    pop: function () { sound.tone({ freq: 880, dur: 0.08, type: 'triangle', vol: 0.14 }); },
+    zap: function () { var c = _live(); if (!c) return; _note(c, 1200, c.currentTime, 0.14, 'square', 0.12, 300); },
+    drop: function () { var c = _live(); if (!c) return; var t = c.currentTime; _note(c, 300, t, 0.14, 'triangle', 0.16, 120); _note(c, 150, t + 0.02, 0.16, 'sine', 0.12); },
     up: function () { sound.seq([523, 659, 784, 1047], { gap: 0.09, dur: 0.16, type: 'triangle', vol: 0.16 }); },
-    down: function () { var c = _live(); if (!c) return; var t = c.currentTime; _note(c, 700, t, 0.5, 'sawtooth', 0.16, 150); _noise(c, t, 0.5, 0.06, 2600, 0.6); },
-    win: function () { sound.seq([523, 659, 784, 1047, 1319], { gap: 0.11, dur: 0.32, type: 'triangle', vol: 0.2 }); },
+    // Scary snake bite / damage: a detuned downward growl + low sub + hiss + thud.
+    down: function () {
+      var c = _live(); if (!c) return; var t = c.currentTime;
+      _note(c, 480, t, 0.6, 'sawtooth', 0.16, 70);      // growl voice 1
+      _note(c, 507, t, 0.6, 'sawtooth', 0.12, 66);      // detuned voice 2 (beating)
+      _note(c, 140, t + 0.04, 0.55, 'sine', 0.16, 52);  // ominous sub
+      _noise(c, t, 0.6, 0.09, 2200, 0.5);               // hiss
+      _note(c, 85, t + 0.5, 0.2, 'sine', 0.22);         // final thud
+    },
+    // Exciting win: a rising run into a held major chord with a sparkle on top.
+    win: function () {
+      var c = _live(); if (!c) return; var t = c.currentTime;
+      [523, 659, 784, 1047].forEach(function (f, i) { _note(c, f, t + i * 0.09, 0.2, 'triangle', 0.18); });
+      var ct = t + 4 * 0.09;
+      [523, 659, 784, 1047].forEach(function (f) { _note(c, f, ct, 0.75, 'triangle', 0.14); });   // chord
+      [1568, 2093, 1568, 2637].forEach(function (f, i) { _note(c, f, ct + 0.18 + i * 0.1, 0.16, 'sine', 0.1); }); // sparkle
+    },
     lose: function () { sound.seq([392, 330, 262], { gap: 0.16, dur: 0.3, type: 'triangle', vol: 0.18 }); }
   };
   Arcade.sound = sound;

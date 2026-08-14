@@ -393,6 +393,7 @@
 
     function shootAt(px, py) {
       if (!running) return;
+      Arcade.sound.zap();          // laser fires
       aimAngle = Math.atan2(py - GUN_Y, px - GUN_X);
       if (weapon === 'ak47' || weapon === 'fire') { coneShot(); return; }
 
@@ -406,6 +407,7 @@
       if (hitIndex >= 0) {
         const m = pineapples[hitIndex];
         lasers.push({ tx: m.x, ty: m.y, life: 0.12 });
+        Arcade.sound[TYPES[m.type].heal ? 'chime' : 'pop']();  // heal vs regular hit
         popPineapple(m);
         pineapples.splice(hitIndex, 1);
         updateHud();
@@ -431,12 +433,13 @@
           hitAny = true;
         }
       }
-      if (hitAny) updateHud();
+      if (hitAny) { updateHud(); Arcade.sound.pop(); }
     }
 
     function loseHeart() {
       hearts -= 0.5;
       updateHud();
+      Arcade.sound.tone({ freq: 180, dur: 0.18, type: 'sawtooth', vol: 0.14, glideTo: 110 }); // missed!
       if (hearts <= 0) { hearts = 0; endGame(); }
     }
 
@@ -613,6 +616,7 @@
     }
 
     function startGame() {
+      Arcade.sound.ensure();
       reset();
       overlay.classList.remove('show');
       running = true;
@@ -626,6 +630,7 @@
       running = false;
       gameOver = true;
       cancelAnimationFrame(rafId);
+      Arcade.sound.lose();
       Arcade.maybeUpdateHigh(HS_KEY, score);
       Arcade.addCoins(score);
       draw();
