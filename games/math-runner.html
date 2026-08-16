@@ -263,10 +263,11 @@
       <div class="overlay show" id="overlay">
         <h2 id="overlayTitle">Math Runner &#127939;</h2>
         <p id="overlayText">
-          Run down the path and pick the lane with the correct answer.<br>
-          Wrong answer? You'll still see the right one flash green &mdash; just
-          costs half a heart.<br>
-          Every correct answer earns a coin!
+          Monsters guard every answer! Tap the lane with the
+          <b>correct answer</b> to slay the beast in it.<br>
+          Get it wrong and that creature takes a bite &mdash; but you'll still
+          see the right answer flash green.<br>
+          Every monster you slay earns a coin!
         </p>
         <button class="action" id="overlayBtn">Start</button>
       </div>
@@ -274,7 +275,7 @@
 
     <div class="legend">
       <b>Tap the answer</b> you want &middot; or swipe / &larr; &rarr; keys &middot;
-      10 &#10084;&#65039; hearts, &minus;&frac12; per miss &middot; +1 coin per correct answer
+      right = slay the monster &amp; +1 coin &middot; wrong = bitten, &minus;&frac12; &#10084;&#65039;
     </div>
 
     <div class="modal" id="settingsModal">
@@ -327,15 +328,20 @@
         <h2>How to Play</h2>
         <p class="how-to">
           Your runner auto-runs down a 3-lane path. As each gate approaches,
-          it shows a math problem with one answer per lane &mdash; get to the
-          correct one by <b>tapping the answer you want</b>, or by swiping
-          across the board / using the &larr; &rarr; keys to step one lane at
-          a time.<br><br>
-          Pick right and the lane flashes green, you earn <b>+1 coin</b>, and
-          your correct-answer count goes up. Pick wrong and both your lane
-          (red) and the correct lane (green) flash so you still see the right
-          answer &mdash; but it costs <b>&minus;&frac12; heart</b>. You start
-          with 10 hearts; it's game over at 0.<br><br>
+          it shows a math problem with one answer per lane &mdash; and a
+          <b>monster guarding each one</b>. Get to the correct answer by
+          <b>tapping the lane you want</b>, or by swiping across the board /
+          using the &larr; &rarr; keys to step one lane at a time.<br><br>
+          Pick right and you <b>slay that creature</b> on the way through, the
+          lane flashes green, and you earn <b>+1 coin</b>. Pick wrong and the
+          monster in your lane lunges and bites you for
+          <b>&minus;&frac12; heart</b> &mdash; but both your lane (red) and the
+          correct lane (green) flash, so you still see the right answer. You
+          start with 10 hearts; it's game over at 0.<br><br>
+          Watch out as you level up: friendly <b style="color:#84cc16">slimes</b>
+          and <b style="color:#cbd5e1">ghosts</b> give way to
+          <b style="color:#a855f7">ogres</b> and finally fire-breathing
+          <b style="color:#ef4444">dragons</b>.<br><br>
           Tap &#9881;&#65039; <b>Settings</b> to turn problem types
           (Addition/Subtraction/Multiplication/Division) on or off, and set
           an independent <b>Easy/Medium/Hard</b> difficulty for each one.
@@ -566,6 +572,25 @@
     const HORIZON = H * 0.16;
     const CONFETTI_PALETTE = ['#fbbf24', '#f472b6', '#38bdf8', '#4ade80', '#a78bfa'];
 
+    // Creatures guard the answers just beyond each gate. Nastier ones only
+    // start showing up at higher levels (same level-gating idea as Racing's
+    // bot types).
+    const CREATURE_GAP = 108; // world units beyond the gate the creatures stand
+    const CREATURE_TYPES = {
+      slime:  { color: '#84cc16', dark: '#3f6212', minLevel: 1, weight: 30 },
+      ghost:  { color: '#cbd5e1', dark: '#64748b', minLevel: 1, weight: 26 },
+      ogre:   { color: '#a855f7', dark: '#581c87', minLevel: 3, weight: 26 },
+      dragon: { color: '#ef4444', dark: '#7f1d1d', minLevel: 5, weight: 24 }
+    };
+
+    function pickCreatureType() {
+      const pool = Object.keys(CREATURE_TYPES).filter((k) => level >= CREATURE_TYPES[k].minLevel);
+      const total = pool.reduce((s, k) => s + CREATURE_TYPES[k].weight, 0);
+      let r = Math.random() * total;
+      for (const k of pool) { if ((r -= CREATURE_TYPES[k].weight) < 0) return k; }
+      return pool[0];
+    }
+
     function laneCenterX(lane) { return ROAD_L + (lane + 0.5) * (ROAD_R - ROAD_L) / LANES; }
     function worldToScreenY(y) { return PLAYER_SCREEN_Y - (y - player.progress); }
 
@@ -616,22 +641,33 @@
       levelEl.textContent = level;
     }
 
-    // --- Particles (shared system for dust / confetti / impact) ---
-    function spawnParticles(kind, x, y) {
-      const n = kind === 'dust' ? 1 : kind === 'confetti' ? 26 : 14;
+    // --- Particles (shared system for dust / confetti / impact / spark) ---
+    // `tint` colors a slain creature's burst with its own color.
+    function spawnParticles(kind, x, y, tint) {
+      const n = kind === 'dust' ? 1 : kind === 'confetti' ? 26 : kind === 'spark' ? 18 : 14;
       for (let i = 0; i < n; i++) {
         const ang = Math.random() * Math.PI * 2;
         const sp = kind === 'dust' ? 20 + Math.random() * 20
           : kind === 'confetti' ? 90 + Math.random() * 160
+          : kind === 'spark' ? 110 + Math.random() * 170
           : 70 + Math.random() * 140;
-        const life = kind === 'dust' ? 0.35 : kind === 'confetti' ? 0.9 + Math.random() * 0.3 : 0.5;
+        const life = kind === 'dust' ? 0.35
+          : kind === 'confetti' ? 0.9 + Math.random() * 0.3
+          : kind === 'spark' ? 0.4 + Math.random() * 0.2
+          : 0.5;
         particles.push({
           x, y,
           vx: Math.cos(ang) * sp * (kind === 'dust' ? 0.4 : 1),
           vy: kind === 'dust' ? -Math.random() * 20 : Math.sin(ang) * sp,
           life, maxLife: life,
-          size: kind === 'dust' ? 2 + Math.random() * 2 : kind === 'confetti' ? 3 + Math.random() * 3 : 3,
-          color: kind === 'dust' ? '#c2a878' : kind === 'confetti' ? CONFETTI_PALETTE[i % CONFETTI_PALETTE.length] : '#ef4444',
+          size: kind === 'dust' ? 2 + Math.random() * 2
+            : kind === 'confetti' ? 3 + Math.random() * 3
+            : kind === 'spark' ? 2 + Math.random() * 2.5
+            : 3,
+          color: kind === 'dust' ? '#c2a878'
+            : kind === 'confetti' ? CONFETTI_PALETTE[i % CONFETTI_PALETTE.length]
+            : kind === 'spark' ? (i % 3 === 0 ? '#fef08a' : (tint || '#f87171'))
+            : '#ef4444',
           gravity: kind === 'confetti' ? 260 : 0,
           shape: kind === 'confetti' ? 'rect' : 'circle'
         });
@@ -670,6 +706,13 @@
       gate.worldY = player.progress + SPAWN_AHEAD;
       gate.judged = false;
       gate.flashTimer = 0;
+      // One creature guarding each lane's answer, just beyond the gate.
+      gate.creatures = gate.lanes.map(() => ({
+        type: pickCreatureType(),
+        state: 'alive',
+        anim: 0,
+        t: Math.random() * 6 // desync the idle animations
+      }));
       gates.push(gate);
       nextGateAt = player.progress + gateSpacing();
     }
@@ -677,14 +720,22 @@
     function judgeGate(g) {
       g.judged = true;
       const gateScreenY = worldToScreenY(g.worldY);
+      const creatureY = worldToScreenY(g.worldY + CREATURE_GAP);
+      const laneX = laneCenterX(player.lane);
       const chosen = g.lanes[player.lane];
+      const guard = g.creatures[player.lane];
       if (chosen.correct) {
         chosen.flash = 'green';
         g.flashTimer = 0.4;
         score++;
+        // Right answer — the guard in that lane gets cut down.
+        guard.state = 'dying';
+        guard.anim = 0;
+        spawnParticles('spark', laneX, creatureY, CREATURE_TYPES[guard.type].color);
         Arcade.addCoins(1);
+        Arcade.sound.zap();
         Arcade.sound.coin();
-        spawnParticles('confetti', laneCenterX(player.lane), gateScreenY);
+        spawnParticles('confetti', laneX, gateScreenY);
         const newLevel = 1 + Math.floor(score / 5);
         if (newLevel !== level) { level = newLevel; Arcade.sound.up(); }
         updateHud();
@@ -694,8 +745,11 @@
         correctLane.flash = 'green';
         g.flashTimer = 0.4;
         hearts -= 0.5;
-        Arcade.sound.buzz();
-        spawnParticles('impact', laneCenterX(player.lane), gateScreenY);
+        // Wrong answer — that lane's creature lunges and takes a bite.
+        guard.state = 'attacking';
+        guard.anim = 0;
+        Arcade.sound.down(); // the shared "bite/damage" growl
+        spawnParticles('impact', laneX, creatureY);
         shakeTime = 0.3; flashAlpha = 0.35;
         updateHud();
         if (hearts <= 0) { hearts = 0; endGame(); }
@@ -736,8 +790,14 @@
           if (!running) return; // judgeGate's wrong-branch may have ended the game
         }
         if (g.flashTimer > 0) g.flashTimer = Math.max(0, g.flashTimer - dt);
+        for (const c of g.creatures) {
+          c.t += dt;
+          if (c.state !== 'alive') c.anim = Math.min(1, c.anim + dt / (c.state === 'dying' ? 0.45 : 0.5));
+        }
       }
-      gates = gates.filter((g) => worldToScreenY(g.worldY) < H + 100);
+      // The guards stand beyond their gate, so they're the last part to
+      // scroll off — prune on them, not on the gate itself.
+      gates = gates.filter((g) => worldToScreenY(g.worldY + CREATURE_GAP) < H + 100);
 
       updateParticles(dt);
       if (shakeTime > 0) shakeTime = Math.max(0, shakeTime - dt);
@@ -852,6 +912,153 @@
       });
     }
 
+    // --- Creatures -------------------------------------------------------
+    // Each is drawn procedurally around its own origin, roughly 40px wide.
+    // `gape` (0..1) opens the mouth — wide open when it's lunging to eat you.
+    function eyes(lx, ly, r, gape) {
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(-lx, ly, r, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(lx, ly, r, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#0f172a';
+      const pr = r * 0.55, pd = gape * 1.5;
+      ctx.beginPath(); ctx.arc(-lx, ly + pd, pr, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(lx, ly + pd, pr, 0, Math.PI * 2); ctx.fill();
+    }
+    function fangMouth(y, w, gape) {
+      const h = 4 + gape * 13;
+      ctx.fillStyle = '#450a0a';
+      roundRect(-w / 2, y, w, h, 3); ctx.fill();
+      ctx.fillStyle = '#fff';
+      const n = 4, tw = w / n;
+      for (let i = 0; i < n; i++) {
+        const tx = -w / 2 + i * tw + tw * 0.15;
+        ctx.beginPath();
+        ctx.moveTo(tx, y);
+        ctx.lineTo(tx + tw * 0.7, y);
+        ctx.lineTo(tx + tw * 0.35, y + 3 + gape * 4);
+        ctx.closePath(); ctx.fill();
+      }
+    }
+
+    function drawSlime(cfg, t, gape) {
+      const wob = Math.sin(t * 4) * 0.07;
+      ctx.fillStyle = cfg.color;
+      ctx.beginPath();
+      ctx.moveTo(-19 * (1 + wob), 15);
+      ctx.quadraticCurveTo(-19 * (1 + wob), -17 * (1 - wob), 0, -17 * (1 - wob));
+      ctx.quadraticCurveTo(19 * (1 + wob), -17 * (1 - wob), 19 * (1 + wob), 15);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = cfg.dark;
+      ctx.beginPath(); ctx.ellipse(0, 15, 19 * (1 + wob), 4, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.45)';
+      ctx.beginPath(); ctx.ellipse(-7, -8, 4, 6, -0.4, 0, Math.PI * 2); ctx.fill();
+      eyes(7, -4, 4.5, gape);
+      fangMouth(5, 16, gape);
+    }
+
+    function drawGhost(cfg, t, gape) {
+      const drift = Math.sin(t * 2.5) * 2;
+      ctx.save();
+      ctx.translate(0, drift);
+      ctx.globalAlpha = 0.92;
+      ctx.fillStyle = cfg.color;
+      ctx.beginPath();
+      ctx.arc(0, -4, 16, Math.PI, 0);
+      ctx.lineTo(16, 9);
+      ctx.quadraticCurveTo(11, 18, 5.5, 10);
+      ctx.quadraticCurveTo(0, 18, -5.5, 10);
+      ctx.quadraticCurveTo(-11, 18, -16, 9);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = cfg.dark;
+      ctx.beginPath(); ctx.ellipse(-6, -7, 3.4, 4.6 + gape * 2, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(6, -7, 3.4, 4.6 + gape * 2, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(0, 4, 4 + gape * 3, 3 + gape * 6, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
+
+    function drawOgre(cfg, t, gape) {
+      const breathe = Math.sin(t * 3) * 0.04;
+      ctx.fillStyle = cfg.dark;
+      ctx.beginPath(); ctx.moveTo(-13, -13); ctx.lineTo(-17, -24); ctx.lineTo(-7, -16); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(13, -13); ctx.lineTo(17, -24); ctx.lineTo(7, -16); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = cfg.color;
+      ctx.beginPath(); ctx.ellipse(0, 0, 18 * (1 + breathe), 17, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = cfg.dark;
+      ctx.beginPath(); ctx.ellipse(-19, 2, 5, 8, 0.3, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(19, 2, 5, 8, -0.3, 0, Math.PI * 2); ctx.fill();
+      eyes(7, -6, 5, gape);
+      fangMouth(3, 20, gape);
+    }
+
+    function drawDragon(cfg, t, gape) {
+      const flap = Math.sin(t * 6) * 0.5;
+      ctx.fillStyle = cfg.dark;
+      ctx.save(); ctx.rotate(-flap * 0.35);
+      ctx.beginPath(); ctx.moveTo(-8, -4); ctx.lineTo(-27, -16); ctx.lineTo(-24, 4); ctx.closePath(); ctx.fill();
+      ctx.restore();
+      ctx.save(); ctx.rotate(flap * 0.35);
+      ctx.beginPath(); ctx.moveTo(8, -4); ctx.lineTo(27, -16); ctx.lineTo(24, 4); ctx.closePath(); ctx.fill();
+      ctx.restore();
+      ctx.fillStyle = cfg.color;
+      ctx.beginPath(); ctx.ellipse(0, 2, 14, 16, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = cfg.dark;
+      ctx.beginPath(); ctx.moveTo(-6, -14); ctx.lineTo(-9, -23); ctx.lineTo(-2, -16); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(6, -14); ctx.lineTo(9, -23); ctx.lineTo(2, -16); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = cfg.color;
+      ctx.beginPath(); ctx.ellipse(0, -6, 11, 9, 0, 0, Math.PI * 2); ctx.fill();
+      eyes(5, -8, 3.8, gape);
+      fangMouth(0, 15, gape);
+      if (gape > 0.5) { // breathing fire mid-lunge
+        ctx.fillStyle = 'rgba(251,146,60,0.85)';
+        ctx.beginPath();
+        ctx.moveTo(-5, 10); ctx.lineTo(0, 24 + gape * 10); ctx.lineTo(5, 10);
+        ctx.closePath(); ctx.fill();
+      }
+    }
+
+    const CREATURE_DRAW = { slime: drawSlime, ghost: drawGhost, ogre: drawOgre, dragon: drawDragon };
+
+    function drawCreature(c, x, y) {
+      if (y < -70 || y > H + 70) return;
+      if (c.state === 'dying' && c.anim >= 1) return; // fully vanished
+      const cfg = CREATURE_TYPES[c.type];
+      ctx.save();
+      ctx.translate(x, y);
+      let gape = 0.06 + Math.sin(c.t * 3) * 0.04; // idle: mouth barely moving
+      if (c.state === 'dying') {
+        ctx.globalAlpha = 1 - c.anim;
+        ctx.rotate(c.anim * 1.4);
+        const s = 1 - c.anim * 0.55;
+        ctx.scale(s, s);
+        gape = 0.9; // shocked
+      } else if (c.state === 'attacking') {
+        const lunge = Math.sin(Math.min(1, c.anim) * Math.PI); // ease out and back
+        ctx.translate(0, lunge * 20);
+        const s = 1 + lunge * 0.4;
+        ctx.scale(s, s);
+        gape = 0.35 + lunge * 0.65; // jaws wide open
+      } else {
+        ctx.translate(0, Math.sin(c.t * 3) * 3); // idle bob
+      }
+      CREATURE_DRAW[c.type](cfg, c.t, gape);
+      ctx.restore();
+
+      // Slash mark across a creature as it's cut down.
+      if (c.state === 'dying' && c.anim < 0.45) {
+        ctx.save();
+        ctx.globalAlpha = 1 - c.anim / 0.45;
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 4;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(x - 24, y - 18);
+        ctx.lineTo(x + 24, y + 18);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
     function drawLimb(px, py, angle, len, color) {
       ctx.save();
       ctx.translate(px, py);
@@ -899,6 +1106,12 @@
       }
       ctx.clearRect(-20, -20, W + 40, H + 40);
       drawGround();
+      // Guards stand beyond their gate, so they're further away — draw them
+      // first and let the nearer gate panels overlap them.
+      for (const g of gates) {
+        const cy = worldToScreenY(g.worldY + CREATURE_GAP);
+        g.creatures.forEach((c, i) => drawCreature(c, laneCenterX(i), cy));
+      }
       for (const g of gates) drawGate(g);
       drawParticles();
       drawRunner();
