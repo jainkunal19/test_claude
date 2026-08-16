@@ -1075,7 +1075,7 @@
       const y = worldToScreenY(g.worldY);
       if (y > H + 90) return;
       const roadW = ROAD_R - ROAD_L;
-      const laneRowH = 46, problemBarH = 30, gapY = 8;
+      const laneRowH = 54, problemBarH = 44, gapY = 8;
       const problemY = y - laneRowH / 2 - gapY - problemBarH / 2;
       // The problem bar sits above the lane row; don't draw either half
       // until the whole gate (including the bar) has cleared the horizon
@@ -1086,10 +1086,27 @@
       ctx.fillStyle = 'rgba(15,23,42,0.85)';
       roundRect(ROAD_L - 6, problemY - problemBarH / 2, roadW + 12, problemBarH, 8);
       ctx.fill();
-      ctx.fillStyle = '#fff';
-      ctx.font = 'bold 16px system-ui, sans-serif';
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(g.problemText, ROAD_L + roadW / 2, problemY);
+      // Draw the problem with the operator in gold and a touch bigger, so
+      // +, −, ×, ÷ are easy to tell apart at a glance.
+      ctx.textBaseline = 'middle';
+      const cxMid = ROAD_L + roadW / 2;
+      const parts = g.problemText.split(' ');
+      const numFont = 'bold 28px system-ui, sans-serif';
+      const opFont = 'bold 34px system-ui, sans-serif';
+      if (parts.length === 3) {
+        const a = parts[0] + ' ', op = parts[1], bnum = ' ' + parts[2];
+        ctx.font = numFont; const wA = ctx.measureText(a).width, wB = ctx.measureText(bnum).width;
+        ctx.font = opFont; const wOp = ctx.measureText(op).width;
+        let sx = cxMid - (wA + wOp + wB) / 2;
+        ctx.textAlign = 'left';
+        ctx.font = numFont; ctx.fillStyle = '#fff'; ctx.fillText(a, sx, problemY); sx += wA;
+        ctx.font = opFont; ctx.fillStyle = '#fde047'; ctx.fillText(op, sx, problemY); sx += wOp;
+        ctx.font = numFont; ctx.fillStyle = '#fff'; ctx.fillText(bnum, sx, problemY);
+        ctx.textAlign = 'center';
+      } else {
+        ctx.font = numFont; ctx.fillStyle = '#fff'; ctx.textAlign = 'center';
+        ctx.fillText(g.problemText, cxMid, problemY);
+      }
 
       const boxW = roadW / LANES - 10;
       // While reviewing this gate, hold the flash at full strength (and pulse
@@ -1112,7 +1129,7 @@
           ctx.stroke();
         }
         ctx.fillStyle = '#fff';
-        ctx.font = 'bold 17px system-ui, sans-serif';
+        ctx.font = 'bold 24px system-ui, sans-serif';
         ctx.fillText(lane.text, cx, y);
       });
     }
@@ -1138,7 +1155,7 @@
       ctx.font = 'bold 12px system-ui, sans-serif';
       ctx.fillText('Correct answer', cx, by + 15);
       ctx.fillStyle = '#4ade80';
-      ctx.font = 'bold 22px system-ui, sans-serif';
+      ctx.font = 'bold 25px system-ui, sans-serif';
       ctx.fillText(reviewGate.problemText + ' = ' + correct.text, cx, by + 36);
       ctx.fillStyle = '#94a3b8';
       ctx.font = 'bold 11px system-ui, sans-serif';
