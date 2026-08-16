@@ -201,6 +201,16 @@
     },
     lose: function () { sound.seq([392, 330, 262], { gap: 0.16, dur: 0.3, type: 'triangle', vol: 0.18 }); },
 
+    // Crowd applause + cheer for a big milestone (e.g. finishing a lap):
+    // overlapping noise "claps" that swell, with a rising cheer over the top.
+    applause: function () {
+      var c = _live(); if (!c) return; var t = c.currentTime;
+      for (var i = 0; i < 18; i++) {
+        _noise(c, t + i * 0.085, 0.16, 0.04 + Math.random() * 0.06, 2200 + Math.random() * 1800, 0.5);
+      }
+      [523, 659, 784, 1047, 1319].forEach(function (f, i) { _note(c, f, t + 0.12 + i * 0.12, 0.55, 'triangle', 0.12); });
+    },
+
     // Car crash: low crunch + glass/debris + a downward metallic clang + thud.
     crash: function () {
       var c = _live(); if (!c) return; var t = c.currentTime;

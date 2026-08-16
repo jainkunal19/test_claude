@@ -256,6 +256,7 @@
       <div class="stat"><div class="label">Correct</div><div class="value" id="score">0</div></div>
       <div class="stat"><div class="label">Hearts</div><div class="value" id="hearts">&#10084;&#65039; 10</div></div>
       <div class="stat"><div class="label">Level</div><div class="value" id="level">1</div></div>
+      <div class="stat"><div class="label">Lap</div><div class="value" id="lap">1</div></div>
     </div>
 
     <div class="board-wrap">
@@ -372,6 +373,10 @@
           and <b style="color:#cbd5e1">ghosts</b> give way to
           <b style="color:#a855f7">ogres</b> and finally fire-breathing
           <b style="color:#ef4444">dragons</b>.<br><br>
+          Every <b>20 correct answers</b> completes a <b>lap</b>: you cross a
+          checkered finish line to a round of applause and pull up at a
+          <b>refreshment booth</b> for a short 5-second breather before the next
+          lap begins.<br><br>
           Tap &#9881;&#65039; <b>Settings</b> to turn problem types
           (Addition/Subtraction/Multiplication/Division) on or off, set an
           independent <b>Easy/Medium/Hard</b> difficulty for each one, and
@@ -591,6 +596,7 @@
     const scoreEl = document.getElementById('score');
     const heartsEl = document.getElementById('hearts');
     const levelEl = document.getElementById('level');
+    const lapEl = document.getElementById('lap');
     const overlay = document.getElementById('overlay');
     const overlayTitle = document.getElementById('overlayTitle');
     const overlayText = document.getElementById('overlayText');
@@ -609,6 +615,13 @@
     const STOP_DISTANCE = 190;
     const ALLOWED_TIMES = [0, 5, 10, 20]; // seconds; 0 = never stop
     const ALLOWED_REVIEW = [0, 3, 5, 8];  // seconds to show the correct answer; 0 = off
+    // Laps: every LAP_TARGET correct answers the runner crosses a finish line
+    // and takes a refreshment break before the next lap.
+    const LAP_TARGET = 20;
+    const LAP_LINE_AHEAD = 420;   // where the finish line appears once a lap is earned
+    const LAP_BOOTH_AHEAD = 210;  // the refreshment booth sits this far past the line
+    const LAP_STOP_AFTER = 70;    // runner halts this far past the line (at the booth)
+    const LAP_BREAK = 5;          // seconds of refreshment break
     const CONFETTI_PALETTE = ['#fbbf24', '#f472b6', '#38bdf8', '#4ade80', '#a78bfa'];
 
     // Creatures guard the answers just beyond each gate. Nastier ones only
@@ -654,6 +667,8 @@
     let waiting, waitTimer, waitingGate, lastTickSec;
     // After a wrong pick the runner vanishes and the correct answer is shown.
     let reviewing, reviewTimer, reviewGate;
+    // Lap state: armed after LAP_TARGET correct, then a finish line + booth.
+    let lap, lapPending, lapLine, lapCrossed, lapResting, lapTimer;
     let running, gameOver, rafId, lastTime;
     let skyGrad = null;
 
@@ -678,6 +693,7 @@
       shakeTime = 0; flashAlpha = 0; dustTimer = 0; skyTime = 0;
       waiting = false; waitTimer = 0; waitingGate = null; lastTickSec = -1;
       reviewing = false; reviewTimer = 0; reviewGate = null;
+      lap = 1; lapPending = false; lapLine = null; lapCrossed = false; lapResting = false; lapTimer = 0;
       updateHud();
     }
 
@@ -686,6 +702,7 @@
       const h = Number.isInteger(hearts) ? hearts : hearts.toFixed(1);
       heartsEl.textContent = '❤️ ' + h;
       levelEl.textContent = level;
+      lapEl.textContent = lap;
     }
 
     // --- Particles (shared system for dust / confetti / impact / spark) ---
@@ -795,6 +812,7 @@
         spawnParticles('confetti', laneX, gateScreenY);
         const newLevel = 1 + Math.floor(score / 5);
         if (newLevel !== level) { level = newLevel; Arcade.sound.up(); }
+        if (score % LAP_TARGET === 0) lapPending = true; // a lap's worth — arm the finish line
         updateHud();
       } else {
         chosen.flash = 'red';
@@ -839,6 +857,19 @@
       lastTickSec = -1;
     }
 
+    // Refreshment break over — start the next lap.
+    function finishLap() {
+      lap++;
+      lapPending = false;
+      lapLine = null;
+      lapCrossed = false;
+      lapResting = false;
+      lapTimer = 0;
+      nextGateAt = player.progress + GATE_FIRST_DISTANCE; // questions resume ahead
+      Arcade.sound.up();
+      updateHud();
+    }
+
     // --- Lane input ---
     function setLane(n) {
       const clamped = Math.max(0, Math.min(LANES - 1, n));
@@ -869,6 +900,10 @@
         // Runner is vanished: the world holds still while the correct answer shows.
         reviewTimer = Math.max(0, reviewTimer - dt);
         if (reviewTimer <= 0) endReview();
+      } else if (lapResting) {
+        // Refreshment break: the runner stands at the booth for a few seconds.
+        lapTimer = Math.max(0, lapTimer - dt);
+        if (lapTimer <= 0) finishLap();
       } else {
         player.progress += runSpeed * dt;
         player.runT += dt;
@@ -880,10 +915,31 @@
           spawnParticles('dust', player.x, PLAYER_SCREEN_Y + 20);
         }
 
-        if (player.progress >= nextGateAt) spawnGate();
+        // --- Lap: finish line + refreshment booth ---
+        // Once a lap is earned, drop the finish line ahead (after any pending
+        // gates are cleared), stop spawning new questions, then cross it.
+        if (lapPending && !lapLine && gates.every((g) => g.judged)) {
+          const L = player.progress + LAP_LINE_AHEAD;
+          lapLine = { worldY: L, boothY: L + LAP_BOOTH_AHEAD };
+        }
+        if (lapLine) {
+          if (!lapCrossed && player.progress >= lapLine.worldY) {
+            lapCrossed = true;
+            Arcade.sound.applause();
+            spawnParticles('confetti', laneCenterX(player.lane), worldToScreenY(lapLine.worldY));
+          }
+          if (lapCrossed && player.progress >= lapLine.worldY + LAP_STOP_AFTER) {
+            player.progress = lapLine.worldY + LAP_STOP_AFTER; // halt exactly at the booth
+            lapResting = true;
+            lapTimer = LAP_BREAK;
+          }
+        }
+
+        // Only spawn new questions when no lap sequence is in progress.
+        if (!lapPending && !lapLine && player.progress >= nextGateAt) spawnGate();
 
         // Pull up short of the next gate so the question can be read.
-        if (timeLimit > 0) {
+        if (timeLimit > 0 && !lapLine) {
           for (const g of gates) {
             if (!g.judged && !g.asked && g.worldY - player.progress <= STOP_DISTANCE) {
               g.asked = true;
@@ -1274,6 +1330,96 @@
       ctx.restore();
     }
 
+    // --- Lap scene: a checkered finish line and a refreshment booth ---
+    function drawLapScene() {
+      if (!lapLine) return;
+      const roadW = ROAD_R - ROAD_L;
+      // Refreshment booth (further away, so drawn first / behind the runner).
+      drawBooth(worldToScreenY(lapLine.boothY));
+      // Checkered finish line across the road.
+      const ly = worldToScreenY(lapLine.worldY);
+      if (ly > HORIZON && ly < H + 20) {
+        const rows = 2, cols = 10, cw = roadW / cols, chh = 9;
+        for (let r = 0; r < rows; r++) {
+          for (let c = 0; c < cols; c++) {
+            ctx.fillStyle = (r + c) % 2 === 0 ? '#f8fafc' : '#0f172a';
+            ctx.fillRect(ROAD_L + c * cw, ly - chh + r * chh, cw, chh);
+          }
+        }
+        // little flags on posts either side
+        [ROAD_L - 4, ROAD_R + 4].forEach((px) => {
+          ctx.fillStyle = '#64748b';
+          ctx.fillRect(px - 1.5, ly - 40, 3, 44);
+          ctx.fillStyle = '#ef4444';
+          ctx.beginPath();
+          ctx.moveTo(px + (px < W / 2 ? 1.5 : -1.5), ly - 40);
+          ctx.lineTo(px + (px < W / 2 ? 18 : -18), ly - 34);
+          ctx.lineTo(px + (px < W / 2 ? 1.5 : -1.5), ly - 28);
+          ctx.closePath(); ctx.fill();
+        });
+      }
+    }
+
+    function drawBooth(cy) {
+      if (cy < HORIZON - 40 || cy > H + 40) return;
+      const bw = 118, roofH = 26, postH = 44;
+      const cx = (ROAD_L + ROAD_R) / 2;
+      const left = cx - bw / 2, top = cy - postH - roofH;
+      // posts
+      ctx.fillStyle = '#a16207';
+      ctx.fillRect(left + 4, cy - postH, 8, postH);
+      ctx.fillRect(left + bw - 12, cy - postH, 8, postH);
+      // counter
+      ctx.fillStyle = '#7c3f12';
+      roundRect(left, cy - 16, bw, 16, 3); ctx.fill();
+      ctx.fillStyle = '#fbbf24';
+      ctx.fillRect(left, cy - 16, bw, 4);
+      // striped canopy (red/white)
+      const stripes = 6, sw = bw / stripes;
+      for (let i = 0; i < stripes; i++) {
+        ctx.fillStyle = i % 2 === 0 ? '#ef4444' : '#f8fafc';
+        ctx.beginPath();
+        ctx.moveTo(left + i * sw, top);
+        ctx.lineTo(left + (i + 1) * sw, top);
+        ctx.lineTo(left + (i + 1) * sw, top + roofH * 0.6);
+        ctx.lineTo(left + i * sw + sw / 2, top + roofH);
+        ctx.lineTo(left + i * sw, top + roofH * 0.6);
+        ctx.closePath(); ctx.fill();
+      }
+      // sign
+      ctx.fillStyle = '#0f172a';
+      roundRect(cx - 30, top - 16, 60, 15, 4); ctx.fill();
+      ctx.fillStyle = '#fde047';
+      ctx.font = 'bold 10px system-ui, sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('REFRESH', cx, top - 8);
+      // a cup and a bottle on the counter
+      ctx.fillStyle = '#38bdf8';
+      roundRect(cx - 24, cy - 30, 12, 16, 2); ctx.fill();
+      ctx.fillStyle = '#f8fafc'; ctx.fillRect(cx - 24, cy - 30, 12, 3);
+      ctx.fillStyle = '#4ade80';
+      roundRect(cx + 12, cy - 34, 9, 20, 3); ctx.fill();
+      ctx.fillStyle = '#166534'; ctx.fillRect(cx + 14, cy - 38, 5, 5);
+    }
+
+    // Banner during the refreshment break.
+    function drawLapBanner() {
+      if (!lapResting) return;
+      const roadW = ROAD_R - ROAD_L, cx = ROAD_L + roadW / 2;
+      const bw = roadW + 12, bh = 58, by = HORIZON + 14;
+      ctx.fillStyle = 'rgba(15,23,42,0.92)';
+      roundRect(ROAD_L - 6, by, bw, bh, 10); ctx.fill();
+      ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 2;
+      roundRect(ROAD_L - 6, by, bw, bh, 10); ctx.stroke();
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#fde047';
+      ctx.font = 'bold 20px system-ui, sans-serif';
+      ctx.fillText('🎉 Lap ' + lap + ' complete!', cx, by + 20);
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = 'bold 12px system-ui, sans-serif';
+      ctx.fillText('Refreshment break — Lap ' + (lap + 1) + ' in ' + Math.ceil(lapTimer) + 's', cx, by + 42);
+    }
+
     // Countdown under the answers of the gate the runner is stopped at.
     function drawCountdown() {
       if (!waiting || !waitingGate || timeLimit <= 0) return;
@@ -1296,10 +1442,11 @@
     function drawRunner() {
       if (player.vanished) return;   // eaten — reappears when the review ends
       const cadence = 8 + runSpeed * 0.02;
-      // Standing still while reading the question — legs together, just breathing.
-      const legPhase = waiting ? 0 : Math.sin(player.runT * cadence) * 0.6;
+      // Standing still while reading the question or resting at the booth.
+      const standing = waiting || lapResting;
+      const legPhase = standing ? 0 : Math.sin(player.runT * cadence) * 0.6;
       const armPhase = -legPhase * 0.7;
-      const squash = waiting
+      const squash = standing
         ? 1 + Math.sin(skyTime * 2.2) * 0.02
         : 1 + Math.sin(player.runT * cadence * 2) * 0.03;
       let bank = Math.max(-0.25, Math.min(0.25, (player.targetX - player.x) / 50));
@@ -1346,11 +1493,13 @@
         const cy = worldToScreenY(g.worldY + CREATURE_GAP);
         g.creatures.forEach((c, i) => { if (!pouncing(c)) drawCreature(c, laneCenterX(i), cy); });
       }
+      drawLapScene();            // finish line + booth (behind the runner)
       for (const g of gates) drawGate(g);
       drawCountdown();
       drawReviewBanner();
       drawParticles();
       drawRunner();
+      drawLapBanner();           // "Lap complete" banner during the break
       for (const g of gates) {
         const cy = worldToScreenY(g.worldY + CREATURE_GAP);
         g.creatures.forEach((c, i) => { if (pouncing(c)) drawCreature(c, laneCenterX(i), cy); });
