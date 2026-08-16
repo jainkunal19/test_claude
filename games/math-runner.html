@@ -39,16 +39,16 @@
       background: radial-gradient(circle at top, #1e293b, var(--bg));
       color: var(--text);
       font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-      padding: 14px;
+      padding: 8px;
     }
 
     .game {
       background: var(--panel);
       border-radius: 20px;
-      padding: 20px 22px;
+      padding: 12px 10px;
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
       width: 100%;
-      max-width: 440px;
+      max-width: 520px;
     }
 
     .back-link {
@@ -57,9 +57,9 @@
       gap: 6px;
       color: var(--accent);
       text-decoration: none;
-      font-size: 0.9rem;
+      font-size: 0.82rem;
       font-weight: 600;
-      margin-bottom: 10px;
+      margin-bottom: 6px;
       opacity: 0.85;
       transition: opacity 0.15s ease;
     }
@@ -67,8 +67,8 @@
 
     h1 {
       text-align: center;
-      font-size: 1.9rem;
-      margin-bottom: 12px;
+      font-size: 1.35rem;
+      margin-bottom: 7px;
       background: linear-gradient(90deg, #16a34a, #4ade80, #22c55e);
       -webkit-background-clip: text;
       background-clip: text;
@@ -77,31 +77,31 @@
 
     .hud {
       display: flex;
-      gap: 10px;
-      margin-bottom: 12px;
+      gap: 8px;
+      margin-bottom: 8px;
     }
     .stat {
       flex: 1;
       background: var(--cell);
       border-radius: 10px;
-      padding: 7px 10px;
+      padding: 4px 8px;
       text-align: center;
     }
     .stat .label {
-      font-size: 0.62rem;
+      font-size: 0.56rem;
       text-transform: uppercase;
       letter-spacing: 1px;
       color: var(--muted);
-      margin-bottom: 2px;
+      margin-bottom: 1px;
     }
-    .stat .value { font-size: 1.1rem; font-weight: 700; }
+    .stat .value { font-size: 0.98rem; font-weight: 700; }
 
     /* Size the wrapper (bounded by the panel width via 100%, not the viewport)
        to the biggest board that fits both width and height; the canvas fills it. */
     .board-wrap {
       position: relative;
-      width: min(100%, 400px); /* fallback if svh unsupported */
-      width: min(100%, 400px, calc((100svh - 240px) * (360 / 640)));
+      width: min(100%, 500px); /* fallback if svh unsupported */
+      width: min(100%, 500px, calc((100svh - 196px) * (400 / 560)));
       margin: 0 auto;
     }
     .board-wrap, .overlay { touch-action: manipulation; }
@@ -112,7 +112,7 @@
       display: block;
       width: 100%;
       height: auto;
-      aspect-ratio: 360 / 640;
+      aspect-ratio: 400 / 560;
       touch-action: none;
     }
 
@@ -148,10 +148,10 @@
     button.action:active { transform: translateY(0); }
 
     .legend {
-      margin-top: 12px;
+      margin-top: 8px;
       color: var(--muted);
-      font-size: 0.78rem;
-      line-height: 1.7;
+      font-size: 0.7rem;
+      line-height: 1.55;
       text-align: center;
     }
     .legend b { color: var(--text); }
@@ -259,12 +259,12 @@
     </div>
 
     <div class="board-wrap">
-      <canvas id="board" width="360" height="640"></canvas>
+      <canvas id="board" width="400" height="560"></canvas>
       <div class="overlay show" id="overlay">
         <h2 id="overlayTitle">Math Runner &#127939;</h2>
         <p id="overlayText">
-          Monsters guard every answer! Tap the lane with the
-          <b>correct answer</b> to slay the beast in it.<br>
+          Monsters guard every answer! The runner stops at each question &mdash;
+          <b>tap the correct answer</b> to charge in and slay the beast.<br>
           Get it wrong and that creature takes a bite &mdash; but you'll still
           see the right answer flash green.<br>
           Every monster you slay earns a coin!
@@ -274,8 +274,8 @@
     </div>
 
     <div class="legend">
-      <b>Tap the answer</b> you want &middot; or swipe / &larr; &rarr; keys &middot;
-      right = slay the monster &amp; +1 coin &middot; wrong = bitten, &minus;&frac12; &#10084;&#65039;
+      <b>Tap your answer</b> to charge &middot; or line up with swipe / &larr; &rarr;<br>
+      Right = slay the monster, +1 coin &middot; wrong = bitten, &minus;&frac12; &#10084;&#65039;
     </div>
 
     <div class="modal" id="settingsModal">
@@ -316,6 +316,16 @@
           </div>
         </div>
 
+        <div class="op-row">
+          <div class="sound-row" style="cursor:default;"><span>&#9201;&#65039; Thinking time</span></div>
+          <div class="mode-select" id="timeLimitRow">
+            <button class="mode-btn" data-time="5">5s</button>
+            <button class="mode-btn active" data-time="10">10s</button>
+            <button class="mode-btn" data-time="20">20s</button>
+            <button class="mode-btn" data-time="0">Off</button>
+          </div>
+        </div>
+
         <div class="modal-actions">
           <button class="btn-ghost" id="settingsCancel">Cancel</button>
           <button class="btn-primary" id="settingsSave">Save</button>
@@ -327,11 +337,17 @@
       <div class="modal-card">
         <h2>How to Play</h2>
         <p class="how-to">
-          Your runner auto-runs down a 3-lane path. As each gate approaches,
-          it shows a math problem with one answer per lane &mdash; and a
-          <b>monster guarding each one</b>. Get to the correct answer by
-          <b>tapping the lane you want</b>, or by swiping across the board /
-          using the &larr; &rarr; keys to step one lane at a time.<br><br>
+          Your runner heads down a 3-lane path. Each gate shows a math problem
+          with one answer per lane &mdash; and a <b>monster guarding each
+          one</b>. The runner <b>stops at every question</b> so you have time
+          to work it out.<br><br>
+          <b>Tap the answer</b> you want and the runner locks it in and charges
+          straight at it. Prefer to line up first? Swipe across the board or
+          use the &larr; &rarr; keys to shift lanes without committing &mdash;
+          when the timer runs out, the runner charges whichever lane it's
+          standing in. Change the thinking time (or switch the wait off
+          entirely for a fast arcade run) under &#9881;&#65039;
+          <b>Settings</b>.<br><br>
           Pick right and you <b>slay that creature</b> on the way through, the
           lane flashes green, and you earn <b>+1 coin</b>. Pick wrong and the
           monster in your lane lunges and bites you for
@@ -343,8 +359,9 @@
           <b style="color:#a855f7">ogres</b> and finally fire-breathing
           <b style="color:#ef4444">dragons</b>.<br><br>
           Tap &#9881;&#65039; <b>Settings</b> to turn problem types
-          (Addition/Subtraction/Multiplication/Division) on or off, and set
-          an independent <b>Easy/Medium/Hard</b> difficulty for each one.
+          (Addition/Subtraction/Multiplication/Division) on or off, set an
+          independent <b>Easy/Medium/Hard</b> difficulty for each one, and
+          choose how long the runner waits at each question.
         </p>
         <div class="highscore">Best Correct Answers: <span id="highScore">0</span></div>
         <div class="close-row"><button class="action" id="infoClose" style="padding:10px 20px;">Close</button></div>
@@ -523,7 +540,7 @@
     const SETTINGS_KEY = 'mathrunner-settings';
 
     function defaultSettings() {
-      const s = {};
+      const s = { timeLimit: 10 }; // seconds to read each question (0 = never stop)
       OPS.forEach((op) => { s[op] = { enabled: true, level: 'medium' }; });
       return s;
     }
@@ -538,6 +555,7 @@
               if (LEVELS.indexOf(raw[op].level) !== -1) out[op].level = raw[op].level;
             }
           });
+          if (ALLOWED_TIMES.indexOf(raw.timeLimit) !== -1) out.timeLimit = raw.timeLimit;
         }
       } catch (e) { /* fall through to defaults */ }
       if (!OPS.some((op) => out[op].enabled)) out.add.enabled = true; // never allow zero enabled
@@ -550,8 +568,8 @@
     // ---------------------------------------------------------------------
     const canvas = document.getElementById('board');
     const ctx = canvas.getContext('2d');
-    const W = canvas.width;   // 360
-    const H = canvas.height;  // 640
+    const W = canvas.width;   // 400
+    const H = canvas.height;  // 560
 
     const scoreEl = document.getElementById('score');
     const heartsEl = document.getElementById('hearts');
@@ -562,20 +580,24 @@
     const overlayBtn = document.getElementById('overlayBtn');
 
     const MAX_HEARTS = 10;
-    const ROAD_L = 50, ROAD_R = 310;
+    const ROAD_L = 46, ROAD_R = W - 46;
     const LANES = 3;
     const PLAYER_SCREEN_Y = H * 0.78;
     const BASE_SPEED = 140, MAX_SPEED = 260, SPEED_STEP = 14;
     const LANE_EASE = 10;
     const SPAWN_AHEAD = 620;
     const GATE_FIRST_DISTANCE = 420;
-    const HORIZON = H * 0.16;
+    const HORIZON = H * 0.15;
+    // How far ahead of the gate the runner halts to read the question.
+    const STOP_DISTANCE = 190;
+    const ALLOWED_TIMES = [0, 5, 10, 20]; // seconds; 0 = never stop
     const CONFETTI_PALETTE = ['#fbbf24', '#f472b6', '#38bdf8', '#4ade80', '#a78bfa'];
 
     // Creatures guard the answers just beyond each gate. Nastier ones only
     // start showing up at higher levels (same level-gating idea as Racing's
     // bot types).
     const CREATURE_GAP = 108; // world units beyond the gate the creatures stand
+    const CREATURE_TRIGGER_LEAD = 62; // how close the runner gets before it reacts
     const CREATURE_TYPES = {
       slime:  { color: '#84cc16', dark: '#3f6212', minLevel: 1, weight: 30 },
       ghost:  { color: '#cbd5e1', dark: '#64748b', minLevel: 1, weight: 26 },
@@ -607,10 +629,11 @@
     // ---------------------------------------------------------------------
     // State
     // ---------------------------------------------------------------------
-    let settings, enabledOps;
+    let settings, enabledOps, timeLimit;
     let player, gates, particles;
     let score, hearts, level, runSpeed, nextGateAt;
     let shakeTime, flashAlpha, dustTimer, skyTime;
+    let waiting, waitTimer, waitingGate, lastTickSec;
     let running, gameOver, rafId, lastTime;
     let skyGrad = null;
 
@@ -624,13 +647,15 @@
     function reset() {
       settings = loadSettings();
       enabledOps = OPS.filter((op) => settings[op].enabled);
-      player = { progress: 0, lane: 1, x: laneCenterX(1), targetX: laneCenterX(1), runT: 0 };
+      timeLimit = settings.timeLimit;
+      player = { progress: 0, lane: 1, x: laneCenterX(1), targetX: laneCenterX(1), runT: 0, hurtTimer: 0 };
       gates = [];
       particles = [];
       score = 0; hearts = MAX_HEARTS; level = 1;
       runSpeed = BASE_SPEED;
       nextGateAt = GATE_FIRST_DISTANCE;
       shakeTime = 0; flashAlpha = 0; dustTimer = 0; skyTime = 0;
+      waiting = false; waitTimer = 0; waitingGate = null; lastTickSec = -1;
       updateHud();
     }
 
@@ -644,29 +669,36 @@
     // --- Particles (shared system for dust / confetti / impact / spark) ---
     // `tint` colors a slain creature's burst with its own color.
     function spawnParticles(kind, x, y, tint) {
-      const n = kind === 'dust' ? 1 : kind === 'confetti' ? 26 : kind === 'spark' ? 18 : 14;
+      const n = kind === 'dust' ? 1 : kind === 'confetti' ? 26
+        : kind === 'spark' ? 18 : kind === 'puff' ? 10 : 14;
       for (let i = 0; i < n; i++) {
         const ang = Math.random() * Math.PI * 2;
         const sp = kind === 'dust' ? 20 + Math.random() * 20
           : kind === 'confetti' ? 90 + Math.random() * 160
           : kind === 'spark' ? 110 + Math.random() * 170
+          : kind === 'puff' ? 25 + Math.random() * 45
           : 70 + Math.random() * 140;
         const life = kind === 'dust' ? 0.35
           : kind === 'confetti' ? 0.9 + Math.random() * 0.3
           : kind === 'spark' ? 0.4 + Math.random() * 0.2
+          : kind === 'puff' ? 0.55 + Math.random() * 0.25
           : 0.5;
         particles.push({
           x, y,
           vx: Math.cos(ang) * sp * (kind === 'dust' ? 0.4 : 1),
-          vy: kind === 'dust' ? -Math.random() * 20 : Math.sin(ang) * sp,
+          vy: kind === 'dust' ? -Math.random() * 20
+            : kind === 'puff' ? Math.sin(ang) * sp - 30 // smoke drifts upward
+            : Math.sin(ang) * sp,
           life, maxLife: life,
           size: kind === 'dust' ? 2 + Math.random() * 2
             : kind === 'confetti' ? 3 + Math.random() * 3
             : kind === 'spark' ? 2 + Math.random() * 2.5
+            : kind === 'puff' ? 5 + Math.random() * 5
             : 3,
           color: kind === 'dust' ? '#c2a878'
             : kind === 'confetti' ? CONFETTI_PALETTE[i % CONFETTI_PALETTE.length]
             : kind === 'spark' ? (i % 3 === 0 ? '#fef08a' : (tint || '#f87171'))
+            : kind === 'puff' ? '#e2e8f0'
             : '#ef4444',
           gravity: kind === 'confetti' ? 260 : 0,
           shape: kind === 'confetti' ? 'rect' : 'circle'
@@ -705,11 +737,13 @@
       const gate = generateGate(enabledOps, settings);
       gate.worldY = player.progress + SPAWN_AHEAD;
       gate.judged = false;
+      gate.asked = false; // has the runner already stopped to read this one?
       gate.flashTimer = 0;
       // One creature guarding each lane's answer, just beyond the gate.
       gate.creatures = gate.lanes.map(() => ({
         type: pickCreatureType(),
         state: 'alive',
+        armed: false, // the reaction holds until the runner is on top of it
         anim: 0,
         t: Math.random() * 6 // desync the idle animations
       }));
@@ -724,16 +758,17 @@
       const laneX = laneCenterX(player.lane);
       const chosen = g.lanes[player.lane];
       const guard = g.creatures[player.lane];
+      // The answer itself resolves here at the gate (flash, score, hearts),
+      // but the creature's slay/bite is armed in update() once the runner
+      // has actually closed the gap to it — see armCreature().
+      guard.anim = 0;
+      guard.armed = false;
       if (chosen.correct) {
         chosen.flash = 'green';
         g.flashTimer = 0.4;
         score++;
-        // Right answer — the guard in that lane gets cut down.
         guard.state = 'dying';
-        guard.anim = 0;
-        spawnParticles('spark', laneX, creatureY, CREATURE_TYPES[guard.type].color);
         Arcade.addCoins(1);
-        Arcade.sound.zap();
         Arcade.sound.coin();
         spawnParticles('confetti', laneX, gateScreenY);
         const newLevel = 1 + Math.floor(score / 5);
@@ -745,15 +780,19 @@
         correctLane.flash = 'green';
         g.flashTimer = 0.4;
         hearts -= 0.5;
-        // Wrong answer — that lane's creature lunges and takes a bite.
         guard.state = 'attacking';
-        guard.anim = 0;
-        Arcade.sound.down(); // the shared "bite/damage" growl
-        spawnParticles('impact', laneX, creatureY);
-        shakeTime = 0.3; flashAlpha = 0.35;
         updateHud();
         if (hearts <= 0) { hearts = 0; endGame(); }
       }
+    }
+
+    // Stop waiting and let the runner charge the gate on its current lane.
+    function endWait() {
+      if (!waiting) return;
+      waiting = false;
+      waitingGate = null;
+      waitTimer = 0;
+      lastTickSec = -1;
     }
 
     // --- Lane input ---
@@ -769,31 +808,80 @@
     // Update / draw
     // ---------------------------------------------------------------------
     function update(dt) {
-      player.progress += runSpeed * dt;
-      player.runT += dt;
+      // The lane tween, sky and effects keep running even while the runner is
+      // halted, so the player can still move between lanes as they think.
       player.x += (player.targetX - player.x) * Math.min(1, dt * LANE_EASE);
       skyTime += dt;
 
-      runSpeed = Math.min(MAX_SPEED, BASE_SPEED + (level - 1) * SPEED_STEP);
+      if (waiting) {
+        waitTimer = Math.max(0, waitTimer - dt);
+        const sec = Math.ceil(waitTimer);
+        if (sec !== lastTickSec) {
+          lastTickSec = sec;
+          if (sec > 0 && sec <= 3) Arcade.sound.click(); // last-3-seconds tick
+        }
+        if (waitTimer <= 0) endWait(); // out of time — charge on whatever lane you're in
+      } else {
+        player.progress += runSpeed * dt;
+        player.runT += dt;
+        runSpeed = Math.min(MAX_SPEED, BASE_SPEED + (level - 1) * SPEED_STEP);
 
-      dustTimer += dt;
-      if (dustTimer >= 0.05) {
-        dustTimer = 0;
-        spawnParticles('dust', player.x, PLAYER_SCREEN_Y + 20);
+        dustTimer += dt;
+        if (dustTimer >= 0.05) {
+          dustTimer = 0;
+          spawnParticles('dust', player.x, PLAYER_SCREEN_Y + 20);
+        }
+
+        if (player.progress >= nextGateAt) spawnGate();
+
+        // Pull up short of the next gate so the question can be read.
+        if (timeLimit > 0) {
+          for (const g of gates) {
+            if (!g.judged && !g.asked && g.worldY - player.progress <= STOP_DISTANCE) {
+              g.asked = true;
+              waiting = true;
+              waitingGate = g;
+              waitTimer = timeLimit;
+              lastTickSec = -1;
+              Arcade.sound.chime(); // "here's your question"
+              break;
+            }
+          }
+        }
+
+        for (const g of gates) {
+          if (!g.judged && g.worldY <= player.progress) {
+            judgeGate(g);
+            if (!running) return; // judgeGate's wrong-branch may have ended the game
+          }
+        }
       }
 
-      if (player.progress >= nextGateAt) spawnGate();
-
       for (const g of gates) {
-        if (!g.judged && g.worldY <= player.progress) {
-          judgeGate(g);
-          if (!running) return; // judgeGate's wrong-branch may have ended the game
-        }
         if (g.flashTimer > 0) g.flashTimer = Math.max(0, g.flashTimer - dt);
-        for (const c of g.creatures) {
+        const guardWorldY = g.worldY + CREATURE_GAP;
+        g.creatures.forEach((c, i) => {
           c.t += dt;
-          if (c.state !== 'alive') c.anim = Math.min(1, c.anim + dt / (c.state === 'dying' ? 0.45 : 0.5));
-        }
+          if (c.state === 'alive') return;
+          // Hold the reaction until the runner is nearly on top of it, so the
+          // slay/bite lands as he arrives rather than a beat early.
+          if (!c.armed) {
+            if (player.progress < guardWorldY - CREATURE_TRIGGER_LEAD) return;
+            c.armed = true;
+            const cx = laneCenterX(i), cy = worldToScreenY(guardWorldY);
+            if (c.state === 'dying') {
+              Arcade.sound.zap();
+              spawnParticles('spark', cx, cy, CREATURE_TYPES[c.type].color);
+              spawnParticles('puff', cx, cy);
+            } else {
+              Arcade.sound.down(); // the shared "bite/damage" growl
+              spawnParticles('impact', player.x, PLAYER_SCREEN_Y - 20);
+              shakeTime = 0.35; flashAlpha = 0.4;
+              player.hurtTimer = 0.5;
+            }
+          }
+          c.anim = Math.min(1, c.anim + dt / (c.state === 'dying' ? 0.55 : 0.5));
+        });
       }
       // The guards stand beyond their gate, so they're the last part to
       // scroll off — prune on them, not on the gate itself.
@@ -802,6 +890,7 @@
       updateParticles(dt);
       if (shakeTime > 0) shakeTime = Math.max(0, shakeTime - dt);
       if (flashAlpha > 0) flashAlpha = Math.max(0, flashAlpha - dt * 2.4);
+      if (player.hurtTimer > 0) player.hurtTimer = Math.max(0, player.hurtTimer - dt);
     }
 
     function drawScrollingDecor(span, factor, drawAt) {
@@ -1020,40 +1109,68 @@
     const CREATURE_DRAW = { slime: drawSlime, ghost: drawGhost, ogre: drawOgre, dragon: drawDragon };
 
     function drawCreature(c, x, y) {
-      if (y < -70 || y > H + 70) return;
-      if (c.state === 'dying' && c.anim >= 1) return; // fully vanished
+      if (y < -90 || y > H + 90) return;
+      const dead = c.state === 'dying' && c.armed;
+      if (dead && c.anim >= 1) return; // fully vanished
       const cfg = CREATURE_TYPES[c.type];
-      ctx.save();
-      ctx.translate(x, y);
+
+      let ox = 0, oy = 0, scale = 1, rot = 0, alpha = 1;
       let gape = 0.06 + Math.sin(c.t * 3) * 0.04; // idle: mouth barely moving
-      if (c.state === 'dying') {
-        ctx.globalAlpha = 1 - c.anim;
-        ctx.rotate(c.anim * 1.4);
-        const s = 1 - c.anim * 0.55;
-        ctx.scale(s, s);
-        gape = 0.9; // shocked
-      } else if (c.state === 'attacking') {
-        const lunge = Math.sin(Math.min(1, c.anim) * Math.PI); // ease out and back
-        ctx.translate(0, lunge * 20);
-        const s = 1 + lunge * 0.4;
-        ctx.scale(s, s);
-        gape = 0.35 + lunge * 0.65; // jaws wide open
+
+      if (dead) {
+        // Puff up for an instant, then implode into nothing, spinning.
+        const p = c.anim;
+        scale = p < 0.18 ? 1 + p * 2.2 : 1.4 * Math.max(0, 1 - (p - 0.18) / 0.82);
+        rot = p * 3.4;
+        alpha = 1 - p * p;
+        gape = 0.9; // caught mid-shriek
+      } else if (c.state === 'attacking' && c.armed) {
+        // Pounce off its spot and land right on the runner, then fall back.
+        const p = Math.min(1, c.anim);
+        const lunge = p < 0.35
+          ? Math.pow(p / 0.35, 0.6)                    // snap forward
+          : 1 - Math.pow((p - 0.35) / 0.65, 1.4);      // ease back off
+        ox = (player.x - x) * lunge;
+        oy = (PLAYER_SCREEN_Y - 24 - y) * lunge;
+        scale = 1 + lunge * 0.5;
+        rot = lunge * 0.3 * (player.x < x ? 1 : -1);
+        gape = 0.35 + lunge * 0.65; // jaws wide
       } else {
-        ctx.translate(0, Math.sin(c.t * 3) * 3); // idle bob
+        // Idle: everyone bobs and sways; slimes also hop on the spot.
+        const hop = c.type === 'slime' ? Math.abs(Math.sin(c.t * 2.4)) * 7 : 0;
+        oy = Math.sin(c.t * 3) * 3 - hop;
+        ox = Math.sin(c.t * 1.3) * 2;
+        if (c.type === 'slime') scale = 1 + hop * 0.006;
       }
+
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, alpha);
+      ctx.translate(x + ox, y + oy);
+      if (rot) ctx.rotate(rot);
+      if (scale !== 1) ctx.scale(scale, scale);
       CREATURE_DRAW[c.type](cfg, c.t, gape);
       ctx.restore();
 
-      // Slash mark across a creature as it's cut down.
-      if (c.state === 'dying' && c.anim < 0.45) {
+      if (dead) {
+        // Slash across it, then an expanding ring where it burst.
+        if (c.anim < 0.4) {
+          ctx.save();
+          ctx.globalAlpha = 1 - c.anim / 0.4;
+          ctx.strokeStyle = '#fff';
+          ctx.lineWidth = 5;
+          ctx.lineCap = 'round';
+          ctx.beginPath();
+          ctx.moveTo(x - 26, y - 20);
+          ctx.lineTo(x + 26, y + 20);
+          ctx.stroke();
+          ctx.restore();
+        }
         ctx.save();
-        ctx.globalAlpha = 1 - c.anim / 0.45;
-        ctx.strokeStyle = '#fff';
-        ctx.lineWidth = 4;
-        ctx.lineCap = 'round';
+        ctx.globalAlpha = Math.max(0, 1 - c.anim) * 0.85;
+        ctx.strokeStyle = cfg.color;
+        ctx.lineWidth = 1 + 4 * (1 - c.anim);
         ctx.beginPath();
-        ctx.moveTo(x - 24, y - 18);
-        ctx.lineTo(x + 24, y + 18);
+        ctx.arc(x, y, 12 + c.anim * 48, 0, Math.PI * 2);
         ctx.stroke();
         ctx.restore();
       }
@@ -1069,22 +1186,48 @@
       ctx.restore();
     }
 
+    // Countdown under the answers of the gate the runner is stopped at.
+    function drawCountdown() {
+      if (!waiting || !waitingGate || timeLimit <= 0) return;
+      const roadW = ROAD_R - ROAD_L;
+      const y = worldToScreenY(waitingGate.worldY) + 34;
+      const frac = Math.max(0, Math.min(1, waitTimer / timeLimit));
+      const barW = roadW * 0.78, barH = 12;
+      const bx = ROAD_L + (roadW - barW) / 2;
+      ctx.fillStyle = 'rgba(15,23,42,0.85)';
+      roundRect(bx, y, barW, barH, 6); ctx.fill();
+      ctx.fillStyle = frac > 0.5 ? '#22c55e' : frac > 0.25 ? '#fbbf24' : '#ef4444';
+      const inner = Math.max(0, (barW - 4) * frac);
+      if (inner > 0) { roundRect(bx + 2, y + 2, inner, barH - 4, 4); ctx.fill(); }
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 13px system-ui, sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(Math.ceil(waitTimer) + 's', ROAD_L + roadW / 2, y + barH + 11);
+    }
+
     function drawRunner() {
       const cadence = 8 + runSpeed * 0.02;
-      const legPhase = Math.sin(player.runT * cadence) * 0.6;
+      // Standing still while reading the question — legs together, just breathing.
+      const legPhase = waiting ? 0 : Math.sin(player.runT * cadence) * 0.6;
       const armPhase = -legPhase * 0.7;
-      const squash = 1 + Math.sin(player.runT * cadence * 2) * 0.03;
-      const bank = Math.max(-0.25, Math.min(0.25, (player.targetX - player.x) / 50));
+      const squash = waiting
+        ? 1 + Math.sin(skyTime * 2.2) * 0.02
+        : 1 + Math.sin(player.runT * cadence * 2) * 0.03;
+      let bank = Math.max(-0.25, Math.min(0.25, (player.targetX - player.x) / 50));
+
+      // Bitten: reel backwards and flash red for a moment.
+      const hurt = player.hurtTimer > 0 ? player.hurtTimer / 0.5 : 0;
+      if (hurt) bank += -0.45 * Math.sin(hurt * Math.PI);
 
       ctx.save();
-      ctx.translate(player.x, PLAYER_SCREEN_Y);
+      ctx.translate(player.x, PLAYER_SCREEN_Y + (hurt ? Math.sin(hurt * Math.PI) * 5 : 0));
       ctx.rotate(bank);
       ctx.scale(1, squash);
 
       drawLimb(-6, -18, legPhase, 22, '#334155');
       drawLimb(6, -18, -legPhase, 22, '#334155');
 
-      ctx.fillStyle = '#22c55e';
+      ctx.fillStyle = hurt && Math.floor(player.hurtTimer * 20) % 2 === 0 ? '#ef4444' : '#22c55e';
       roundRect(-11, -46, 22, 30, 8); ctx.fill();
 
       drawLimb(-10, -40, armPhase, 16, '#fbbf24');
@@ -1107,14 +1250,21 @@
       ctx.clearRect(-20, -20, W + 40, H + 40);
       drawGround();
       // Guards stand beyond their gate, so they're further away — draw them
-      // first and let the nearer gate panels overlap them.
+      // first and let the nearer gate panels overlap them. One exception: a
+      // creature mid-pounce is landing on the runner, so it's drawn after him.
+      const pouncing = (c) => c.state === 'attacking' && c.armed;
       for (const g of gates) {
         const cy = worldToScreenY(g.worldY + CREATURE_GAP);
-        g.creatures.forEach((c, i) => drawCreature(c, laneCenterX(i), cy));
+        g.creatures.forEach((c, i) => { if (!pouncing(c)) drawCreature(c, laneCenterX(i), cy); });
       }
       for (const g of gates) drawGate(g);
+      drawCountdown();
       drawParticles();
       drawRunner();
+      for (const g of gates) {
+        const cy = worldToScreenY(g.worldY + CREATURE_GAP);
+        g.creatures.forEach((c, i) => { if (pouncing(c)) drawCreature(c, laneCenterX(i), cy); });
+      }
       drawSky();
       ctx.restore();
 
@@ -1146,6 +1296,7 @@
 
     function endGame() {
       running = false; gameOver = true;
+      waiting = false; waitingGate = null;
       cancelAnimationFrame(rafId);
       Arcade.sound.lose();
       Arcade.maybeUpdateHigh(HS_KEY, score);
@@ -1180,10 +1331,13 @@
       const dx = e.clientX - swipeStartX;
       swipeStartX = null;
       if (Math.abs(dx) > 30) {
-        setLane(player.lane + (dx > 0 ? 1 : -1)); // swipe: step one lane over
+        setLane(player.lane + (dx > 0 ? 1 : -1)); // swipe: step over, no commit
       } else {
+        // A tap names an answer outright, so it also locks it in and sends
+        // the runner charging; swipe/keys only reposition.
         const rect = canvas.getBoundingClientRect();
-        setLane(laneFromCanvasX(((e.clientX - rect.left) / rect.width) * W)); // tap: jump to that lane
+        setLane(laneFromCanvasX(((e.clientX - rect.left) / rect.width) * W));
+        endWait();
       }
     });
     canvas.addEventListener('pointercancel', () => { swipeStartX = null; });
@@ -1220,6 +1374,9 @@
           btn.classList.toggle('active', btn.dataset.level === draftSettings[op].level);
         });
       });
+      document.querySelectorAll('#timeLimitRow .mode-btn').forEach((btn) => {
+        btn.classList.toggle('active', Number(btn.dataset.time) === draftSettings.timeLimit);
+      });
       refreshEnabledLock();
       settingsModal.classList.add('show');
     }
@@ -1228,8 +1385,18 @@
       settings = draftSettings;
       saveSettings(settings);
       enabledOps = OPS.filter((op) => settings[op].enabled);
+      // Apply the new thinking time right away, even mid-run.
+      timeLimit = settings.timeLimit;
+      if (timeLimit <= 0) endWait();
       closeSettings();
     }
+
+    document.querySelectorAll('#timeLimitRow .mode-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        draftSettings.timeLimit = Number(btn.dataset.time);
+        document.querySelectorAll('#timeLimitRow .mode-btn').forEach((b) => b.classList.toggle('active', b === btn));
+      });
+    });
 
     OPS.forEach((op) => {
       document.getElementById(op + 'Enabled').addEventListener('change', (e) => {
