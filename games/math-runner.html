@@ -39,13 +39,13 @@
       background: radial-gradient(circle at top, #1e293b, var(--bg));
       color: var(--text);
       font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-      padding: 8px;
+      padding: 6px 4px 14px;
     }
 
     .game {
       background: var(--panel);
       border-radius: 20px;
-      padding: 12px 10px;
+      padding: 10px 6px 12px;
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
       width: 100%;
       max-width: 520px;
@@ -101,7 +101,7 @@
     .board-wrap {
       position: relative;
       width: min(100%, 500px); /* fallback if svh unsupported */
-      width: min(100%, 500px, calc((100svh - 196px) * (400 / 560)));
+      width: min(100%, 500px, calc((100svh - 190px) * (400 / 680)));
       margin: 0 auto;
     }
     .board-wrap, .overlay { touch-action: manipulation; }
@@ -112,7 +112,7 @@
       display: block;
       width: 100%;
       height: auto;
-      aspect-ratio: 400 / 560;
+      aspect-ratio: 400 / 680;
       touch-action: none;
     }
 
@@ -259,7 +259,7 @@
     </div>
 
     <div class="board-wrap">
-      <canvas id="board" width="400" height="560"></canvas>
+      <canvas id="board" width="400" height="680"></canvas>
       <div class="overlay show" id="overlay">
         <h2 id="overlayTitle">Math Runner &#127939;</h2>
         <p id="overlayText">
@@ -586,7 +586,7 @@
     const canvas = document.getElementById('board');
     const ctx = canvas.getContext('2d');
     const W = canvas.width;   // 400
-    const H = canvas.height;  // 560
+    const H = canvas.height;  // 680 (tall board — more road visible ahead)
 
     const scoreEl = document.getElementById('score');
     const heartsEl = document.getElementById('hearts');
