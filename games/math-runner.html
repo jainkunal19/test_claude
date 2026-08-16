@@ -101,7 +101,7 @@
     .board-wrap {
       position: relative;
       width: min(100%, 400px); /* fallback if svh unsupported */
-      width: min(100%, 400px, calc((100svh - 300px) * (360 / 640)));
+      width: min(100%, 400px, calc((100svh - 240px) * (360 / 640)));
       margin: 0 auto;
     }
     .board-wrap, .overlay { touch-action: manipulation; }
@@ -146,28 +146,6 @@
     }
     button.action:hover { opacity: 0.9; transform: translateY(-1px); }
     button.action:active { transform: translateY(0); }
-
-    .lane-controls {
-      display: flex;
-      gap: 12px;
-      justify-content: center;
-      margin-top: 12px;
-    }
-    .lane-btn {
-      flex: 1;
-      max-width: 140px;
-      padding: 14px;
-      border: none;
-      border-radius: 12px;
-      background: var(--cell);
-      color: var(--text);
-      font-size: 1.4rem;
-      font-weight: 700;
-      cursor: pointer;
-      touch-action: manipulation;
-    }
-    .lane-btn:hover { opacity: 0.88; }
-    .lane-btn:active { transform: translateY(1px); }
 
     .legend {
       margin-top: 12px;
@@ -294,13 +272,8 @@
       </div>
     </div>
 
-    <div class="lane-controls">
-      <button class="lane-btn" id="laneLeftBtn" aria-label="Move left">&#9664;</button>
-      <button class="lane-btn" id="laneRightBtn" aria-label="Move right">&#9654;</button>
-    </div>
-
     <div class="legend">
-      &larr; &rarr; keys, swipe, or the buttons above to switch lanes &middot;
+      <b>Tap the answer</b> you want &middot; or swipe / &larr; &rarr; keys &middot;
       10 &#10084;&#65039; hearts, &minus;&frac12; per miss &middot; +1 coin per correct answer
     </div>
 
@@ -354,9 +327,10 @@
         <h2>How to Play</h2>
         <p class="how-to">
           Your runner auto-runs down a 3-lane path. As each gate approaches,
-          it shows a math problem with one answer per lane &mdash; switch
-          lanes (&larr; &rarr; keys, swipe on the board, or the on-screen
-          buttons) to run through the correct one.<br><br>
+          it shows a math problem with one answer per lane &mdash; get to the
+          correct one by <b>tapping the answer you want</b>, or by swiping
+          across the board / using the &larr; &rarr; keys to step one lane at
+          a time.<br><br>
           Pick right and the lane flashes green, you earn <b>+1 coin</b>, and
           your correct-answer count goes up. Pick wrong and both your lane
           (red) and the correct lane (green) flash so you still see the right
@@ -978,18 +952,28 @@
       else if (e.key === 'ArrowRight') { if (!e.repeat) setLane(player.lane + 1); e.preventDefault(); }
     });
 
+    // Which lane does a canvas x coordinate fall in? Taps outside the road
+    // clamp to the nearest lane, so an off-target tap still does what the
+    // player meant.
+    function laneFromCanvasX(x) {
+      const laneW = (ROAD_R - ROAD_L) / LANES;
+      return Math.max(0, Math.min(LANES - 1, Math.floor((x - ROAD_L) / laneW)));
+    }
+
     let swipeStartX = null;
     canvas.addEventListener('pointerdown', (e) => { if (running) swipeStartX = e.clientX; });
     canvas.addEventListener('pointerup', (e) => {
       if (!running || swipeStartX == null) return;
       const dx = e.clientX - swipeStartX;
       swipeStartX = null;
-      if (Math.abs(dx) > 30) setLane(player.lane + (dx > 0 ? 1 : -1));
+      if (Math.abs(dx) > 30) {
+        setLane(player.lane + (dx > 0 ? 1 : -1)); // swipe: step one lane over
+      } else {
+        const rect = canvas.getBoundingClientRect();
+        setLane(laneFromCanvasX(((e.clientX - rect.left) / rect.width) * W)); // tap: jump to that lane
+      }
     });
     canvas.addEventListener('pointercancel', () => { swipeStartX = null; });
-
-    document.getElementById('laneLeftBtn').addEventListener('click', () => setLane(player.lane - 1));
-    document.getElementById('laneRightBtn').addEventListener('click', () => setLane(player.lane + 1));
 
     // Block double-tap / double-click zoom on the play area.
     const boardWrap = document.querySelector('.board-wrap');
