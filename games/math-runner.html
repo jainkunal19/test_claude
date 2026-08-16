@@ -255,7 +255,6 @@
     <div class="hud">
       <div class="stat"><div class="label">Correct</div><div class="value" id="score">0</div></div>
       <div class="stat"><div class="label">Hearts</div><div class="value" id="hearts">&#10084;&#65039; 10</div></div>
-      <div class="stat"><div class="label">Level</div><div class="value" id="level">1</div></div>
       <div class="stat"><div class="label">Lap</div><div class="value" id="lap">1</div></div>
     </div>
 
@@ -369,9 +368,9 @@
           on. Change that pause (3s / 5s / 8s / Off) under &#9881;&#65039;
           <b>Settings &rarr; Answer review</b>. You start with 10 hearts; it's
           game over at 0.<br><br>
-          Watch out as you level up: friendly <b style="color:#84cc16">slimes</b>
-          and <b style="color:#cbd5e1">ghosts</b> give way to
-          <b style="color:#a855f7">ogres</b> and finally fire-breathing
+          Watch out — the further you run, the tougher the guards: friendly
+          <b style="color:#84cc16">slimes</b> and <b style="color:#cbd5e1">ghosts</b>
+          give way to <b style="color:#a855f7">ogres</b> and finally fire-breathing
           <b style="color:#ef4444">dragons</b>.<br><br>
           Every <b>20 correct answers</b> completes a <b>lap</b>: you cross a
           checkered finish line to a round of applause and pull up at a
@@ -595,7 +594,6 @@
 
     const scoreEl = document.getElementById('score');
     const heartsEl = document.getElementById('hearts');
-    const levelEl = document.getElementById('level');
     const lapEl = document.getElementById('lap');
     const overlay = document.getElementById('overlay');
     const overlayTitle = document.getElementById('overlayTitle');
@@ -701,7 +699,6 @@
       scoreEl.textContent = score;
       const h = Number.isInteger(hearts) ? hearts : hearts.toFixed(1);
       heartsEl.textContent = '❤️ ' + h;
-      levelEl.textContent = level;
       lapEl.textContent = lap;
     }
 
