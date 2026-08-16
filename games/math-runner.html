@@ -326,6 +326,16 @@
           </div>
         </div>
 
+        <div class="op-row">
+          <div class="sound-row" style="cursor:default;"><span>&#128064; Answer review</span></div>
+          <div class="mode-select" id="reviewTimeRow">
+            <button class="mode-btn" data-review="3">3s</button>
+            <button class="mode-btn active" data-review="5">5s</button>
+            <button class="mode-btn" data-review="8">8s</button>
+            <button class="mode-btn" data-review="0">Off</button>
+          </div>
+        </div>
+
         <div class="modal-actions">
           <button class="btn-ghost" id="settingsCancel">Cancel</button>
           <button class="btn-primary" id="settingsSave">Save</button>
@@ -351,9 +361,13 @@
           Pick right and you <b>slay that creature</b> on the way through, the
           lane flashes green, and you earn <b>+1 coin</b>. Pick wrong and the
           monster in your lane lunges and bites you for
-          <b>&minus;&frac12; heart</b> &mdash; but both your lane (red) and the
-          correct lane (green) flash, so you still see the right answer. You
-          start with 10 hearts; it's game over at 0.<br><br>
+          <b>&minus;&frac12; heart</b> &mdash; the runner <b>vanishes</b> and
+          everything holds still for <b>5 seconds</b> while the correct answer
+          (green, ringed) and a <b>&ldquo;Correct answer&rdquo;</b> banner stay
+          on screen so you can learn it. Then he <b>pops back in</b> and runs
+          on. Change that pause (3s / 5s / 8s / Off) under &#9881;&#65039;
+          <b>Settings &rarr; Answer review</b>. You start with 10 hearts; it's
+          game over at 0.<br><br>
           Watch out as you level up: friendly <b style="color:#84cc16">slimes</b>
           and <b style="color:#cbd5e1">ghosts</b> give way to
           <b style="color:#a855f7">ogres</b> and finally fire-breathing
@@ -540,7 +554,9 @@
     const SETTINGS_KEY = 'mathrunner-settings';
 
     function defaultSettings() {
-      const s = { timeLimit: 10 }; // seconds to read each question (0 = never stop)
+      // reviewTime: seconds the runner stays vanished while the correct answer
+      // is shown after a wrong pick (0 = skip the review entirely).
+      const s = { timeLimit: 10, reviewTime: 5 };
       OPS.forEach((op) => { s[op] = { enabled: true, level: 'medium' }; });
       return s;
     }
@@ -556,6 +572,7 @@
             }
           });
           if (ALLOWED_TIMES.indexOf(raw.timeLimit) !== -1) out.timeLimit = raw.timeLimit;
+          if (ALLOWED_REVIEW.indexOf(raw.reviewTime) !== -1) out.reviewTime = raw.reviewTime;
         }
       } catch (e) { /* fall through to defaults */ }
       if (!OPS.some((op) => out[op].enabled)) out.add.enabled = true; // never allow zero enabled
@@ -591,6 +608,7 @@
     // How far ahead of the gate the runner halts to read the question.
     const STOP_DISTANCE = 190;
     const ALLOWED_TIMES = [0, 5, 10, 20]; // seconds; 0 = never stop
+    const ALLOWED_REVIEW = [0, 3, 5, 8];  // seconds to show the correct answer; 0 = off
     const CONFETTI_PALETTE = ['#fbbf24', '#f472b6', '#38bdf8', '#4ade80', '#a78bfa'];
 
     // Creatures guard the answers just beyond each gate. Nastier ones only
@@ -629,11 +647,13 @@
     // ---------------------------------------------------------------------
     // State
     // ---------------------------------------------------------------------
-    let settings, enabledOps, timeLimit;
+    let settings, enabledOps, timeLimit, reviewTime;
     let player, gates, particles;
     let score, hearts, level, runSpeed, nextGateAt;
     let shakeTime, flashAlpha, dustTimer, skyTime;
     let waiting, waitTimer, waitingGate, lastTickSec;
+    // After a wrong pick the runner vanishes and the correct answer is shown.
+    let reviewing, reviewTimer, reviewGate;
     let running, gameOver, rafId, lastTime;
     let skyGrad = null;
 
@@ -648,7 +668,8 @@
       settings = loadSettings();
       enabledOps = OPS.filter((op) => settings[op].enabled);
       timeLimit = settings.timeLimit;
-      player = { progress: 0, lane: 1, x: laneCenterX(1), targetX: laneCenterX(1), runT: 0, hurtTimer: 0 };
+      reviewTime = settings.reviewTime;
+      player = { progress: 0, lane: 1, x: laneCenterX(1), targetX: laneCenterX(1), runT: 0, hurtTimer: 0, vanished: false };
       gates = [];
       particles = [];
       score = 0; hearts = MAX_HEARTS; level = 1;
@@ -656,6 +677,7 @@
       nextGateAt = GATE_FIRST_DISTANCE;
       shakeTime = 0; flashAlpha = 0; dustTimer = 0; skyTime = 0;
       waiting = false; waitTimer = 0; waitingGate = null; lastTickSec = -1;
+      reviewing = false; reviewTimer = 0; reviewGate = null;
       updateHud();
     }
 
@@ -786,6 +808,28 @@
       }
     }
 
+    // Wrong answer: the monster makes the runner vanish, and the gate holds on
+    // screen with the correct answer highlighted so the player can study it.
+    // After reviewTime seconds he pops back and carries on.
+    function startReview(g) {
+      if (reviewTime <= 0 || reviewing) return;
+      reviewing = true;
+      reviewTimer = reviewTime;
+      reviewGate = g;
+      player.vanished = true;
+      spawnParticles('puff', player.x, PLAYER_SCREEN_Y - 20);
+    }
+
+    function endReview() {
+      if (!reviewing) return;
+      reviewing = false;
+      reviewGate = null;
+      reviewTimer = 0;
+      player.vanished = false;
+      spawnParticles('puff', player.x, PLAYER_SCREEN_Y - 20);
+      Arcade.sound.up();          // pop back in
+    }
+
     // Stop waiting and let the runner charge the gate on its current lane.
     function endWait() {
       if (!waiting) return;
@@ -821,6 +865,10 @@
           if (sec > 0 && sec <= 3) Arcade.sound.click(); // last-3-seconds tick
         }
         if (waitTimer <= 0) endWait(); // out of time — charge on whatever lane you're in
+      } else if (reviewing) {
+        // Runner is vanished: the world holds still while the correct answer shows.
+        reviewTimer = Math.max(0, reviewTimer - dt);
+        if (reviewTimer <= 0) endReview();
       } else {
         player.progress += runSpeed * dt;
         player.runT += dt;
@@ -878,6 +926,7 @@
               spawnParticles('impact', player.x, PLAYER_SCREEN_Y - 20);
               shakeTime = 0.35; flashAlpha = 0.4;
               player.hurtTimer = 0.5;
+              startReview(g);      // vanish + show the correct answer
             }
           }
           c.anim = Math.min(1, c.anim + dt / (c.state === 'dying' ? 0.55 : 0.5));
@@ -987,18 +1036,57 @@
       ctx.fillText(g.problemText, ROAD_L + roadW / 2, problemY);
 
       const boxW = roadW / LANES - 10;
+      // While reviewing this gate, hold the flash at full strength (and pulse
+      // the correct answer) instead of letting it fade after 0.4s.
+      const hold = reviewing && reviewGate === g;
+      const pulse = hold ? 0.75 + 0.25 * Math.sin(skyTime * 6) : 1;
       g.lanes.forEach((lane, i) => {
         const cx = laneCenterX(i);
+        const fr = hold ? 1 : g.flashTimer / 0.4;
         let fill = 'rgba(30,41,59,0.92)';
-        if (lane.flash === 'green') fill = `rgba(34,197,94,${0.55 + 0.4 * (g.flashTimer / 0.4)})`;
-        else if (lane.flash === 'red') fill = `rgba(239,68,68,${0.55 + 0.4 * (g.flashTimer / 0.4)})`;
+        if (lane.flash === 'green') fill = `rgba(34,197,94,${(0.55 + 0.4 * fr) * (hold ? pulse : 1)})`;
+        else if (lane.flash === 'red') fill = `rgba(239,68,68,${0.55 + 0.4 * fr})`;
         ctx.fillStyle = fill;
         roundRect(cx - boxW / 2, y - laneRowH / 2, boxW, laneRowH, 8);
         ctx.fill();
+        if (hold && lane.flash === 'green') {   // ring the right answer
+          ctx.strokeStyle = '#bbf7d0';
+          ctx.lineWidth = 3;
+          roundRect(cx - boxW / 2, y - laneRowH / 2, boxW, laneRowH, 8);
+          ctx.stroke();
+        }
         ctx.fillStyle = '#fff';
         ctx.font = 'bold 17px system-ui, sans-serif';
         ctx.fillText(lane.text, cx, y);
       });
+    }
+
+    // Banner shown while the runner is vanished: the correct answer + countdown.
+    function drawReviewBanner() {
+      if (!reviewing || !reviewGate) return;
+      const correct = reviewGate.lanes.find((l) => l.correct);
+      if (!correct) return;
+      const roadW = ROAD_R - ROAD_L;
+      const cx = ROAD_L + roadW / 2;
+      const bw = roadW + 12, bh = 62;
+      // Sit in the open road above the gate — always fully on screen, never
+      // clipped by the bottom edge or hidden behind the answer row.
+      const gateTop = worldToScreenY(reviewGate.worldY) - 60;
+      const by = Math.min(Math.max(HORIZON + 10, H * 0.3), Math.max(HORIZON + 10, gateTop - bh));
+      ctx.fillStyle = 'rgba(15,23,42,0.92)';
+      roundRect(ROAD_L - 6, by, bw, bh, 10); ctx.fill();
+      ctx.strokeStyle = '#22c55e'; ctx.lineWidth = 2;
+      roundRect(ROAD_L - 6, by, bw, bh, 10); ctx.stroke();
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = 'bold 12px system-ui, sans-serif';
+      ctx.fillText('Correct answer', cx, by + 15);
+      ctx.fillStyle = '#4ade80';
+      ctx.font = 'bold 22px system-ui, sans-serif';
+      ctx.fillText(reviewGate.problemText + ' = ' + correct.text, cx, by + 36);
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = 'bold 11px system-ui, sans-serif';
+      ctx.fillText('back in ' + Math.ceil(reviewTimer) + 's', cx, by + 53);
     }
 
     // --- Creatures -------------------------------------------------------
@@ -1206,6 +1294,7 @@
     }
 
     function drawRunner() {
+      if (player.vanished) return;   // eaten — reappears when the review ends
       const cadence = 8 + runSpeed * 0.02;
       // Standing still while reading the question — legs together, just breathing.
       const legPhase = waiting ? 0 : Math.sin(player.runT * cadence) * 0.6;
@@ -1259,6 +1348,7 @@
       }
       for (const g of gates) drawGate(g);
       drawCountdown();
+      drawReviewBanner();
       drawParticles();
       drawRunner();
       for (const g of gates) {
@@ -1377,6 +1467,9 @@
       document.querySelectorAll('#timeLimitRow .mode-btn').forEach((btn) => {
         btn.classList.toggle('active', Number(btn.dataset.time) === draftSettings.timeLimit);
       });
+      document.querySelectorAll('#reviewTimeRow .mode-btn').forEach((btn) => {
+        btn.classList.toggle('active', Number(btn.dataset.review) === draftSettings.reviewTime);
+      });
       refreshEnabledLock();
       settingsModal.classList.add('show');
     }
@@ -1388,6 +1481,8 @@
       // Apply the new thinking time right away, even mid-run.
       timeLimit = settings.timeLimit;
       if (timeLimit <= 0) endWait();
+      reviewTime = settings.reviewTime;
+      if (reviewTime <= 0) endReview();   // turning it off releases a held review
       closeSettings();
     }
 
@@ -1395,6 +1490,13 @@
       btn.addEventListener('click', () => {
         draftSettings.timeLimit = Number(btn.dataset.time);
         document.querySelectorAll('#timeLimitRow .mode-btn').forEach((b) => b.classList.toggle('active', b === btn));
+      });
+    });
+
+    document.querySelectorAll('#reviewTimeRow .mode-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        draftSettings.reviewTime = Number(btn.dataset.review);
+        document.querySelectorAll('#reviewTimeRow .mode-btn').forEach((b) => b.classList.toggle('active', b === btn));
       });
     });
 
