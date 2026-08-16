@@ -1,0 +1,1263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Math Runner &middot; Alisha Arcade</title>
+  <link rel="manifest" href="../manifest.json">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="Alisha Arcade">
+  <link rel="apple-touch-icon" href="../images/apple-touch-icon.png">
+  <script src="../arcade.js"></script>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #1e293b;
+      --cell: #334155;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --accent: #22c55e;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    button, .back-link, canvas {
+      touch-action: manipulation;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at top, #1e293b, var(--bg));
+      color: var(--text);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      padding: 14px;
+    }
+
+    .game {
+      background: var(--panel);
+      border-radius: 20px;
+      padding: 20px 22px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+      width: 100%;
+      max-width: 440px;
+    }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 10px;
+      opacity: 0.85;
+      transition: opacity 0.15s ease;
+    }
+    .back-link:hover { opacity: 1; }
+
+    h1 {
+      text-align: center;
+      font-size: 1.9rem;
+      margin-bottom: 12px;
+      background: linear-gradient(90deg, #16a34a, #4ade80, #22c55e);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hud {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .stat {
+      flex: 1;
+      background: var(--cell);
+      border-radius: 10px;
+      padding: 7px 10px;
+      text-align: center;
+    }
+    .stat .label {
+      font-size: 0.62rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--muted);
+      margin-bottom: 2px;
+    }
+    .stat .value { font-size: 1.1rem; font-weight: 700; }
+
+    /* Size the wrapper (bounded by the panel width via 100%, not the viewport)
+       to the biggest board that fits both width and height; the canvas fills it. */
+    .board-wrap {
+      position: relative;
+      width: min(100%, 400px); /* fallback if svh unsupported */
+      width: min(100%, 400px, calc((100svh - 240px) * (360 / 640)));
+      margin: 0 auto;
+    }
+    .board-wrap, .overlay { touch-action: manipulation; }
+
+    canvas#board {
+      background: #14532d;
+      border-radius: 12px;
+      display: block;
+      width: 100%;
+      height: auto;
+      aspect-ratio: 360 / 640;
+      touch-action: none;
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      background: rgba(0, 0, 0, 0.82);
+      border-radius: 12px;
+      text-align: center;
+      padding: 24px;
+    }
+    .overlay.show { display: flex; }
+    .overlay h2 { font-size: 1.4rem; }
+    .overlay p { color: var(--muted); font-size: 0.92rem; line-height: 1.55; }
+
+    button.action {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      color: #052e13;
+      background: var(--accent);
+      transition: opacity 0.15s ease, transform 0.1s ease;
+    }
+    button.action:hover { opacity: 0.9; transform: translateY(-1px); }
+    button.action:active { transform: translateY(0); }
+
+    .legend {
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 0.78rem;
+      line-height: 1.7;
+      text-align: center;
+    }
+    .legend b { color: var(--text); }
+
+    /* Info / Settings buttons */
+    .info-btn {
+      float: right;
+      background: var(--cell);
+      color: var(--text);
+      border: none;
+      border-radius: 9px;
+      padding: 6px 12px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .info-btn:hover { opacity: 0.88; }
+    .icon-btn {
+      float: right;
+      margin-left: 8px;
+      background: var(--cell);
+      color: var(--text);
+      border: none;
+      border-radius: 9px;
+      padding: 6px 12px;
+      font-size: 0.95rem;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .icon-btn:hover { opacity: 0.88; }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.62);
+      z-index: 50;
+      padding: 20px;
+    }
+    .modal.show { display: flex; }
+    .modal-card {
+      background: var(--panel);
+      border-radius: 16px;
+      padding: 24px;
+      width: 100%;
+      max-width: 380px;
+      max-height: 88vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    }
+    .modal-card h2 { margin-bottom: 10px; font-size: 1.25rem; }
+    .modal-card .hint { color: var(--muted); font-size: 0.85rem; margin-bottom: 14px; }
+    .modal-card .how-to { color: #94a3b8; font-size: 0.9rem; line-height: 1.6; margin-bottom: 16px; }
+    .modal-card .highscore {
+      background: var(--cell);
+      border-radius: 10px;
+      padding: 12px;
+      text-align: center;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+    .modal-card .highscore span { color: var(--accent); font-size: 1.2rem; }
+    .modal-card .close-row { text-align: right; }
+
+    .op-row { margin-bottom: 14px; }
+    .op-row:last-child { margin-bottom: 4px; }
+    .modal-card .sound-row {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 10px; font-size: 0.95rem; font-weight: 600; cursor: pointer;
+    }
+    .modal-card .sound-row input { width: auto; margin: 0; transform: scale(1.3); cursor: pointer; accent-color: var(--accent); }
+    .modal-card .sound-row input:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .mode-select {
+      display: flex; gap: 6px; background: var(--bg); border-radius: 12px; padding: 5px; margin: 8px 0 0;
+    }
+    .mode-btn {
+      flex: 1; padding: 8px; border: none; border-radius: 9px; background: transparent; color: #94a3b8;
+      font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: background .15s ease, color .15s ease;
+      touch-action: manipulation;
+    }
+    .mode-btn:hover { color: var(--text); }
+    .mode-btn.active { background: var(--accent); color: #052e13; }
+
+    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
+    .modal-actions button { padding: 10px 18px; border: none; border-radius: 12px; font-size: 0.9rem; font-weight: 700; cursor: pointer; }
+    .btn-primary { color: #052e13; background: linear-gradient(90deg, #4ade80, #16a34a); }
+    .btn-ghost { color: var(--muted); background: transparent; }
+  </style>
+</head>
+<body>
+  <main class="game">
+    <a class="back-link" href="../index.html">&larr; Back to Alisha Arcade</a>
+    <button class="icon-btn" id="settingsBtn" aria-label="Settings" title="Settings">&#9881;&#65039;</button>
+    <button class="info-btn" id="infoBtn">&#9432; Info</button>
+    <h1>Math Runner &#127939;</h1>
+
+    <div class="hud">
+      <div class="stat"><div class="label">Correct</div><div class="value" id="score">0</div></div>
+      <div class="stat"><div class="label">Hearts</div><div class="value" id="hearts">&#10084;&#65039; 10</div></div>
+      <div class="stat"><div class="label">Level</div><div class="value" id="level">1</div></div>
+    </div>
+
+    <div class="board-wrap">
+      <canvas id="board" width="360" height="640"></canvas>
+      <div class="overlay show" id="overlay">
+        <h2 id="overlayTitle">Math Runner &#127939;</h2>
+        <p id="overlayText">
+          Monsters guard every answer! Tap the lane with the
+          <b>correct answer</b> to slay the beast in it.<br>
+          Get it wrong and that creature takes a bite &mdash; but you'll still
+          see the right answer flash green.<br>
+          Every monster you slay earns a coin!
+        </p>
+        <button class="action" id="overlayBtn">Start</button>
+      </div>
+    </div>
+
+    <div class="legend">
+      <b>Tap the answer</b> you want &middot; or swipe / &larr; &rarr; keys &middot;
+      right = slay the monster &amp; +1 coin &middot; wrong = bitten, &minus;&frac12; &#10084;&#65039;
+    </div>
+
+    <div class="modal" id="settingsModal">
+      <div class="modal-card">
+        <h2>Math Settings</h2>
+        <p class="hint">Choose which problem types show up, and how hard each one is.</p>
+
+        <div class="op-row">
+          <label class="sound-row" for="addEnabled"><span>&#10133; Addition</span><input type="checkbox" id="addEnabled" checked></label>
+          <div class="mode-select difficulty" id="addLevel">
+            <button class="mode-btn" data-level="easy">Easy</button>
+            <button class="mode-btn active" data-level="medium">Medium</button>
+            <button class="mode-btn" data-level="hard">Hard</button>
+          </div>
+        </div>
+        <div class="op-row">
+          <label class="sound-row" for="subEnabled"><span>&#10134; Subtraction</span><input type="checkbox" id="subEnabled" checked></label>
+          <div class="mode-select difficulty" id="subLevel">
+            <button class="mode-btn" data-level="easy">Easy</button>
+            <button class="mode-btn active" data-level="medium">Medium</button>
+            <button class="mode-btn" data-level="hard">Hard</button>
+          </div>
+        </div>
+        <div class="op-row">
+          <label class="sound-row" for="mulEnabled"><span>&#10006;&#65039; Multiplication</span><input type="checkbox" id="mulEnabled" checked></label>
+          <div class="mode-select difficulty" id="mulLevel">
+            <button class="mode-btn" data-level="easy">Easy</button>
+            <button class="mode-btn active" data-level="medium">Medium</button>
+            <button class="mode-btn" data-level="hard">Hard</button>
+          </div>
+        </div>
+        <div class="op-row">
+          <label class="sound-row" for="divEnabled"><span>&#10135; Division</span><input type="checkbox" id="divEnabled" checked></label>
+          <div class="mode-select difficulty" id="divLevel">
+            <button class="mode-btn" data-level="easy">Easy</button>
+            <button class="mode-btn active" data-level="medium">Medium</button>
+            <button class="mode-btn" data-level="hard">Hard</button>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn-ghost" id="settingsCancel">Cancel</button>
+          <button class="btn-primary" id="settingsSave">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal" id="infoModal">
+      <div class="modal-card">
+        <h2>How to Play</h2>
+        <p class="how-to">
+          Your runner auto-runs down a 3-lane path. As each gate approaches,
+          it shows a math problem with one answer per lane &mdash; and a
+          <b>monster guarding each one</b>. Get to the correct answer by
+          <b>tapping the lane you want</b>, or by swiping across the board /
+          using the &larr; &rarr; keys to step one lane at a time.<br><br>
+          Pick right and you <b>slay that creature</b> on the way through, the
+          lane flashes green, and you earn <b>+1 coin</b>. Pick wrong and the
+          monster in your lane lunges and bites you for
+          <b>&minus;&frac12; heart</b> &mdash; but both your lane (red) and the
+          correct lane (green) flash, so you still see the right answer. You
+          start with 10 hearts; it's game over at 0.<br><br>
+          Watch out as you level up: friendly <b style="color:#84cc16">slimes</b>
+          and <b style="color:#cbd5e1">ghosts</b> give way to
+          <b style="color:#a855f7">ogres</b> and finally fire-breathing
+          <b style="color:#ef4444">dragons</b>.<br><br>
+          Tap &#9881;&#65039; <b>Settings</b> to turn problem types
+          (Addition/Subtraction/Multiplication/Division) on or off, and set
+          an independent <b>Easy/Medium/Hard</b> difficulty for each one.
+        </p>
+        <div class="highscore">Best Correct Answers: <span id="highScore">0</span></div>
+        <div class="close-row"><button class="action" id="infoClose" style="padding:10px 20px;">Close</button></div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // ---------------------------------------------------------------------
+    // Problem generation (pure functions, no DOM — kept isolated so they can
+    // be extracted and unit-tested independently of the game/canvas code).
+    // ---------------------------------------------------------------------
+    const OPS = ['add', 'sub', 'mul', 'div'];
+    const LEVELS = ['easy', 'medium', 'hard'];
+    const OP_SYMBOL = { add: '+', sub: '−', mul: '×', div: '÷' };
+
+    function randInt(min, max) { return min + Math.floor(Math.random() * (max - min + 1)); }
+
+    function shuffleArray(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        const tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+      }
+      return arr;
+    }
+
+    function genAdd(level) {
+      let a, b, tries = 0;
+      if (level === 'easy') {
+        a = randInt(1, 9); b = randInt(1, 9);
+      } else if (level === 'medium') {
+        do { a = randInt(10, 40); b = randInt(1, 40); tries++; }
+        while ((a + b > 50 || a + b < 11) && tries < 200);
+      } else {
+        do { a = randInt(10, 89); b = randInt(10, 89); tries++; }
+        while ((a + b > 100 || (a % 10 + b % 10) < 10) && tries < 200);
+      }
+      return { a, b, answer: a + b };
+    }
+
+    function genSub(level) {
+      let a, b, tries = 0;
+      if (level === 'easy') {
+        const x = randInt(1, 9), y = randInt(1, 9);
+        a = Math.max(x, y); b = Math.min(x, y);
+      } else if (level === 'medium') {
+        a = randInt(10, 50); b = randInt(1, a);
+      } else {
+        do { a = randInt(20, 99); b = randInt(10, a); tries++; }
+        while ((a % 10) >= (b % 10) && tries < 200);
+      }
+      return { a, b, answer: a - b };
+    }
+
+    function genMul(level) {
+      const range = level === 'easy' ? 5 : level === 'medium' ? 10 : 12;
+      const a = randInt(1, range), b = randInt(1, range);
+      return { a, b, answer: a * b };
+    }
+
+    function genDiv(level) {
+      if (level === 'easy' || level === 'medium') {
+        const range = level === 'easy' ? 5 : 10;
+        const d = randInt(1, range), q = randInt(1, range);
+        return { a: d * q, b: d, answer: { q, r: 0 } };
+      }
+      const dividend = randInt(1, 100);
+      const divisor = randInt(1, 12);
+      const q = Math.floor(dividend / divisor);
+      const r = dividend % divisor;
+      return { a: dividend, b: divisor, answer: { q, r } };
+    }
+
+    function generateProblem(op, level) {
+      const g = op === 'add' ? genAdd(level)
+        : op === 'sub' ? genSub(level)
+        : op === 'mul' ? genMul(level)
+        : genDiv(level);
+      const text = `${g.a} ${OP_SYMBOL[op]} ${g.b}`;
+      return { op, level, a: g.a, b: g.b, text, answerValue: g.answer };
+    }
+
+    // Easy/Medium division is always exact by construction, so it's shown as
+    // a plain integer; Hard division sometimes has a remainder, so it always
+    // renders "Q r R" (even "7 r 0") so the format never changes shape.
+    function formatAnswer(op, level, val) {
+      if (op === 'div') return level === 'hard' ? `${val.q} r ${val.r}` : String(val.q);
+      return String(val);
+    }
+
+    function valuesEqual(op, v1, v2) {
+      if (op === 'div') return v1.q === v2.q && v1.r === v2.r;
+      return v1 === v2;
+    }
+
+    // Two wrong answers per problem, shaped like plausible kid mistakes
+    // rather than random noise, deduped against the correct value and
+    // each other.
+    function generateDistractors(op, level, a, b, correct) {
+      const out = [];
+      function tryAdd(v) {
+        if (v == null) return false;
+        if (op !== 'div' && v < 0) return false;
+        if (op === 'div' && (v.q < 0 || v.r < 0)) return false;
+        if (valuesEqual(op, v, correct)) return false;
+        for (const existing of out) if (valuesEqual(op, v, existing)) return false;
+        out.push(v);
+        return true;
+      }
+
+      if (op === 'add' || op === 'sub') {
+        const pool = shuffleArray([-10, -2, -1, 1, 2, 10]);
+        for (const off of pool) { if (out.length >= 2) break; tryAdd(correct + off); }
+        let guard = 0;
+        while (out.length < 2 && guard < 50) {
+          guard++;
+          tryAdd(correct + (Math.random() < 0.5 ? -1 : 1) * randInt(3, 6));
+        }
+      } else if (op === 'mul') {
+        tryAdd(a * (b > 1 ? b - 1 : b + 1));
+        tryAdd((a > 1 ? a - 1 : a + 1) * b);
+        let guard = 0;
+        while (out.length < 2 && guard < 50) {
+          guard++;
+          tryAdd(correct + (Math.random() < 0.5 ? -1 : 1) * randInt(1, 3));
+        }
+      } else { // div
+        if (level === 'hard') {
+          // "forgot the remainder" and "off-by-one quotient" mistakes.
+          tryAdd(correct.r === 0 ? { q: correct.q + 1, r: 0 } : { q: correct.q, r: 0 });
+          tryAdd({ q: Math.max(0, correct.q - 1), r: correct.r });
+          // Fallback: jitter the quotient outward (unbounded, so this always
+          // has room — unlike jittering the remainder, which collapses to a
+          // single possible value when the divisor is 1).
+          let guard = 0, k = 1;
+          while (out.length < 2 && guard < 50) {
+            guard++;
+            const sign = guard % 2 === 0 ? 1 : -1;
+            tryAdd({ q: Math.max(0, correct.q + sign * k), r: correct.r });
+            if (guard % 2 === 0) k++;
+          }
+        } else {
+          const pool = shuffleArray([-2, -1, 1, 2]);
+          for (const off of pool) {
+            if (out.length >= 2) break;
+            const qv = correct.q + off;
+            if (qv >= 0) tryAdd({ q: qv, r: 0 });
+          }
+          let guard = 0;
+          while (out.length < 2 && guard < 50) {
+            guard++;
+            const qv = Math.max(0, correct.q + randInt(3, 5) * (Math.random() < 0.5 ? -1 : 1));
+            tryAdd({ q: qv, r: 0 });
+          }
+        }
+      }
+      return out;
+    }
+
+    function generateGate(enabledOps, settingsObj) {
+      const op = enabledOps[randInt(0, enabledOps.length - 1)];
+      const level = settingsObj[op].level;
+      const problem = generateProblem(op, level);
+      const distractors = generateDistractors(op, level, problem.a, problem.b, problem.answerValue);
+      const lanes = shuffleArray([
+        { value: problem.answerValue, text: formatAnswer(op, level, problem.answerValue), correct: true },
+        { value: distractors[0], text: formatAnswer(op, level, distractors[0]), correct: false },
+        { value: distractors[1], text: formatAnswer(op, level, distractors[1]), correct: false }
+      ]);
+      return { problemText: problem.text, lanes };
+    }
+
+    // ---------------------------------------------------------------------
+    // Settings persistence
+    // ---------------------------------------------------------------------
+    const SETTINGS_KEY = 'mathrunner-settings';
+
+    function defaultSettings() {
+      const s = {};
+      OPS.forEach((op) => { s[op] = { enabled: true, level: 'medium' }; });
+      return s;
+    }
+    function loadSettings() {
+      const out = defaultSettings();
+      try {
+        const raw = JSON.parse(localStorage.getItem(SETTINGS_KEY));
+        if (raw && typeof raw === 'object') {
+          OPS.forEach((op) => {
+            if (raw[op] && typeof raw[op] === 'object') {
+              if (typeof raw[op].enabled === 'boolean') out[op].enabled = raw[op].enabled;
+              if (LEVELS.indexOf(raw[op].level) !== -1) out[op].level = raw[op].level;
+            }
+          });
+        }
+      } catch (e) { /* fall through to defaults */ }
+      if (!OPS.some((op) => out[op].enabled)) out.add.enabled = true; // never allow zero enabled
+      return out;
+    }
+    function saveSettings(s) { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); } catch (e) { /* ignore */ } }
+
+    // ---------------------------------------------------------------------
+    // Canvas / DOM setup
+    // ---------------------------------------------------------------------
+    const canvas = document.getElementById('board');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width;   // 360
+    const H = canvas.height;  // 640
+
+    const scoreEl = document.getElementById('score');
+    const heartsEl = document.getElementById('hearts');
+    const levelEl = document.getElementById('level');
+    const overlay = document.getElementById('overlay');
+    const overlayTitle = document.getElementById('overlayTitle');
+    const overlayText = document.getElementById('overlayText');
+    const overlayBtn = document.getElementById('overlayBtn');
+
+    const MAX_HEARTS = 10;
+    const ROAD_L = 50, ROAD_R = 310;
+    const LANES = 3;
+    const PLAYER_SCREEN_Y = H * 0.78;
+    const BASE_SPEED = 140, MAX_SPEED = 260, SPEED_STEP = 14;
+    const LANE_EASE = 10;
+    const SPAWN_AHEAD = 620;
+    const GATE_FIRST_DISTANCE = 420;
+    const HORIZON = H * 0.16;
+    const CONFETTI_PALETTE = ['#fbbf24', '#f472b6', '#38bdf8', '#4ade80', '#a78bfa'];
+
+    // Creatures guard the answers just beyond each gate. Nastier ones only
+    // start showing up at higher levels (same level-gating idea as Racing's
+    // bot types).
+    const CREATURE_GAP = 108; // world units beyond the gate the creatures stand
+    const CREATURE_TYPES = {
+      slime:  { color: '#84cc16', dark: '#3f6212', minLevel: 1, weight: 30 },
+      ghost:  { color: '#cbd5e1', dark: '#64748b', minLevel: 1, weight: 26 },
+      ogre:   { color: '#a855f7', dark: '#581c87', minLevel: 3, weight: 26 },
+      dragon: { color: '#ef4444', dark: '#7f1d1d', minLevel: 5, weight: 24 }
+    };
+
+    function pickCreatureType() {
+      const pool = Object.keys(CREATURE_TYPES).filter((k) => level >= CREATURE_TYPES[k].minLevel);
+      const total = pool.reduce((s, k) => s + CREATURE_TYPES[k].weight, 0);
+      let r = Math.random() * total;
+      for (const k of pool) { if ((r -= CREATURE_TYPES[k].weight) < 0) return k; }
+      return pool[0];
+    }
+
+    function laneCenterX(lane) { return ROAD_L + (lane + 0.5) * (ROAD_R - ROAD_L) / LANES; }
+    function worldToScreenY(y) { return PLAYER_SCREEN_Y - (y - player.progress); }
+
+    function roundRect(x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w, y, x + w, y + h, r);
+      ctx.arcTo(x + w, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r);
+      ctx.arcTo(x, y, x + w, y, r);
+      ctx.closePath();
+    }
+
+    // ---------------------------------------------------------------------
+    // State
+    // ---------------------------------------------------------------------
+    let settings, enabledOps;
+    let player, gates, particles;
+    let score, hearts, level, runSpeed, nextGateAt;
+    let shakeTime, flashAlpha, dustTimer, skyTime;
+    let running, gameOver, rafId, lastTime;
+    let skyGrad = null;
+
+    const clouds = [
+      { baseX: 20, y: 24, r: 20, speed: 6 },
+      { baseX: 140, y: 46, r: 15, speed: 4 },
+      { baseX: 230, y: 18, r: 24, speed: 5 },
+      { baseX: 330, y: 48, r: 13, speed: 7 }
+    ];
+
+    function reset() {
+      settings = loadSettings();
+      enabledOps = OPS.filter((op) => settings[op].enabled);
+      player = { progress: 0, lane: 1, x: laneCenterX(1), targetX: laneCenterX(1), runT: 0 };
+      gates = [];
+      particles = [];
+      score = 0; hearts = MAX_HEARTS; level = 1;
+      runSpeed = BASE_SPEED;
+      nextGateAt = GATE_FIRST_DISTANCE;
+      shakeTime = 0; flashAlpha = 0; dustTimer = 0; skyTime = 0;
+      updateHud();
+    }
+
+    function updateHud() {
+      scoreEl.textContent = score;
+      const h = Number.isInteger(hearts) ? hearts : hearts.toFixed(1);
+      heartsEl.textContent = '❤️ ' + h;
+      levelEl.textContent = level;
+    }
+
+    // --- Particles (shared system for dust / confetti / impact / spark) ---
+    // `tint` colors a slain creature's burst with its own color.
+    function spawnParticles(kind, x, y, tint) {
+      const n = kind === 'dust' ? 1 : kind === 'confetti' ? 26 : kind === 'spark' ? 18 : 14;
+      for (let i = 0; i < n; i++) {
+        const ang = Math.random() * Math.PI * 2;
+        const sp = kind === 'dust' ? 20 + Math.random() * 20
+          : kind === 'confetti' ? 90 + Math.random() * 160
+          : kind === 'spark' ? 110 + Math.random() * 170
+          : 70 + Math.random() * 140;
+        const life = kind === 'dust' ? 0.35
+          : kind === 'confetti' ? 0.9 + Math.random() * 0.3
+          : kind === 'spark' ? 0.4 + Math.random() * 0.2
+          : 0.5;
+        particles.push({
+          x, y,
+          vx: Math.cos(ang) * sp * (kind === 'dust' ? 0.4 : 1),
+          vy: kind === 'dust' ? -Math.random() * 20 : Math.sin(ang) * sp,
+          life, maxLife: life,
+          size: kind === 'dust' ? 2 + Math.random() * 2
+            : kind === 'confetti' ? 3 + Math.random() * 3
+            : kind === 'spark' ? 2 + Math.random() * 2.5
+            : 3,
+          color: kind === 'dust' ? '#c2a878'
+            : kind === 'confetti' ? CONFETTI_PALETTE[i % CONFETTI_PALETTE.length]
+            : kind === 'spark' ? (i % 3 === 0 ? '#fef08a' : (tint || '#f87171'))
+            : '#ef4444',
+          gravity: kind === 'confetti' ? 260 : 0,
+          shape: kind === 'confetti' ? 'rect' : 'circle'
+        });
+      }
+    }
+    function updateParticles(dt) {
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx * dt; p.y += p.vy * dt; p.vy += p.gravity * dt;
+        p.life -= dt;
+        if (p.life <= 0) particles.splice(i, 1);
+      }
+    }
+    function drawParticles() {
+      for (const p of particles) {
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, p.life / p.maxLife);
+        ctx.fillStyle = p.color;
+        if (p.shape === 'rect') {
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.life * 6);
+          ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+        } else {
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+    }
+
+    // --- Gates ---
+    function gateSpacing() { return Math.max(320, 560 - (level - 1) * 30); }
+    function spawnGate() {
+      const gate = generateGate(enabledOps, settings);
+      gate.worldY = player.progress + SPAWN_AHEAD;
+      gate.judged = false;
+      gate.flashTimer = 0;
+      // One creature guarding each lane's answer, just beyond the gate.
+      gate.creatures = gate.lanes.map(() => ({
+        type: pickCreatureType(),
+        state: 'alive',
+        anim: 0,
+        t: Math.random() * 6 // desync the idle animations
+      }));
+      gates.push(gate);
+      nextGateAt = player.progress + gateSpacing();
+    }
+
+    function judgeGate(g) {
+      g.judged = true;
+      const gateScreenY = worldToScreenY(g.worldY);
+      const creatureY = worldToScreenY(g.worldY + CREATURE_GAP);
+      const laneX = laneCenterX(player.lane);
+      const chosen = g.lanes[player.lane];
+      const guard = g.creatures[player.lane];
+      if (chosen.correct) {
+        chosen.flash = 'green';
+        g.flashTimer = 0.4;
+        score++;
+        // Right answer — the guard in that lane gets cut down.
+        guard.state = 'dying';
+        guard.anim = 0;
+        spawnParticles('spark', laneX, creatureY, CREATURE_TYPES[guard.type].color);
+        Arcade.addCoins(1);
+        Arcade.sound.zap();
+        Arcade.sound.coin();
+        spawnParticles('confetti', laneX, gateScreenY);
+        const newLevel = 1 + Math.floor(score / 5);
+        if (newLevel !== level) { level = newLevel; Arcade.sound.up(); }
+        updateHud();
+      } else {
+        chosen.flash = 'red';
+        const correctLane = g.lanes.find((l) => l.correct);
+        correctLane.flash = 'green';
+        g.flashTimer = 0.4;
+        hearts -= 0.5;
+        // Wrong answer — that lane's creature lunges and takes a bite.
+        guard.state = 'attacking';
+        guard.anim = 0;
+        Arcade.sound.down(); // the shared "bite/damage" growl
+        spawnParticles('impact', laneX, creatureY);
+        shakeTime = 0.3; flashAlpha = 0.35;
+        updateHud();
+        if (hearts <= 0) { hearts = 0; endGame(); }
+      }
+    }
+
+    // --- Lane input ---
+    function setLane(n) {
+      const clamped = Math.max(0, Math.min(LANES - 1, n));
+      if (clamped === player.lane) return;
+      player.lane = clamped;
+      player.targetX = laneCenterX(clamped);
+      Arcade.sound.click();
+    }
+
+    // ---------------------------------------------------------------------
+    // Update / draw
+    // ---------------------------------------------------------------------
+    function update(dt) {
+      player.progress += runSpeed * dt;
+      player.runT += dt;
+      player.x += (player.targetX - player.x) * Math.min(1, dt * LANE_EASE);
+      skyTime += dt;
+
+      runSpeed = Math.min(MAX_SPEED, BASE_SPEED + (level - 1) * SPEED_STEP);
+
+      dustTimer += dt;
+      if (dustTimer >= 0.05) {
+        dustTimer = 0;
+        spawnParticles('dust', player.x, PLAYER_SCREEN_Y + 20);
+      }
+
+      if (player.progress >= nextGateAt) spawnGate();
+
+      for (const g of gates) {
+        if (!g.judged && g.worldY <= player.progress) {
+          judgeGate(g);
+          if (!running) return; // judgeGate's wrong-branch may have ended the game
+        }
+        if (g.flashTimer > 0) g.flashTimer = Math.max(0, g.flashTimer - dt);
+        for (const c of g.creatures) {
+          c.t += dt;
+          if (c.state !== 'alive') c.anim = Math.min(1, c.anim + dt / (c.state === 'dying' ? 0.45 : 0.5));
+        }
+      }
+      // The guards stand beyond their gate, so they're the last part to
+      // scroll off — prune on them, not on the gate itself.
+      gates = gates.filter((g) => worldToScreenY(g.worldY + CREATURE_GAP) < H + 100);
+
+      updateParticles(dt);
+      if (shakeTime > 0) shakeTime = Math.max(0, shakeTime - dt);
+      if (flashAlpha > 0) flashAlpha = Math.max(0, flashAlpha - dt * 2.4);
+    }
+
+    function drawScrollingDecor(span, factor, drawAt) {
+      const off = (((player.progress * factor) % span) + span) % span;
+      for (let y = -span + off; y < H + span; y += span) drawAt(y);
+    }
+
+    function drawTree(x, y) {
+      if (y < -40 || y > H + 40) return;
+      ctx.fillStyle = '#5b3a1e';
+      ctx.fillRect(x - 3, y - 4, 6, 16);
+      ctx.fillStyle = '#2f6b2a';
+      ctx.beginPath(); ctx.arc(x, y - 14, 14, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(x - 8, y - 8, 10, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(x + 8, y - 8, 10, 0, Math.PI * 2); ctx.fill();
+    }
+    function drawFlower(x, y) {
+      if (y < -20 || y > H + 20) return;
+      ctx.fillStyle = '#eab308';
+      ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill();
+    }
+
+    function drawGround() {
+      ctx.fillStyle = '#3f7d32';
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#e8d9a8';
+      ctx.fillRect(ROAD_L, 0, ROAD_R - ROAD_L, H);
+      ctx.fillStyle = '#c9b47c';
+      ctx.fillRect(ROAD_L - 4, 0, 4, H);
+      ctx.fillRect(ROAD_R, 0, 4, H);
+
+      // far scenery — slower scroll factor for a parallax depth cue
+      drawScrollingDecor(300, 0.55, (y) => {
+        drawTree(ROAD_L - 26, y);
+        drawTree(ROAD_R + 26, y + 150);
+      });
+
+      // lane dashes — full scroll speed, matches player.progress directly
+      const dash = 22, gap = 20, span = dash + gap;
+      const off = ((player.progress % span) + span) % span;
+      ctx.fillStyle = '#fff8e1';
+      for (let k = 1; k <= 2; k++) {
+        const x = ROAD_L + (ROAD_R - ROAD_L) * k / 3 - 2;
+        for (let y = -dash + off; y < H; y += span) ctx.fillRect(x, y, 3, dash);
+      }
+
+      // near edge decor — full scroll speed
+      drawScrollingDecor(90, 1, (y) => {
+        drawFlower(ROAD_L - 14, y);
+        drawFlower(ROAD_R + 14, y + 45);
+      });
+    }
+
+    function drawSky() {
+      if (!skyGrad) {
+        skyGrad = ctx.createLinearGradient(0, 0, 0, HORIZON);
+        skyGrad.addColorStop(0, '#7dd3fc');
+        skyGrad.addColorStop(1, '#bae6fd');
+      }
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, W, HORIZON);
+      for (const c of clouds) {
+        const x = ((c.baseX + skyTime * c.speed) % (W + 160)) - 80;
+        ctx.save();
+        ctx.globalAlpha = 0.85;
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath(); ctx.arc(x, c.y, c.r, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(x - c.r * 0.7, c.y + 4, c.r * 0.7, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(x + c.r * 0.7, c.y + 4, c.r * 0.7, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+      }
+      ctx.fillStyle = '#2f6b2a';
+      ctx.fillRect(0, HORIZON - 2, W, 3);
+    }
+
+    function drawGate(g) {
+      const y = worldToScreenY(g.worldY);
+      if (y > H + 90) return;
+      const roadW = ROAD_R - ROAD_L;
+      const laneRowH = 46, problemBarH = 30, gapY = 8;
+      const problemY = y - laneRowH / 2 - gapY - problemBarH / 2;
+      // The problem bar sits above the lane row; don't draw either half
+      // until the whole gate (including the bar) has cleared the horizon
+      // band drawn on top of the scene, so answer choices never appear
+      // without their problem text.
+      if (problemY - problemBarH / 2 < HORIZON) return;
+
+      ctx.fillStyle = 'rgba(15,23,42,0.85)';
+      roundRect(ROAD_L - 6, problemY - problemBarH / 2, roadW + 12, problemBarH, 8);
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 16px system-ui, sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(g.problemText, ROAD_L + roadW / 2, problemY);
+
+      const boxW = roadW / LANES - 10;
+      g.lanes.forEach((lane, i) => {
+        const cx = laneCenterX(i);
+        let fill = 'rgba(30,41,59,0.92)';
+        if (lane.flash === 'green') fill = `rgba(34,197,94,${0.55 + 0.4 * (g.flashTimer / 0.4)})`;
+        else if (lane.flash === 'red') fill = `rgba(239,68,68,${0.55 + 0.4 * (g.flashTimer / 0.4)})`;
+        ctx.fillStyle = fill;
+        roundRect(cx - boxW / 2, y - laneRowH / 2, boxW, laneRowH, 8);
+        ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 17px system-ui, sans-serif';
+        ctx.fillText(lane.text, cx, y);
+      });
+    }
+
+    // --- Creatures -------------------------------------------------------
+    // Each is drawn procedurally around its own origin, roughly 40px wide.
+    // `gape` (0..1) opens the mouth — wide open when it's lunging to eat you.
+    function eyes(lx, ly, r, gape) {
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(-lx, ly, r, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(lx, ly, r, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#0f172a';
+      const pr = r * 0.55, pd = gape * 1.5;
+      ctx.beginPath(); ctx.arc(-lx, ly + pd, pr, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(lx, ly + pd, pr, 0, Math.PI * 2); ctx.fill();
+    }
+    function fangMouth(y, w, gape) {
+      const h = 4 + gape * 13;
+      ctx.fillStyle = '#450a0a';
+      roundRect(-w / 2, y, w, h, 3); ctx.fill();
+      ctx.fillStyle = '#fff';
+      const n = 4, tw = w / n;
+      for (let i = 0; i < n; i++) {
+        const tx = -w / 2 + i * tw + tw * 0.15;
+        ctx.beginPath();
+        ctx.moveTo(tx, y);
+        ctx.lineTo(tx + tw * 0.7, y);
+        ctx.lineTo(tx + tw * 0.35, y + 3 + gape * 4);
+        ctx.closePath(); ctx.fill();
+      }
+    }
+
+    function drawSlime(cfg, t, gape) {
+      const wob = Math.sin(t * 4) * 0.07;
+      ctx.fillStyle = cfg.color;
+      ctx.beginPath();
+      ctx.moveTo(-19 * (1 + wob), 15);
+      ctx.quadraticCurveTo(-19 * (1 + wob), -17 * (1 - wob), 0, -17 * (1 - wob));
+      ctx.quadraticCurveTo(19 * (1 + wob), -17 * (1 - wob), 19 * (1 + wob), 15);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = cfg.dark;
+      ctx.beginPath(); ctx.ellipse(0, 15, 19 * (1 + wob), 4, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.45)';
+      ctx.beginPath(); ctx.ellipse(-7, -8, 4, 6, -0.4, 0, Math.PI * 2); ctx.fill();
+      eyes(7, -4, 4.5, gape);
+      fangMouth(5, 16, gape);
+    }
+
+    function drawGhost(cfg, t, gape) {
+      const drift = Math.sin(t * 2.5) * 2;
+      ctx.save();
+      ctx.translate(0, drift);
+      ctx.globalAlpha = 0.92;
+      ctx.fillStyle = cfg.color;
+      ctx.beginPath();
+      ctx.arc(0, -4, 16, Math.PI, 0);
+      ctx.lineTo(16, 9);
+      ctx.quadraticCurveTo(11, 18, 5.5, 10);
+      ctx.quadraticCurveTo(0, 18, -5.5, 10);
+      ctx.quadraticCurveTo(-11, 18, -16, 9);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = cfg.dark;
+      ctx.beginPath(); ctx.ellipse(-6, -7, 3.4, 4.6 + gape * 2, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(6, -7, 3.4, 4.6 + gape * 2, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(0, 4, 4 + gape * 3, 3 + gape * 6, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
+
+    function drawOgre(cfg, t, gape) {
+      const breathe = Math.sin(t * 3) * 0.04;
+      ctx.fillStyle = cfg.dark;
+      ctx.beginPath(); ctx.moveTo(-13, -13); ctx.lineTo(-17, -24); ctx.lineTo(-7, -16); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(13, -13); ctx.lineTo(17, -24); ctx.lineTo(7, -16); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = cfg.color;
+      ctx.beginPath(); ctx.ellipse(0, 0, 18 * (1 + breathe), 17, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = cfg.dark;
+      ctx.beginPath(); ctx.ellipse(-19, 2, 5, 8, 0.3, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(19, 2, 5, 8, -0.3, 0, Math.PI * 2); ctx.fill();
+      eyes(7, -6, 5, gape);
+      fangMouth(3, 20, gape);
+    }
+
+    function drawDragon(cfg, t, gape) {
+      const flap = Math.sin(t * 6) * 0.5;
+      ctx.fillStyle = cfg.dark;
+      ctx.save(); ctx.rotate(-flap * 0.35);
+      ctx.beginPath(); ctx.moveTo(-8, -4); ctx.lineTo(-27, -16); ctx.lineTo(-24, 4); ctx.closePath(); ctx.fill();
+      ctx.restore();
+      ctx.save(); ctx.rotate(flap * 0.35);
+      ctx.beginPath(); ctx.moveTo(8, -4); ctx.lineTo(27, -16); ctx.lineTo(24, 4); ctx.closePath(); ctx.fill();
+      ctx.restore();
+      ctx.fillStyle = cfg.color;
+      ctx.beginPath(); ctx.ellipse(0, 2, 14, 16, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = cfg.dark;
+      ctx.beginPath(); ctx.moveTo(-6, -14); ctx.lineTo(-9, -23); ctx.lineTo(-2, -16); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(6, -14); ctx.lineTo(9, -23); ctx.lineTo(2, -16); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = cfg.color;
+      ctx.beginPath(); ctx.ellipse(0, -6, 11, 9, 0, 0, Math.PI * 2); ctx.fill();
+      eyes(5, -8, 3.8, gape);
+      fangMouth(0, 15, gape);
+      if (gape > 0.5) { // breathing fire mid-lunge
+        ctx.fillStyle = 'rgba(251,146,60,0.85)';
+        ctx.beginPath();
+        ctx.moveTo(-5, 10); ctx.lineTo(0, 24 + gape * 10); ctx.lineTo(5, 10);
+        ctx.closePath(); ctx.fill();
+      }
+    }
+
+    const CREATURE_DRAW = { slime: drawSlime, ghost: drawGhost, ogre: drawOgre, dragon: drawDragon };
+
+    function drawCreature(c, x, y) {
+      if (y < -70 || y > H + 70) return;
+      if (c.state === 'dying' && c.anim >= 1) return; // fully vanished
+      const cfg = CREATURE_TYPES[c.type];
+      ctx.save();
+      ctx.translate(x, y);
+      let gape = 0.06 + Math.sin(c.t * 3) * 0.04; // idle: mouth barely moving
+      if (c.state === 'dying') {
+        ctx.globalAlpha = 1 - c.anim;
+        ctx.rotate(c.anim * 1.4);
+        const s = 1 - c.anim * 0.55;
+        ctx.scale(s, s);
+        gape = 0.9; // shocked
+      } else if (c.state === 'attacking') {
+        const lunge = Math.sin(Math.min(1, c.anim) * Math.PI); // ease out and back
+        ctx.translate(0, lunge * 20);
+        const s = 1 + lunge * 0.4;
+        ctx.scale(s, s);
+        gape = 0.35 + lunge * 0.65; // jaws wide open
+      } else {
+        ctx.translate(0, Math.sin(c.t * 3) * 3); // idle bob
+      }
+      CREATURE_DRAW[c.type](cfg, c.t, gape);
+      ctx.restore();
+
+      // Slash mark across a creature as it's cut down.
+      if (c.state === 'dying' && c.anim < 0.45) {
+        ctx.save();
+        ctx.globalAlpha = 1 - c.anim / 0.45;
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 4;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(x - 24, y - 18);
+        ctx.lineTo(x + 24, y + 18);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    function drawLimb(px, py, angle, len, color) {
+      ctx.save();
+      ctx.translate(px, py);
+      ctx.rotate(angle);
+      ctx.fillStyle = color;
+      roundRect(-3, 0, 6, len, 3);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawRunner() {
+      const cadence = 8 + runSpeed * 0.02;
+      const legPhase = Math.sin(player.runT * cadence) * 0.6;
+      const armPhase = -legPhase * 0.7;
+      const squash = 1 + Math.sin(player.runT * cadence * 2) * 0.03;
+      const bank = Math.max(-0.25, Math.min(0.25, (player.targetX - player.x) / 50));
+
+      ctx.save();
+      ctx.translate(player.x, PLAYER_SCREEN_Y);
+      ctx.rotate(bank);
+      ctx.scale(1, squash);
+
+      drawLimb(-6, -18, legPhase, 22, '#334155');
+      drawLimb(6, -18, -legPhase, 22, '#334155');
+
+      ctx.fillStyle = '#22c55e';
+      roundRect(-11, -46, 22, 30, 8); ctx.fill();
+
+      drawLimb(-10, -40, armPhase, 16, '#fbbf24');
+      drawLimb(10, -40, -armPhase, 16, '#fbbf24');
+
+      ctx.fillStyle = '#f2c9a0';
+      ctx.beginPath(); ctx.arc(0, -56, 10, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#5b3a1e';
+      ctx.beginPath(); ctx.arc(0, -60, 10, Math.PI, Math.PI * 2); ctx.fill();
+
+      ctx.restore();
+    }
+
+    function draw() {
+      ctx.save();
+      if (shakeTime > 0) {
+        const mag = 6 * (shakeTime / 0.3);
+        ctx.translate((Math.random() - 0.5) * mag, (Math.random() - 0.5) * mag);
+      }
+      ctx.clearRect(-20, -20, W + 40, H + 40);
+      drawGround();
+      // Guards stand beyond their gate, so they're further away — draw them
+      // first and let the nearer gate panels overlap them.
+      for (const g of gates) {
+        const cy = worldToScreenY(g.worldY + CREATURE_GAP);
+        g.creatures.forEach((c, i) => drawCreature(c, laneCenterX(i), cy));
+      }
+      for (const g of gates) drawGate(g);
+      drawParticles();
+      drawRunner();
+      drawSky();
+      ctx.restore();
+
+      if (flashAlpha > 0) {
+        ctx.fillStyle = `rgba(239,68,68,${flashAlpha})`;
+        ctx.fillRect(0, 0, W, H);
+      }
+    }
+
+    function loop(time) {
+      if (!running) return;
+      if (!lastTime) lastTime = time;
+      const dt = Math.min(0.05, (time - lastTime) / 1000);
+      lastTime = time;
+      update(dt);
+      if (!running) return; // endGame may have stopped the loop mid-frame
+      draw();
+      rafId = requestAnimationFrame(loop);
+    }
+
+    function startGame() {
+      Arcade.sound.ensure();
+      reset();
+      overlay.classList.remove('show');
+      running = true; gameOver = false; lastTime = 0;
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(loop);
+    }
+
+    function endGame() {
+      running = false; gameOver = true;
+      cancelAnimationFrame(rafId);
+      Arcade.sound.lose();
+      Arcade.maybeUpdateHigh(HS_KEY, score);
+      draw();
+      overlayTitle.textContent = 'Game Over';
+      overlayText.innerHTML = `Correct answers: <strong>${score}</strong>`;
+      overlayBtn.textContent = 'Play Again';
+      overlay.classList.add('show');
+    }
+
+    // ---------------------------------------------------------------------
+    // Input
+    // ---------------------------------------------------------------------
+    document.addEventListener('keydown', (e) => {
+      if (!running) return;
+      if (e.key === 'ArrowLeft') { if (!e.repeat) setLane(player.lane - 1); e.preventDefault(); }
+      else if (e.key === 'ArrowRight') { if (!e.repeat) setLane(player.lane + 1); e.preventDefault(); }
+    });
+
+    // Which lane does a canvas x coordinate fall in? Taps outside the road
+    // clamp to the nearest lane, so an off-target tap still does what the
+    // player meant.
+    function laneFromCanvasX(x) {
+      const laneW = (ROAD_R - ROAD_L) / LANES;
+      return Math.max(0, Math.min(LANES - 1, Math.floor((x - ROAD_L) / laneW)));
+    }
+
+    let swipeStartX = null;
+    canvas.addEventListener('pointerdown', (e) => { if (running) swipeStartX = e.clientX; });
+    canvas.addEventListener('pointerup', (e) => {
+      if (!running || swipeStartX == null) return;
+      const dx = e.clientX - swipeStartX;
+      swipeStartX = null;
+      if (Math.abs(dx) > 30) {
+        setLane(player.lane + (dx > 0 ? 1 : -1)); // swipe: step one lane over
+      } else {
+        const rect = canvas.getBoundingClientRect();
+        setLane(laneFromCanvasX(((e.clientX - rect.left) / rect.width) * W)); // tap: jump to that lane
+      }
+    });
+    canvas.addEventListener('pointercancel', () => { swipeStartX = null; });
+
+    // Block double-tap / double-click zoom on the play area.
+    const boardWrap = document.querySelector('.board-wrap');
+    let lastTapEnd = 0;
+    boardWrap.addEventListener('touchend', (e) => {
+      const now = Date.now();
+      if (now - lastTapEnd <= 350) e.preventDefault();
+      lastTapEnd = now;
+    }, { passive: false });
+    boardWrap.addEventListener('dblclick', (e) => e.preventDefault());
+
+    overlayBtn.addEventListener('click', startGame);
+
+    // ---------------------------------------------------------------------
+    // Settings modal
+    // ---------------------------------------------------------------------
+    const settingsModal = document.getElementById('settingsModal');
+    let draftSettings;
+
+    function refreshEnabledLock() {
+      const enabledCount = OPS.filter((op) => draftSettings[op].enabled).length;
+      OPS.forEach((op) => {
+        document.getElementById(op + 'Enabled').disabled = draftSettings[op].enabled && enabledCount === 1;
+      });
+    }
+    function openSettings() {
+      draftSettings = JSON.parse(JSON.stringify(settings));
+      OPS.forEach((op) => {
+        document.getElementById(op + 'Enabled').checked = draftSettings[op].enabled;
+        document.querySelectorAll('#' + op + 'Level .mode-btn').forEach((btn) => {
+          btn.classList.toggle('active', btn.dataset.level === draftSettings[op].level);
+        });
+      });
+      refreshEnabledLock();
+      settingsModal.classList.add('show');
+    }
+    function closeSettings() { settingsModal.classList.remove('show'); }
+    function commitSettings() {
+      settings = draftSettings;
+      saveSettings(settings);
+      enabledOps = OPS.filter((op) => settings[op].enabled);
+      closeSettings();
+    }
+
+    OPS.forEach((op) => {
+      document.getElementById(op + 'Enabled').addEventListener('change', (e) => {
+        draftSettings[op].enabled = e.target.checked;
+        refreshEnabledLock();
+      });
+      document.querySelectorAll('#' + op + 'Level .mode-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          draftSettings[op].level = btn.dataset.level;
+          document.querySelectorAll('#' + op + 'Level .mode-btn').forEach((b) => b.classList.toggle('active', b === btn));
+        });
+      });
+    });
+
+    document.getElementById('settingsBtn').addEventListener('click', openSettings);
+    document.getElementById('settingsCancel').addEventListener('click', closeSettings);
+    document.getElementById('settingsSave').addEventListener('click', commitSettings);
+    settingsModal.addEventListener('click', (e) => { if (e.target === settingsModal) closeSettings(); });
+
+    // --- Info menu & high score (shared arcade.js) ---
+    const HS_KEY = 'mathrunner-highscore';
+    Arcade.initInfoMenu(HS_KEY);
+
+    // Draw an idle frame behind the start overlay.
+    reset();
+    draw();
+  </script>
+
+  <script src="../sw-register.js"></script>
+</body>
+</html>

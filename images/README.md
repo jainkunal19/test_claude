@@ -10,6 +10,11 @@ Drop game thumbnail images here. The landing page (`index.html`) expects:
 - `racing.png` — thumbnail for the Racing game
 - `snakes-and-ladders.png` — thumbnail for the Snakes &amp; Ladders game
 - `blackjack.png` — thumbnail for the Blackjack game
+- `math-runner.png` — thumbnail for the Math Runner game (not yet supplied;
+  the card currently falls back to the 🏃➗ emoji placeholder. When adding it,
+  also add `./images/math-runner.png` to `service-worker.js`'s `ASSETS` list
+  and bump `CACHE_VERSION` — it's deliberately left out for now since
+  `cache.addAll` fails the whole precache install if any listed file 404s.)
 
 ## App / web-app assets
 
