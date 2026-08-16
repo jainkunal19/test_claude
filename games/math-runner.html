@@ -39,16 +39,16 @@
       background: radial-gradient(circle at top, #1e293b, var(--bg));
       color: var(--text);
       font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-      padding: 14px;
+      padding: 8px;
     }
 
     .game {
       background: var(--panel);
       border-radius: 20px;
-      padding: 20px 22px;
+      padding: 12px 10px;
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
       width: 100%;
-      max-width: 440px;
+      max-width: 520px;
     }
 
     .back-link {
@@ -57,9 +57,9 @@
       gap: 6px;
       color: var(--accent);
       text-decoration: none;
-      font-size: 0.9rem;
+      font-size: 0.82rem;
       font-weight: 600;
-      margin-bottom: 10px;
+      margin-bottom: 6px;
       opacity: 0.85;
       transition: opacity 0.15s ease;
     }
@@ -67,8 +67,8 @@
 
     h1 {
       text-align: center;
-      font-size: 1.9rem;
-      margin-bottom: 12px;
+      font-size: 1.35rem;
+      margin-bottom: 7px;
       background: linear-gradient(90deg, #16a34a, #4ade80, #22c55e);
       -webkit-background-clip: text;
       background-clip: text;
@@ -77,31 +77,31 @@
 
     .hud {
       display: flex;
-      gap: 10px;
-      margin-bottom: 12px;
+      gap: 8px;
+      margin-bottom: 8px;
     }
     .stat {
       flex: 1;
       background: var(--cell);
       border-radius: 10px;
-      padding: 7px 10px;
+      padding: 4px 8px;
       text-align: center;
     }
     .stat .label {
-      font-size: 0.62rem;
+      font-size: 0.56rem;
       text-transform: uppercase;
       letter-spacing: 1px;
       color: var(--muted);
-      margin-bottom: 2px;
+      margin-bottom: 1px;
     }
-    .stat .value { font-size: 1.1rem; font-weight: 700; }
+    .stat .value { font-size: 0.98rem; font-weight: 700; }
 
     /* Size the wrapper (bounded by the panel width via 100%, not the viewport)
        to the biggest board that fits both width and height; the canvas fills it. */
     .board-wrap {
       position: relative;
-      width: min(100%, 400px); /* fallback if svh unsupported */
-      width: min(100%, 400px, calc((100svh - 240px) * (360 / 640)));
+      width: min(100%, 500px); /* fallback if svh unsupported */
+      width: min(100%, 500px, calc((100svh - 196px) * (400 / 560)));
       margin: 0 auto;
     }
     .board-wrap, .overlay { touch-action: manipulation; }
@@ -112,7 +112,7 @@
       display: block;
       width: 100%;
       height: auto;
-      aspect-ratio: 360 / 640;
+      aspect-ratio: 400 / 560;
       touch-action: none;
     }
 
@@ -148,10 +148,10 @@
     button.action:active { transform: translateY(0); }
 
     .legend {
-      margin-top: 12px;
+      margin-top: 8px;
       color: var(--muted);
-      font-size: 0.78rem;
-      line-height: 1.7;
+      font-size: 0.7rem;
+      line-height: 1.55;
       text-align: center;
     }
     .legend b { color: var(--text); }
@@ -259,12 +259,12 @@
     </div>
 
     <div class="board-wrap">
-      <canvas id="board" width="360" height="640"></canvas>
+      <canvas id="board" width="400" height="560"></canvas>
       <div class="overlay show" id="overlay">
         <h2 id="overlayTitle">Math Runner &#127939;</h2>
         <p id="overlayText">
-          Monsters guard every answer! Tap the lane with the
-          <b>correct answer</b> to slay the beast in it.<br>
+          Monsters guard every answer! The runner stops at each question &mdash;
+          <b>tap the correct answer</b> to charge in and slay the beast.<br>
           Get it wrong and that creature takes a bite &mdash; but you'll still
           see the right answer flash green.<br>
           Every monster you slay earns a coin!
@@ -274,8 +274,8 @@
     </div>
 
     <div class="legend">
-      <b>Tap the answer</b> you want &middot; or swipe / &larr; &rarr; keys &middot;
-      right = slay the monster &amp; +1 coin &middot; wrong = bitten, &minus;&frac12; &#10084;&#65039;
+      <b>Tap your answer</b> to charge &middot; or line up with swipe / &larr; &rarr;<br>
+      Right = slay the monster, +1 coin &middot; wrong = bitten, &minus;&frac12; &#10084;&#65039;
     </div>
 
     <div class="modal" id="settingsModal">
@@ -316,6 +316,16 @@
           </div>
         </div>
 
+        <div class="op-row">
+          <div class="sound-row" style="cursor:default;"><span>&#9201;&#65039; Thinking time</span></div>
+          <div class="mode-select" id="timeLimitRow">
+            <button class="mode-btn" data-time="5">5s</button>
+            <button class="mode-btn active" data-time="10">10s</button>
+            <button class="mode-btn" data-time="20">20s</button>
+            <button class="mode-btn" data-time="0">Off</button>
+          </div>
+        </div>
+
         <div class="modal-actions">
           <button class="btn-ghost" id="settingsCancel">Cancel</button>
           <button class="btn-primary" id="settingsSave">Save</button>
@@ -327,11 +337,17 @@
       <div class="modal-card">
         <h2>How to Play</h2>
         <p class="how-to">
-          Your runner auto-runs down a 3-lane path. As each gate approaches,
-          it shows a math problem with one answer per lane &mdash; and a
-          <b>monster guarding each one</b>. Get to the correct answer by
-          <b>tapping the lane you want</b>, or by swiping across the board /
-          using the &larr; &rarr; keys to step one lane at a time.<br><br>
+          Your runner heads down a 3-lane path. Each gate shows a math problem
+          with one answer per lane &mdash; and a <b>monster guarding each
+          one</b>. The runner <b>stops at every question</b> so you have time
+          to work it out.<br><br>
+          <b>Tap the answer</b> you want and the runner locks it in and charges
+          straight at it. Prefer to line up first? Swipe across the board or
+          use the &larr; &rarr; keys to shift lanes without committing &mdash;
+          when the timer runs out, the runner charges whichever lane it's
+          standing in. Change the thinking time (or switch the wait off
+          entirely for a fast arcade run) under &#9881;&#65039;
+          <b>Settings</b>.<br><br>
           Pick right and you <b>slay that creature</b> on the way through, the
           lane flashes green, and you earn <b>+1 coin</b>. Pick wrong and the
           monster in your lane lunges and bites you for
@@ -343,8 +359,9 @@
           <b style="color:#a855f7">ogres</b> and finally fire-breathing
           <b style="color:#ef4444">dragons</b>.<br><br>
           Tap &#9881;&#65039; <b>Settings</b> to turn problem types
-          (Addition/Subtraction/Multiplication/Division) on or off, and set
-          an independent <b>Easy/Medium/Hard</b> difficulty for each one.
+          (Addition/Subtraction/Multiplication/Division) on or off, set an
+          independent <b>Easy/Medium/Hard</b> difficulty for each one, and
+          choose how long the runner waits at each question.
         </p>
         <div class="highscore">Best Correct Answers: <span id="highScore">0</span></div>
         <div class="close-row"><button class="action" id="infoClose" style="padding:10px 20px;">Close</button></div>
@@ -523,7 +540,7 @@
     const SETTINGS_KEY = 'mathrunner-settings';
 
     function defaultSettings() {
-      const s = {};
+      const s = { timeLimit: 10 }; // seconds to read each question (0 = never stop)
       OPS.forEach((op) => { s[op] = { enabled: true, level: 'medium' }; });
       return s;
     }
@@ -538,6 +555,7 @@
               if (LEVELS.indexOf(raw[op].level) !== -1) out[op].level = raw[op].level;
             }
           });
+          if (ALLOWED_TIMES.indexOf(raw.timeLimit) !== -1) out.timeLimit = raw.timeLimit;
         }
       } catch (e) { /* fall through to defaults */ }
       if (!OPS.some((op) => out[op].enabled)) out.add.enabled = true; // never allow zero enabled
@@ -550,8 +568,8 @@
     // ---------------------------------------------------------------------
     const canvas = document.getElementById('board');
     const ctx = canvas.getContext('2d');
-    const W = canvas.width;   // 360
-    const H = canvas.height;  // 640
+    const W = canvas.width;   // 400
+    const H = canvas.height;  // 560
 
     const scoreEl = document.getElementById('score');
     const heartsEl = document.getElementById('hearts');
@@ -562,14 +580,17 @@
     const overlayBtn = document.getElementById('overlayBtn');
 
     const MAX_HEARTS = 10;
-    const ROAD_L = 50, ROAD_R = 310;
+    const ROAD_L = 46, ROAD_R = W - 46;
     const LANES = 3;
     const PLAYER_SCREEN_Y = H * 0.78;
     const BASE_SPEED = 140, MAX_SPEED = 260, SPEED_STEP = 14;
     const LANE_EASE = 10;
     const SPAWN_AHEAD = 620;
     const GATE_FIRST_DISTANCE = 420;
-    const HORIZON = H * 0.16;
+    const HORIZON = H * 0.15;
+    // How far ahead of the gate the runner halts to read the question.
+    const STOP_DISTANCE = 190;
+    const ALLOWED_TIMES = [0, 5, 10, 20]; // seconds; 0 = never stop
     const CONFETTI_PALETTE = ['#fbbf24', '#f472b6', '#38bdf8', '#4ade80', '#a78bfa'];
 
     // Creatures guard the answers just beyond each gate. Nastier ones only
@@ -607,10 +628,11 @@
     // ---------------------------------------------------------------------
     // State
     // ---------------------------------------------------------------------
-    let settings, enabledOps;
+    let settings, enabledOps, timeLimit;
     let player, gates, particles;
     let score, hearts, level, runSpeed, nextGateAt;
     let shakeTime, flashAlpha, dustTimer, skyTime;
+    let waiting, waitTimer, waitingGate, lastTickSec;
     let running, gameOver, rafId, lastTime;
     let skyGrad = null;
 
@@ -624,6 +646,7 @@
     function reset() {
       settings = loadSettings();
       enabledOps = OPS.filter((op) => settings[op].enabled);
+      timeLimit = settings.timeLimit;
       player = { progress: 0, lane: 1, x: laneCenterX(1), targetX: laneCenterX(1), runT: 0 };
       gates = [];
       particles = [];
@@ -631,6 +654,7 @@
       runSpeed = BASE_SPEED;
       nextGateAt = GATE_FIRST_DISTANCE;
       shakeTime = 0; flashAlpha = 0; dustTimer = 0; skyTime = 0;
+      waiting = false; waitTimer = 0; waitingGate = null; lastTickSec = -1;
       updateHud();
     }
 
@@ -705,6 +729,7 @@
       const gate = generateGate(enabledOps, settings);
       gate.worldY = player.progress + SPAWN_AHEAD;
       gate.judged = false;
+      gate.asked = false; // has the runner already stopped to read this one?
       gate.flashTimer = 0;
       // One creature guarding each lane's answer, just beyond the gate.
       gate.creatures = gate.lanes.map(() => ({
@@ -756,6 +781,15 @@
       }
     }
 
+    // Stop waiting and let the runner charge the gate on its current lane.
+    function endWait() {
+      if (!waiting) return;
+      waiting = false;
+      waitingGate = null;
+      waitTimer = 0;
+      lastTickSec = -1;
+    }
+
     // --- Lane input ---
     function setLane(n) {
       const clamped = Math.max(0, Math.min(LANES - 1, n));
@@ -769,26 +803,56 @@
     // Update / draw
     // ---------------------------------------------------------------------
     function update(dt) {
-      player.progress += runSpeed * dt;
-      player.runT += dt;
+      // The lane tween, sky and effects keep running even while the runner is
+      // halted, so the player can still move between lanes as they think.
       player.x += (player.targetX - player.x) * Math.min(1, dt * LANE_EASE);
       skyTime += dt;
 
-      runSpeed = Math.min(MAX_SPEED, BASE_SPEED + (level - 1) * SPEED_STEP);
+      if (waiting) {
+        waitTimer = Math.max(0, waitTimer - dt);
+        const sec = Math.ceil(waitTimer);
+        if (sec !== lastTickSec) {
+          lastTickSec = sec;
+          if (sec > 0 && sec <= 3) Arcade.sound.click(); // last-3-seconds tick
+        }
+        if (waitTimer <= 0) endWait(); // out of time — charge on whatever lane you're in
+      } else {
+        player.progress += runSpeed * dt;
+        player.runT += dt;
+        runSpeed = Math.min(MAX_SPEED, BASE_SPEED + (level - 1) * SPEED_STEP);
 
-      dustTimer += dt;
-      if (dustTimer >= 0.05) {
-        dustTimer = 0;
-        spawnParticles('dust', player.x, PLAYER_SCREEN_Y + 20);
+        dustTimer += dt;
+        if (dustTimer >= 0.05) {
+          dustTimer = 0;
+          spawnParticles('dust', player.x, PLAYER_SCREEN_Y + 20);
+        }
+
+        if (player.progress >= nextGateAt) spawnGate();
+
+        // Pull up short of the next gate so the question can be read.
+        if (timeLimit > 0) {
+          for (const g of gates) {
+            if (!g.judged && !g.asked && g.worldY - player.progress <= STOP_DISTANCE) {
+              g.asked = true;
+              waiting = true;
+              waitingGate = g;
+              waitTimer = timeLimit;
+              lastTickSec = -1;
+              Arcade.sound.chime(); // "here's your question"
+              break;
+            }
+          }
+        }
+
+        for (const g of gates) {
+          if (!g.judged && g.worldY <= player.progress) {
+            judgeGate(g);
+            if (!running) return; // judgeGate's wrong-branch may have ended the game
+          }
+        }
       }
 
-      if (player.progress >= nextGateAt) spawnGate();
-
       for (const g of gates) {
-        if (!g.judged && g.worldY <= player.progress) {
-          judgeGate(g);
-          if (!running) return; // judgeGate's wrong-branch may have ended the game
-        }
         if (g.flashTimer > 0) g.flashTimer = Math.max(0, g.flashTimer - dt);
         for (const c of g.creatures) {
           c.t += dt;
@@ -1069,11 +1133,33 @@
       ctx.restore();
     }
 
+    // Countdown under the answers of the gate the runner is stopped at.
+    function drawCountdown() {
+      if (!waiting || !waitingGate || timeLimit <= 0) return;
+      const roadW = ROAD_R - ROAD_L;
+      const y = worldToScreenY(waitingGate.worldY) + 34;
+      const frac = Math.max(0, Math.min(1, waitTimer / timeLimit));
+      const barW = roadW * 0.78, barH = 12;
+      const bx = ROAD_L + (roadW - barW) / 2;
+      ctx.fillStyle = 'rgba(15,23,42,0.85)';
+      roundRect(bx, y, barW, barH, 6); ctx.fill();
+      ctx.fillStyle = frac > 0.5 ? '#22c55e' : frac > 0.25 ? '#fbbf24' : '#ef4444';
+      const inner = Math.max(0, (barW - 4) * frac);
+      if (inner > 0) { roundRect(bx + 2, y + 2, inner, barH - 4, 4); ctx.fill(); }
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 13px system-ui, sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(Math.ceil(waitTimer) + 's', ROAD_L + roadW / 2, y + barH + 11);
+    }
+
     function drawRunner() {
       const cadence = 8 + runSpeed * 0.02;
-      const legPhase = Math.sin(player.runT * cadence) * 0.6;
+      // Standing still while reading the question — legs together, just breathing.
+      const legPhase = waiting ? 0 : Math.sin(player.runT * cadence) * 0.6;
       const armPhase = -legPhase * 0.7;
-      const squash = 1 + Math.sin(player.runT * cadence * 2) * 0.03;
+      const squash = waiting
+        ? 1 + Math.sin(skyTime * 2.2) * 0.02
+        : 1 + Math.sin(player.runT * cadence * 2) * 0.03;
       const bank = Math.max(-0.25, Math.min(0.25, (player.targetX - player.x) / 50));
 
       ctx.save();
@@ -1113,6 +1199,7 @@
         g.creatures.forEach((c, i) => drawCreature(c, laneCenterX(i), cy));
       }
       for (const g of gates) drawGate(g);
+      drawCountdown();
       drawParticles();
       drawRunner();
       drawSky();
@@ -1146,6 +1233,7 @@
 
     function endGame() {
       running = false; gameOver = true;
+      waiting = false; waitingGate = null;
       cancelAnimationFrame(rafId);
       Arcade.sound.lose();
       Arcade.maybeUpdateHigh(HS_KEY, score);
@@ -1180,10 +1268,13 @@
       const dx = e.clientX - swipeStartX;
       swipeStartX = null;
       if (Math.abs(dx) > 30) {
-        setLane(player.lane + (dx > 0 ? 1 : -1)); // swipe: step one lane over
+        setLane(player.lane + (dx > 0 ? 1 : -1)); // swipe: step over, no commit
       } else {
+        // A tap names an answer outright, so it also locks it in and sends
+        // the runner charging; swipe/keys only reposition.
         const rect = canvas.getBoundingClientRect();
-        setLane(laneFromCanvasX(((e.clientX - rect.left) / rect.width) * W)); // tap: jump to that lane
+        setLane(laneFromCanvasX(((e.clientX - rect.left) / rect.width) * W));
+        endWait();
       }
     });
     canvas.addEventListener('pointercancel', () => { swipeStartX = null; });
@@ -1220,6 +1311,9 @@
           btn.classList.toggle('active', btn.dataset.level === draftSettings[op].level);
         });
       });
+      document.querySelectorAll('#timeLimitRow .mode-btn').forEach((btn) => {
+        btn.classList.toggle('active', Number(btn.dataset.time) === draftSettings.timeLimit);
+      });
       refreshEnabledLock();
       settingsModal.classList.add('show');
     }
@@ -1228,8 +1322,18 @@
       settings = draftSettings;
       saveSettings(settings);
       enabledOps = OPS.filter((op) => settings[op].enabled);
+      // Apply the new thinking time right away, even mid-run.
+      timeLimit = settings.timeLimit;
+      if (timeLimit <= 0) endWait();
       closeSettings();
     }
+
+    document.querySelectorAll('#timeLimitRow .mode-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        draftSettings.timeLimit = Number(btn.dataset.time);
+        document.querySelectorAll('#timeLimitRow .mode-btn').forEach((b) => b.classList.toggle('active', b === btn));
+      });
+    });
 
     OPS.forEach((op) => {
       document.getElementById(op + 'Enabled').addEventListener('change', (e) => {
