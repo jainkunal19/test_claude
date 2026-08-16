@@ -22,6 +22,7 @@ games/
   racing.html            Racing (top-down race vs bot cars, placement scoring)
   snakes-and-ladders.html  Snakes & Ladders (dice race vs bot + 2-player, animated)
   blackjack.html         Blackjack (vs House/dealer bot; guided + unguided modes)
+  math-runner.html       Math Runner (kids' math endless runner, monster-guarded answers)
 arcade.js                Shared helpers: coin wallet, high scores, Info menu, sound FX
 sw-register.js           Shared service-worker registration + update UI
 images/
@@ -124,6 +125,16 @@ still works.
   no help and pays **100** (`winValue()`), Blackjack `×1.5`. A win feeds
   `addCoins` and a per-session score into `maybeUpdateHigh`; switching mode
   resets the session (score/wins).
+  **Math Runner** is a 3-lane endless runner for math practice: each gate poses
+  a problem with one answer per lane, each guarded by a monster. The runner
+  halts at every gate for a configurable *thinking time* (`timeLimit`), and
+  tapping an answer commits it. A right pick slays the guard (+1 coin); a wrong
+  one gets the runner bitten (−½ heart) and starts an **answer review** — the
+  runner `vanished`es, the world freezes, and the correct lane stays ringed
+  green with a banner for `reviewTime` seconds (settings: 3/5/8s or Off,
+  default 5) before he pops back in and runs on. Both durations live in the
+  `mathrunner-settings` localStorage blob alongside the per-operation
+  enable/level flags.
 - **Info menu (every game).** Each game has an `ⓘ Info` button
   (`.info-btn`, floated right just after the back link) that opens a `.modal`
   / `.modal-card` overlay with two things: a static **How to Play** section
