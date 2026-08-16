@@ -134,7 +134,11 @@ still works.
   green with a banner for `reviewTime` seconds (settings: 3/5/8s or Off,
   default 5) before he pops back in and runs on. Both durations live in the
   `mathrunner-settings` localStorage blob alongside the per-operation
-  enable/level flags.
+  enable/level flags. Every **`LAP_TARGET` (20) correct answers** completes a
+  **lap**: once armed, a checkered finish line + a refreshment booth spawn ahead
+  (after any pending gates clear and with new gates paused); crossing the line
+  fires `Arcade.sound.applause()`, then the runner halts at the booth for a
+  `LAP_BREAK` (5s) rest before `finishLap()` bumps the lap counter and resumes.
 - **Info menu (every game).** Each game has an `ⓘ Info` button
   (`.info-btn`, floated right just after the back link) that opens a `.modal`
   / `.modal-card` overlay with two things: a static **How to Play** section
