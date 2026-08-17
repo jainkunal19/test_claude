@@ -92,6 +92,44 @@
       infoModal.addEventListener('click', function (e) {
         if (e.target === infoModal) infoModal.classList.remove('show');
       });
+    },
+
+    // Size a board box (a .board-wrap, or a board element itself) to the largest
+    // aspect-preserving rectangle that fits the REAL available space, and keep
+    // it fitted on resize / orientation / mobile-toolbar changes. This measures
+    // the actual chrome instead of guessing "100svh - NNpx", so boards fill the
+    // screen consistently across devices. opts: { aspect (w/h, else read from a
+    // child canvas), maxWidth, gap, onFit(w,h) }. Returns a re-fit function.
+    fitBoard: function (boxEl, opts) {
+      opts = opts || {};
+      if (!boxEl) return function () {};
+      var pending = false;
+      function apply() {
+        pending = false;
+        if (!boxEl.isConnected) return;
+        var panel = boxEl.closest('.game') || document.body;
+        var canvas = boxEl.matches('canvas') ? boxEl : boxEl.querySelector('canvas');
+        var aspect = opts.aspect || (canvas && canvas.width && canvas.height ? canvas.width / canvas.height : 1);
+        var pcs = getComputedStyle(panel);
+        var availW = panel.clientWidth - parseFloat(pcs.paddingLeft) - parseFloat(pcs.paddingRight);
+        if (opts.maxWidth) availW = Math.min(availW, opts.maxWidth);
+        // Chrome = everything in the panel that isn't the board. It's
+        // board-size independent, so it stays valid after we resize the board.
+        var chrome = panel.offsetHeight - boxEl.offsetHeight;
+        var bcs = getComputedStyle(document.body);
+        var bodyPad = parseFloat(bcs.paddingTop) + parseFloat(bcs.paddingBottom);
+        var vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+        var availH = vh - bodyPad - chrome - (opts.gap || 0);
+        var w = Math.max(60, Math.min(availW, availH * aspect));
+        boxEl.style.width = w + 'px';
+        if (opts.onFit) opts.onFit(w, w / aspect);
+      }
+      function schedule() { if (!pending) { pending = true; requestAnimationFrame(apply); } }
+      apply();
+      window.addEventListener('resize', schedule);
+      window.addEventListener('orientationchange', schedule);
+      if (window.visualViewport) window.visualViewport.addEventListener('resize', schedule);
+      return schedule;
     }
   };
 
