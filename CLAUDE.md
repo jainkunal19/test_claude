@@ -60,6 +60,14 @@ still works.
   prevent double-tap zoom. Where a game needs input, offer both keyboard and
   on-screen controls and let the user choose (see Tetris' control toggle,
   which auto-detects touch via `navigator.maxTouchPoints`).
+  **Board sizing.** Prefer the shared **`Arcade.fitBoard(boxEl, { maxWidth })`**
+  helper over a hand-tuned `calc(100svh - NNpx)` CSS formula: it measures the
+  *actual* chrome (`panel.offsetHeight − board.offsetHeight`) and the true
+  usable height (`visualViewport.height`), then sizes the board to the largest
+  aspect-preserving box that fits — filling the screen consistently across
+  devices and re-fitting on resize/orientation. Keep a `width: min(100%, CAP)`
+  CSS fallback for first paint. Currently **piloted on Math Runner**; roll out
+  to the other boards after sign-off.
 - **1-player vs bot pattern.** Turn-based games (Tic Tac Toe, Connect 4)
   share a UI convention: a `.mode-select` toggle (`1 Player` / `2 Players`)
   and, in 1-player mode, a `.difficulty` toggle (`Easy` / `Medium` / `Hard`).
