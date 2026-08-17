@@ -32,7 +32,14 @@
     }
 
     body {
-      min-height: 100vh;
+      /* Use the SMALL viewport height (always-visible area) instead of 100vh.
+         On iOS, 100vh is the *large* (toolbar-hidden) viewport — taller than
+         what's on screen — so centering pushes the panel down and hides the
+         bottom under the browser toolbar. svh matches the visible area in every
+         context (browser with toolbar, or the full-screen standalone web-app),
+         so the layout fills the screen consistently everywhere. */
+      min-height: 100vh;   /* fallback for old browsers */
+      min-height: 100svh;
       display: flex;
       align-items: center;
       justify-content: center;

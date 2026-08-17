@@ -60,6 +60,13 @@ still works.
   prevent double-tap zoom. Where a game needs input, offer both keyboard and
   on-screen controls and let the user choose (see Tetris' control toggle,
   which auto-detects touch via `navigator.maxTouchPoints`).
+  **Viewport height.** Size the outer page layout (the `body`) with **`svh`**
+  (small viewport height), never bare `100vh`. On iOS `100vh` is the *large*
+  toolbar-hidden height — taller than what's on screen — so a centered panel
+  gets pushed down and its bottom hides under the browser toolbar (fine in the
+  standalone web-app, broken in Safari/Chrome). Use
+  `min-height: 100vh; min-height: 100svh;` so it fills the actually-visible area
+  consistently across browsers and the installed web-app.
   **Board sizing.** Prefer the shared **`Arcade.fitBoard(boxEl, { maxWidth })`**
   helper over a hand-tuned `calc(100svh - NNpx)` CSS formula: it measures the
   *actual* chrome (`panel.offsetHeight − board.offsetHeight`) and the true
