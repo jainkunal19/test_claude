@@ -34,7 +34,8 @@
     }
 
     body {
-      min-height: 100vh;
+      min-height: 100vh;    /* fallback for old browsers */
+      min-height: 100svh;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -102,8 +103,9 @@
        to the biggest board that fits both width and height; the canvas fills it. */
     .board-wrap {
       position: relative;
-      width: min(100%, 560px); /* fallback if svh unsupported */
-      width: min(100%, 560px, calc((100svh - 235px) * (456 / 504)));
+      /* First-paint fallback; Arcade.fitBoard() sets the real size in JS by
+         measuring the actual available space (see the fitBoard call below). */
+      width: min(100%, 560px);
       margin: 0 auto;
     }
     .board-wrap, .overlay { touch-action: manipulation; }
@@ -652,6 +654,10 @@
 
     // Block double-tap / double-click zoom on the play area.
     const boardWrap = document.querySelector('.board-wrap');
+    // Size the board to fill the real available space (measured, not guessed),
+    // and keep it fitted on resize / orientation / mobile-toolbar changes. The
+    // maze is a fixed grid, so this preserves its aspect (no distortion).
+    Arcade.fitBoard(boardWrap, { maxWidth: 560 });
     let lastTapEnd = 0;
     boardWrap.addEventListener('touchend', (e) => {
       const now = Date.now();

@@ -32,7 +32,8 @@
     }
 
     body {
-      min-height: 100vh;
+      min-height: 100vh;    /* fallback for old browsers */
+      min-height: 100svh;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -96,12 +97,14 @@
     }
     .stat .value { font-size: 1.1rem; font-weight: 700; }
 
-    /* Size the wrapper (bounded by the panel width via 100%, not the viewport)
-       to the biggest board that fits both width and height; the canvas fills it. */
+    /* Fill mode: Arcade.fitBoard({fill}) sizes this wrapper to the FULL available
+       rectangle (both dimensions) and the scene adapts its shape to it, so there
+       are no dark side margins in any browser. */
     .board-wrap {
       position: relative;
-      width: min(100%, 460px); /* fallback if svh unsupported */
-      width: min(100%, 460px, calc((100svh - 225px) * (360 / 560)));
+      /* First-paint fallback; Arcade.fitBoard() sets the real px size in JS by
+         measuring the actual available space (see the fitBoard call below). */
+      width: 100%;
       margin: 0 auto;
     }
     .board-wrap, .overlay { touch-action: manipulation; }
@@ -111,8 +114,7 @@
       border-radius: 12px;
       display: block;
       width: 100%;
-      height: auto;
-      aspect-ratio: 360 / 560;
+      height: 100%;
       touch-action: none;
     }
 
@@ -274,8 +276,13 @@
   <script>
     const canvas = document.getElementById('board');
     const ctx = canvas.getContext('2d');
-    const W = canvas.width;   // 360
-    const H = canvas.height;  // 560
+    // Responsive-fill design space: the WIDTH is fixed at 360 so all X geometry
+    // (road, lanes, car sizes) stays constant, while the HEIGHT tracks the panel
+    // aspect ratio so a single uniform transform fills the screen with no side
+    // gaps and no distortion. layout() recomputes H and the H-derived values on
+    // every resize; the canvas starts at a sensible default.
+    const W = 360;
+    let H = 560;  // recomputed in layout() to match the panel aspect
 
     const scoreEl = document.getElementById('score');
     const rankEl = document.getElementById('rank');
@@ -288,7 +295,7 @@
     const ROAD_L = 44, ROAD_R = W - 44;
     const ROAD_W = ROAD_R - ROAD_L;
     const LANES = 3;
-    const PLAYER_SCREEN_Y = H * 0.76; // where the player's rear sits on screen
+    let PLAYER_SCREEN_Y = H * 0.76; // where the player's rear sits on screen (recomputed in layout())
 
     function laneCenterX(lane) { return ROAD_L + (lane + 0.5) * (ROAD_W / LANES); }
 
@@ -845,6 +852,24 @@
 
     // Block double-tap zoom on the play area.
     const boardWrap = document.querySelector('.board-wrap');
+
+    // Re-lay-out the canvas to fill a (cssW × cssH) box. Width stays the fixed
+    // 360-unit design space; height grows/shrinks to match the box aspect, so a
+    // single UNIFORM scale (same X & Y factor) fills the box edge-to-edge with
+    // no distortion — only the amount of road visible changes. dpr keeps it crisp
+    // on retina. Called by Arcade.fitBoard's fill mode on load and every resize.
+    function layout(cssW, cssH) {
+      const dpr = window.devicePixelRatio || 1;
+      H = Math.round(360 * cssH / cssW);
+      canvas.width = Math.round(cssW * dpr);
+      canvas.height = Math.round(cssH * dpr);
+      const s = (cssW * dpr) / 360;      // uniform design→device scale
+      ctx.setTransform(s, 0, 0, s, 0, 0);
+      PLAYER_SCREEN_Y = H * 0.76;
+      // Show the resize immediately while idle (running loop redraws itself).
+      if (!running && player) draw();
+    }
+
     let lastTapEnd = 0;
     boardWrap.addEventListener('touchend', (e) => {
       const now = Date.now();
@@ -865,7 +890,11 @@
     player = makePlayer();
     bots = makeBots();
     finishDist = 3400 + level * 1200;
-    draw();
+    // Size the board to fill the real available space and keep it fitted on
+    // resize / orientation / mobile-toolbar changes. Fill mode: the scene adapts
+    // its shape to the panel, so no dark side margins. The initial fit draws the
+    // idle frame behind the start overlay.
+    Arcade.fitBoard(boardWrap, { fill: true, onFit: layout });
   </script>
 
   <script src="../sw-register.js"></script>

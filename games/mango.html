@@ -33,7 +33,8 @@
     }
 
     body {
-      min-height: 100vh;
+      min-height: 100vh;    /* fallback for old browsers */
+      min-height: 100svh;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -97,12 +98,14 @@
     }
     .stat .value { font-size: 1.15rem; font-weight: 700; }
 
-    /* Size the wrapper (bounded by the panel width via 100%, not the viewport)
-       to the biggest board that fits both width and height; the canvas fills it. */
+    /* Fill mode: Arcade.fitBoard({fill}) sizes this wrapper to the FULL available
+       rectangle (both dimensions) and the scene adapts its shape to it, so there
+       are no dark side margins in any browser. */
     .board-wrap {
       position: relative;
-      width: min(100%, 460px); /* fallback if svh unsupported */
-      width: min(100%, 460px, calc((100svh - 215px) * (360 / 540)));
+      /* First-paint fallback; Arcade.fitBoard() sets the real px size in JS by
+         measuring the actual available space (see the fitBoard call below). */
+      width: 100%;
       margin: 0 auto;
     }
     .board-wrap, .overlay { touch-action: manipulation; }
@@ -112,8 +115,7 @@
       border-radius: 12px;
       display: block;
       width: 100%;
-      height: auto;
-      aspect-ratio: 360 / 540;
+      height: 100%;
       touch-action: none;
       cursor: crosshair;
     }
@@ -283,8 +285,13 @@
   <script>
     const canvas = document.getElementById('board');
     const ctx = canvas.getContext('2d');
-    const W = canvas.width;
-    const H = canvas.height;
+    // Responsive-fill design space: the WIDTH is fixed at 360 so all X geometry
+    // (gun position, spawn range) stays constant, while the HEIGHT tracks the
+    // panel aspect ratio so a single uniform transform fills the screen with no
+    // side gaps and no distortion. layout() recomputes H (and GUN_Y, which sits
+    // at the bottom) on every resize; the canvas starts at a sensible default.
+    const W = 360;
+    let H = 540;  // recomputed in layout() to match the panel aspect
 
     const scoreEl = document.getElementById('score');
     const heartsEl = document.getElementById('hearts');
@@ -296,7 +303,7 @@
 
     const MAX_HEARTS = 10;
     const GUN_X = W / 2;
-    const GUN_Y = H; // turret base sits at the bottom-center
+    let GUN_Y = H; // turret base sits at the bottom-center (recomputed in layout())
 
     // Pineapple types and their spawn weights.
     const TYPES = {
@@ -657,6 +664,24 @@
     // Block double-tap / double-click zoom on the play area. iOS Safari
     // ignores user-scalable=no, so guard a quick second tap explicitly.
     const boardWrap = document.querySelector('.board-wrap');
+
+    // Re-lay-out the canvas to fill a (cssW × cssH) box. Width stays the fixed
+    // 360-unit design space; height grows/shrinks to match the box aspect, so a
+    // single UNIFORM scale (same X & Y factor) fills the box edge-to-edge with
+    // no distortion — only the length of the pineapple fall changes. dpr keeps it
+    // crisp on retina. Called by Arcade.fitBoard's fill mode on load and resize.
+    function layout(cssW, cssH) {
+      const dpr = window.devicePixelRatio || 1;
+      H = Math.round(360 * cssH / cssW);
+      GUN_Y = H;                          // turret stays pinned to the bottom
+      canvas.width = Math.round(cssW * dpr);
+      canvas.height = Math.round(cssH * dpr);
+      const s = (cssW * dpr) / 360;      // uniform design→device scale
+      ctx.setTransform(s, 0, 0, s, 0, 0);
+      // Show the resize immediately while idle (running loop redraws itself).
+      if (!running && pineapples) draw();
+    }
+
     let lastTapEnd = 0;
     boardWrap.addEventListener('touchend', (e) => {
       const now = Date.now();
@@ -696,9 +721,12 @@
     const HS_KEY = 'mango-highscore';
     Arcade.initInfoMenu(HS_KEY);
 
-    // Draw an idle frame behind the start overlay.
+    // Size the board to fill the real available space and keep it fitted on
+    // resize / orientation / mobile-toolbar changes. Fill mode: the scene adapts
+    // its shape to the panel, so no dark side margins. reset() seeds the idle
+    // state; the initial fit then draws the frame behind the start overlay.
     reset();
-    draw();
+    Arcade.fitBoard(boardWrap, { fill: true, onFit: layout });
   </script>
 
   <script src="../sw-register.js"></script>

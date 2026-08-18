@@ -37,7 +37,8 @@
     }
 
     body {
-      min-height: 100vh;
+      min-height: 100vh;    /* fallback for old browsers */
+      min-height: 100svh;
       display: flex;
       align-items: flex-start;      /* top-align so the board sits high, not floating mid-screen */
       justify-content: center;
@@ -144,10 +145,9 @@
 
     .board-wrap {
       position: relative;
+      /* First-paint fallback; Arcade.fitBoard() sets the real size in JS by
+         measuring the actual available space (see the fitBoard call below). */
       width: min(100%, 640px);
-      /* board is now taller than wide (5:6) — divide the height budget by the
-         aspect ratio so the taller board still fits without vertical scroll */
-      width: min(100%, 640px, calc((100svh - 250px) / 1.2));
       margin: 0 auto;
     }
     canvas#board {
@@ -925,6 +925,10 @@
     Arcade.initInfoMenu(HS_KEY);
 
     // --- Init ---
+    // Size the board to fill the real available space (measured, not guessed),
+    // and keep it fitted on resize / orientation / mobile-toolbar changes. The
+    // 10×10 board is a fixed grid, so this preserves its aspect (no distortion).
+    Arcade.fitBoard(document.querySelector('.board-wrap'), { maxWidth: 640 });
     buildDie();
     renderDie(1);
     drawStaticBoard();
