@@ -37,7 +37,8 @@
     }
 
     body {
-      min-height: 100vh;
+      min-height: 100vh;    /* fallback for old browsers */
+      min-height: 100svh;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -123,9 +124,9 @@
       border-radius: 14px;
       padding: 3%;
       width: 100%;
-      /* Cap by height too so the board never overflows the screen. */
-      max-width: 100%; /* fallback if svh unsupported */
-      max-width: min(100%, calc((100svh - 360px) * (7 / 6)));
+      /* First-paint fallback; Arcade.fitBoard() sets the real size in JS by
+         measuring the actual available space (see the fitBoard call below). */
+      max-width: min(100%, 520px);
       aspect-ratio: 7 / 6;
       margin: 0 auto;
     }
@@ -631,6 +632,11 @@
     // --- Info menu & high score (shared arcade.js) ---
     const HS_KEY = 'connect4-highscore';
     Arcade.initInfoMenu(HS_KEY);
+
+    // Size the board to fill the real available space (measured, not guessed),
+    // and keep it fitted on resize / orientation / mobile-toolbar changes. The
+    // 7×6 grid has a fixed aspect, so the discs stay circular (no distortion).
+    Arcade.fitBoard(boardEl, { aspect: 7 / 6, maxWidth: 520 });
 
     // Start in 1-player mode, medium difficulty.
     setMode(1);

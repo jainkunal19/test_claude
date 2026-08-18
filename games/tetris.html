@@ -34,7 +34,8 @@
     }
 
     body {
-      min-height: 100vh;
+      min-height: 100vh;    /* fallback for old browsers */
+      min-height: 100svh;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -84,15 +85,20 @@
       align-items: flex-start;
     }
 
-    .board-wrap { position: relative; }
+    .board-wrap {
+      position: relative;
+      /* First-paint fallback; Arcade.fitBoard() sets the real size in JS by
+         measuring the actual available space (see the fitBoard call below). */
+      width: min(100%, 340px);
+      margin: 0 auto;
+    }
 
     canvas#board {
       background: #0b1120;
       border-radius: 10px;
       display: block;
-      height: min(700px, 72vh); /* fallback if svh unsupported */
-      height: min(700px, 76svh);
-      width: auto;
+      width: 100%;
+      height: auto;
       aspect-ratio: 1 / 2;
       touch-action: none;
     }
@@ -669,6 +675,11 @@
     // --- Info menu & high score (shared arcade.js) ---
     const HS_KEY = 'tetris-highscore';
     Arcade.initInfoMenu(HS_KEY);
+
+    // Size the board to fill the real available space (measured, not guessed),
+    // and keep it fitted on resize / orientation / mobile-toolbar changes. The
+    // well is a fixed 10×20 grid, so a fixed aspect keeps the cells square.
+    Arcade.fitBoard(document.querySelector('.board-wrap'), { maxWidth: 340 });
 
     startGame();
   </script>
