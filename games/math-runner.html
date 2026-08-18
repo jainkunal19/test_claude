@@ -103,13 +103,14 @@
     }
     .stat .value { font-size: 0.98rem; font-weight: 700; }
 
-    /* Size the wrapper (bounded by the panel width via 100%, not the viewport)
-       to the biggest board that fits both width and height; the canvas fills it. */
+    /* Fill mode: Arcade.fitBoard({fill}) sizes this wrapper to the FULL available
+       rectangle (both dimensions) and the scene adapts its shape to it, so there
+       are no dark side margins in any browser. */
     .board-wrap {
       position: relative;
-      /* First-paint fallback; Arcade.fitBoard() sets the real size in JS by
+      /* First-paint fallback; Arcade.fitBoard() sets the real px size in JS by
          measuring the actual available space (see the fitBoard call below). */
-      width: min(100%, 500px);
+      width: 100%;
       margin: 0 auto;
     }
     .board-wrap, .overlay { touch-action: manipulation; }
@@ -119,8 +120,7 @@
       border-radius: 12px;
       display: block;
       width: 100%;
-      height: auto;
-      aspect-ratio: 400 / 680;
+      height: 100%;
       touch-action: none;
     }
 
@@ -597,8 +597,13 @@
     // ---------------------------------------------------------------------
     const canvas = document.getElementById('board');
     const ctx = canvas.getContext('2d');
-    const W = canvas.width;   // 400
-    const H = canvas.height;  // 680 (tall board — more road visible ahead)
+    // Responsive-fill design space: the WIDTH is fixed at 400 so all X geometry
+    // (roads, lanes, spawn/gate distances) stays constant, while the HEIGHT
+    // tracks the panel's aspect ratio so a single uniform transform fills the
+    // screen with no side gaps and no distortion. layout() recomputes H and the
+    // H-derived values on every resize; the canvas starts at a sensible default.
+    const W = 400;
+    let H = 680;  // recomputed in layout() to match the panel aspect
 
     const scoreEl = document.getElementById('score');
     const heartsEl = document.getElementById('hearts');
@@ -611,12 +616,12 @@
     const MAX_HEARTS = 10;
     const ROAD_L = 46, ROAD_R = W - 46;
     const LANES = 3;
-    const PLAYER_SCREEN_Y = H * 0.78;
+    let PLAYER_SCREEN_Y = H * 0.78;  // recomputed in layout()
     const BASE_SPEED = 140, MAX_SPEED = 260, SPEED_STEP = 14;
     const LANE_EASE = 10;
     const SPAWN_AHEAD = 620;
     const GATE_FIRST_DISTANCE = 420;
-    const HORIZON = H * 0.15;
+    let HORIZON = H * 0.15;  // recomputed in layout()
     // How far ahead of the gate the runner halts to read the question.
     const STOP_DISTANCE = 190;
     const ALLOWED_TIMES = [0, 5, 10, 20]; // seconds; 0 = never stop
@@ -1605,9 +1610,30 @@
 
     // Block double-tap / double-click zoom on the play area.
     const boardWrap = document.querySelector('.board-wrap');
+
+    // Re-lay-out the canvas to fill a (cssW × cssH) box. Width stays the fixed
+    // 400-unit design space; height grows/shrinks to match the box aspect, so a
+    // single UNIFORM scale (same X & Y factor) fills the box edge-to-edge with
+    // no distortion — only the amount of road visible changes. dpr keeps it crisp
+    // on retina. Called by Arcade.fitBoard's fill mode on load and every resize.
+    function layout(cssW, cssH) {
+      const dpr = window.devicePixelRatio || 1;
+      H = Math.round(400 * cssH / cssW);
+      canvas.width = Math.round(cssW * dpr);
+      canvas.height = Math.round(cssH * dpr);
+      const s = (cssW * dpr) / 400;      // uniform design→device scale
+      ctx.setTransform(s, 0, 0, s, 0, 0);
+      PLAYER_SCREEN_Y = H * 0.78;
+      HORIZON = H * 0.15;
+      skyGrad = null;                     // aspect changed → rebuild sky gradient
+      // Show the resize immediately while idle (running loop redraws itself).
+      if (!running && player) draw();
+    }
+
     // Size the board to fill the real available space (measured, not guessed),
-    // and keep it fitted on resize / orientation / mobile-toolbar changes.
-    Arcade.fitBoard(boardWrap, { maxWidth: 500 });
+    // and keep it fitted on resize / orientation / mobile-toolbar changes. Fill
+    // mode: the scene adapts its shape to the panel, so no dark side margins.
+    Arcade.fitBoard(boardWrap, { fill: true, onFit: layout });
     let lastTapEnd = 0;
     boardWrap.addEventListener('touchend', (e) => {
       const now = Date.now();

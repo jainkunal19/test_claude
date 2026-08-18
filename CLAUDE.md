@@ -73,8 +73,15 @@ still works.
   usable height (`visualViewport.height`), then sizes the board to the largest
   aspect-preserving box that fits — filling the screen consistently across
   devices and re-fitting on resize/orientation. Keep a `width: min(100%, CAP)`
-  CSS fallback for first paint. Currently **piloted on Math Runner**; roll out
-  to the other boards after sign-off.
+  CSS fallback for first paint. For a scene that can **adapt its shape** rather
+  than hold a fixed grid, pass `{ fill: true, onFit }`: the box is sized to the
+  *whole* available rectangle (both dimensions) and `onFit(w, h)` re-lays-out the
+  canvas so there are **no dark side margins** in any browser. **Math Runner**
+  pilots `fill` mode — it fixes the design **width** at 400 and derives the
+  design **height** from the panel aspect (`H = 400·h/w`), then applies one
+  *uniform* `ctx.setTransform(w·dpr/400, …)` so the world fills the screen with
+  no distortion (only the amount of road shown changes). Aspect-locked (grid)
+  games keep the plain `fitBoard`; roll out to the other boards after sign-off.
 - **1-player vs bot pattern.** Turn-based games (Tic Tac Toe, Connect 4)
   share a UI convention: a `.mode-select` toggle (`1 Player` / `2 Players`)
   and, in 1-player mode, a `.difficulty` toggle (`Easy` / `Medium` / `Hard`).

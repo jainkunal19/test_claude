@@ -99,7 +99,11 @@
     // it fitted on resize / orientation / mobile-toolbar changes. This measures
     // the actual chrome instead of guessing "100svh - NNpx", so boards fill the
     // screen consistently across devices. opts: { aspect (w/h, else read from a
-    // child canvas), maxWidth, gap, onFit(w,h) }. Returns a re-fit function.
+    // child canvas), maxWidth, gap, fill, onFit(w,h) }. With opts.fill the box is
+    // sized to the FULL available rectangle (both dimensions, ignoring aspect) so
+    // a scene that can adapt its shape fills the panel with no side gaps; onFit
+    // then receives the actual (w, h) to re-lay-out against. Returns a re-fit
+    // function.
     fitBoard: function (boxEl, opts) {
       opts = opts || {};
       if (!boxEl) return function () {};
@@ -120,6 +124,15 @@
         var bodyPad = parseFloat(bcs.paddingTop) + parseFloat(bcs.paddingBottom);
         var vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
         var availH = vh - bodyPad - chrome - (opts.gap || 0);
+        if (opts.fill) {
+          // Fill mode: take the whole rectangle, let the scene adapt its shape.
+          var fw = Math.max(60, availW);
+          var fh = Math.max(60, availH);
+          boxEl.style.width = fw + 'px';
+          boxEl.style.height = fh + 'px';
+          if (opts.onFit) opts.onFit(fw, fh);
+          return;
+        }
         var w = Math.max(60, Math.min(availW, availH * aspect));
         boxEl.style.width = w + 'px';
         if (opts.onFit) opts.onFit(w, w / aspect);
